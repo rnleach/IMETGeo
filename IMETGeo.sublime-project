@@ -1,0 +1,21 @@
+{
+  "folders":
+  [
+    {
+      "path":"."
+    },
+  ],
+  "build_systems":
+  [
+    {
+      "name":"make test",
+      "working_dir":"$project_path",
+      "cmd":["make", "test"]
+    },
+    {
+      "name":"make build",
+      "working_dir":"$project_path",
+      "cmd":["make"]
+    },
+  ]
+}
