@@ -84,6 +84,7 @@ default: build
 test: $(OBJFILES) $(OBJFILES_TEST)
 	-rm $(TESTDIR)$(TEST_NAME)
 	-$(LINK_TEST)
+	-ldd $(TESTDIR)$(TEST_NAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{} cp -u "{}" $(TESTDIR)
 	-$(TESTDIR)$(TEST_NAME)
 
 #
@@ -91,6 +92,7 @@ test: $(OBJFILES) $(OBJFILES_TEST)
 #
 build: $(OBJFILES)
 	$(LINK)
+	-ldd $(PROGDIR)$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{} cp -u "{}" $(PROGDIR)
 
 #
 # Object files depend on cpp files.
