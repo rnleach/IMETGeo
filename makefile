@@ -29,15 +29,15 @@ POSTCOMPILE = mv -f $(OBJDIR)$*.Td $(OBJDIR)$*.d
 # Compiler flags, includes, and programs
 #
 CPPFLAGS = -std=c++11 -Wall
-CPP_INCLUDES = 
+CPP_INCLUDES = `pkg-config --cflags gtkmm-3.0` `gdal-config --cflags`
 COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c 
 
 #
 # Linker directories, flags, and program
 #
 LINKFLAGS = 
-LIBS      = 
-LINK      = g++ -o $(PROGDIR)$(PROGNAME) $(LINKFLAGS) $(OBJFILES) 
+LIBS      = `pkg-config --libs gtkmm-3.0` `gdal-config --libs`
+LINK      = g++ -o $(PROGDIR)$(PROGNAME) $(LINKFLAGS) $(OBJFILES) $(LIBS)
 LINK_TEST = g++ -o $(TESTDIR)$(TEST_NAME) $(OBJFILES) $(OBJFILES_TEST)
 
 #
@@ -93,6 +93,7 @@ test: $(OBJFILES) $(OBJFILES_TEST)
 build: $(OBJFILES)
 	$(LINK)
 	-ldd $(PROGDIR)$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{} cp -u "{}" $(PROGDIR)
+	-cp -u ./res/* ./bin/
 
 #
 # Object files depend on cpp files.
