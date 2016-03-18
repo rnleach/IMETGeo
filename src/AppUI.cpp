@@ -49,7 +49,8 @@ AppUI::AppUI() :
   displayThreshold_(nullptr),
   textBuffer_(nullptr),
   layersTree_(nullptr),
-  titleEntry_(nullptr)
+  titleEntry_(nullptr),
+  refreshMinutes_(nullptr)
 {
   // Initialize GDAL
   OGRRegisterAll();
@@ -176,10 +177,13 @@ AppUI::AppUI() :
   std::cerr << "Setting display threshold in constructor.\n";
   displayThreshold_->set_value(234);
   std::cerr << "Done setting threshold in constructor, was signal called?\n";
+  std::cerr << "Setting display threshold in constructor again.\n";
+  displayThreshold_->set_value(234);
+  std::cerr << "Done setting threshold in constructor again, was signal called again?\n";
   /*****************************************************************************
   *****************************************************************************
   ***************************** end delete code *******************************/
-  
+
   // textBuffer_
   Gtk::TextView *textArea = nullptr;
   refBuilder->get_widget("textArea", textArea);
@@ -252,6 +256,82 @@ AppUI::AppUI() :
   /*****************************************************************************
   *****************************************************************************
   ***************************** end delete code *******************************/
+
+  // refreshMinutes_
+  refBuilder->get_widget("refreshMinutesSpinner", refreshMinutes_);
+  if(!refreshMinutes_)
+  {
+    throw std::runtime_error("Unable to connect refreshMinutes_.");
+  }
+  /************************* start delete code *********************************
+  *****************************************************************************
+  *****************************************************************************/
+  std::cerr << "Setting refresh minutes in constructor.\n";
+  refreshMinutes_->set_value(234);
+  std::cerr << "Done setting refreshMinutes_ in constructor.\n";
+  /*****************************************************************************
+  *****************************************************************************
+  ***************************** end delete code *******************************/
+
+  Gtk::Button *exportPlaceFileButton = nullptr;
+  refBuilder->get_widget("exportPlacefile", exportPlaceFileButton);
+  if(exportPlaceFileButton)
+  {
+    exportPlaceFileButton->signal_clicked().connect(
+      sigc::mem_fun(*this, &AppUI::onExportPlacefileClicked) );
+  }
+  else
+  {
+    throw std::runtime_error("Unable to connect export placefile button.");
+  }
+
+  Gtk::Button *exportKMLButton = nullptr;
+  refBuilder->get_widget("exportKML", exportKMLButton);
+  if(exportKMLButton)
+  {
+    exportKMLButton->signal_clicked().connect(
+      sigc::mem_fun(*this, &AppUI::onExportKMLClicked) );
+  }
+  else
+  {
+    throw std::runtime_error("Unable to connect export KML button.");
+  }
+
+  //
+  // Load Images
+  //
+  Gtk::Image *gdalImage = nullptr;
+  refBuilder->get_widget("gdalImage", gdalImage);
+  if(!gdalImage)
+  {
+    throw std::runtime_error("Unable to connect gdalImage.");
+  }
+  gdalImage->set("trac_logo.png");
+
+  Gtk::Image *gtkImage = nullptr;
+  refBuilder->get_widget("gtkImage", gtkImage);
+  if(!gtkImage)
+  {
+    throw std::runtime_error("Unable to connect gtkImage.");
+  }
+  gtkImage->set("GTK-plus_1.png");
+
+  Gtk::LinkButton *gdalButton = nullptr;
+  refBuilder->get_widget("gdalLinkButton", gdalButton);
+  if(!gdalButton)
+  {
+    throw std::runtime_error("Unable to connect gdalButton.");
+  }
+  gdalButton->set_label("gdal.org");
+
+  Gtk::LinkButton *gtkButton = nullptr;
+  refBuilder->get_widget("GTKlinkButton", gtkButton);
+  if(!gtkButton)
+  {
+    throw std::runtime_error("Unable to connect gtkButton.");
+  }
+  gtkButton->set_label("www.gtk.org");
+
 }
 
 /*==============================================================================
@@ -259,44 +339,44 @@ AppUI::AppUI() :
  *============================================================================*/
 void AppUI::onDeleteClicked()
 {
-// TODO
-std::cerr << "Delete Button Clicked. Not implemented.\n";
+  // TODO
+  std::cerr << "Delete Button Clicked. Not implemented.\n";
 }
 
 void AppUI::onAddShapefile()
 {
-// TODO
-std::cerr << "Add shape file requested. Not implemented.\n";
+  // TODO
+  std::cerr << "Add shape file requested. Not implemented.\n";
 }
 
 void AppUI::onAddKML()
 {
-// TODO
-std::cerr << "Add KML requested. Not implemented.\n";
+  // TODO
+  std::cerr << "Add KML requested. Not implemented.\n";
 }
 
 void AppUI::onAddGDB()
 {
-// TODO
-std::cerr << "Add file geo-database requested. Not implemented.\n";
+  // TODO
+  std::cerr << "Add file geo-database requested. Not implemented.\n";
 }
 
 void AppUI::onLabelFieldChange()
 {
-// TODO
-std::cerr << "Label field change requested. Not implemented.\n";
+  // TODO
+  std::cerr << "Label field change requested. Not implemented.\n";
 }
 
 void AppUI::onLayerColorSelect()
 {
-// TODO
-std::cerr << "Layer color select requested. Not implemented.\n";
+  // TODO
+  std::cerr << "Layer color select requested. Not implemented.\n";
 }
 
 void AppUI::onFilledPolygonToggle()
 {
-// TODO
-std::cerr << "Filled polygon toggled. Not implemented.\n";
+  // TODO
+  std::cerr << "Filled polygon toggled. Not implemented.\n";
 }
 
 void AppUI::onDisplayThresholdChanged()
@@ -323,6 +403,18 @@ bool AppUI::isSelectable(const Glib::RefPtr<Gtk::TreeModel>& model,
 {
   const Gtk::TreeModel::iterator iter = model->get_iter(path);
   return iter->children().empty(); // only allow leaf nodes to be selected
+}
+
+void AppUI::onExportPlacefileClicked()
+{
+  // TODO
+  std::cerr << "Export Placefile Button Clicked. Not implemented.\n";
+}
+
+void AppUI::onExportKMLClicked()
+{
+  // TODO
+  std::cerr << "Export KML Button Clicked. Not implemented.\n";
 }
 
 /*==============================================================================

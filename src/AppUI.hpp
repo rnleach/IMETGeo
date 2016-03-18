@@ -75,6 +75,7 @@ namespace GeoConv
 
     // The output section
     Gtk::Entry *titleEntry_;
+    Gtk::SpinButton *refreshMinutes_;
 
     //
     // Private constructor to enforce singleton
@@ -100,6 +101,10 @@ namespace GeoConv
     void onSelectionChanged();
     bool isSelectable(const Glib::RefPtr<Gtk::TreeModel>& model, 
         const Gtk::TreeModel::Path& path, bool);
+
+    /* Export buttons. */
+    void onExportPlacefileClicked();
+    void onExportKMLClicked();
 
     //
     // Make sure the UI elements are consistent.
