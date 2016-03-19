@@ -78,19 +78,23 @@ $(info                                           )
 #
 # Build the program.
 #
-default: build
+default: update
 
 #
 # Make sure all the directories exist
 #
-dirs:
-	-mkdir -p $(OBJDIR)
+distDirs:
 	-mkdir -p $(DISTDIR)
 	-mkdir -p $(DISTDIR)/bin
 	-mkdir -p $(DISTDIR)/share
 	-mkdir -p $(DISTDIR)/share/icons
 	-mkdir -p $(DISTDIR)/share/glib-2.0
 	-mkdir -p $(DISTDIR)/share/glib-2.0/schemas
+
+objDir:
+	-mkdir -p $(OBJDIR)
+
+$(OBJDIR): | objDir
 
 #
 # Build and run tests
@@ -105,21 +109,27 @@ test: $(OBJFILES) $(OBJFILES_TEST)
 #
 # Build the data target
 #
-build: dirs $(OBJFILES)
+build: distDirs $(OBJFILES)
 	$(LINK)
-	-ldd $(PROGDIR)/$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{} cp -u "{}" $(PROGDIR)/
+	-ldd $(PROGDIR)/$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{}  cp -u "{}" $(PROGDIR)/
 	-cp -u ./res/* $(DISTDIR)/bin/
 	-cp -uR /usr/local/share/icons/* $(DISTDIR)/share/icons/
 	-cp -uR /usr/local/share/glib-2.0/schemas/* $(DISTDIR)/share/glib-2.0/schemas/
 
 #
+# Update just my files
+#
+update: $(OBJFILES)
+	$(LINK)
+
+#
 # Object files depend on cpp files.
 #
-$(OBJFILES): $(OBJDIR)/%.o: ./src/%.cpp $(OBJDIR)/%.d dirs
+$(OBJFILES): $(OBJDIR)/%.o: ./src/%.cpp $(OBJDIR)/%.d | objDir
 	$(COMPILE) $< -o$@
 	$(POSTCOMPILE)
 
-$(OBJFILES_TEST): $(OBJDIR)/%.o: ./test/src/%.cpp $(OBJDIR)/%.d
+$(OBJFILES_TEST): $(OBJDIR)/%.o: ./test/src/%.cpp $(OBJDIR)/%.d | objDir
 	$(COMPILE) $< -o$@
 	$(POSTCOMPILE)
 
