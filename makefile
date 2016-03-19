@@ -1,8 +1,9 @@
 #
 # Target directory and name of library
 #
-PROGDIR   = ./dist/bin/
-TESTDIR   = ./test/bin/
+DISTDIR   = ./dist
+PROGDIR   = $(DISTDIR)/bin
+TESTDIR   = ./test/bin
 PROGNAME  = IMETGeo.exe
 TEST_NAME = IMETGeo_Unittests.exe
 
@@ -15,15 +16,15 @@ SRCS_TEST = $(wildcard ./test/src/*.cpp)
 #
 # Location of object files (and potentially dependency files)
 #
-OBJDIR        = ./obj/
-OBJFILES      = $(patsubst %.cpp, $(OBJDIR)%.o, $(notdir $(SRCS)))
-OBJFILES_TEST = $(patsubst %.cpp, $(OBJDIR)%.o, $(notdir $(SRCS_TEST)))
+OBJDIR        = ./obj
+OBJFILES      = $(patsubst %.cpp, $(OBJDIR)/%.o, $(notdir $(SRCS)))
+OBJFILES_TEST = $(patsubst %.cpp, $(OBJDIR)/%.o, $(notdir $(SRCS_TEST)))
 
 #
 # Dependency definitions
 #
-DEPFLAGS = -MT $@ -MMD -MP -MF $(OBJDIR)$*.Td
-POSTCOMPILE = mv -f $(OBJDIR)$*.Td $(OBJDIR)$*.d
+DEPFLAGS = -MT $@ -MMD -MP -MF $(OBJDIR)/$*.Td
+POSTCOMPILE = mv -f $(OBJDIR)/$*.Td $(OBJDIR)/$*.d
 
 #
 # Compiler flags, includes, and programs
@@ -37,12 +38,13 @@ COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c
 #
 LINKFLAGS = 
 LIBS      = `pkg-config --libs gtkmm-3.0` `gdal-config --libs`
-LINK      = g++ -o $(PROGDIR)$(PROGNAME) $(LINKFLAGS) $(OBJFILES) $(LIBS)
-LINK_TEST = g++ -o $(TESTDIR)$(TEST_NAME) $(OBJFILES) $(OBJFILES_TEST)
+LINK      = g++ -o $(PROGDIR)/$(PROGNAME) $(LINKFLAGS) $(OBJFILES) $(LIBS)
+LINK_TEST = g++ -o $(TESTDIR)/$(TEST_NAME) $(OBJFILES) $(OBJFILES_TEST)
 
 #
 # Output all variables to terminal for inspection during build process....
 #
+$(info DISTDIR            = $(DISTDIR)           )
 $(info PROGDIR            = $(PROGDIR)           )
 $(info TESTDIR            = $(TESTDIR)           )
 $(info PROGNAME           = $(PROGNAME)          )
@@ -79,50 +81,57 @@ $(info                                           )
 default: build
 
 #
+# Make sure all the directories exist
+#
+dirs:
+	-mkdir -p $(OBJDIR)
+	-mkdir -p $(DISTDIR)
+	-mkdir -p $(DISTDIR)/bin
+	-mkdir -p $(DISTDIR)/share
+	-mkdir -p $(DISTDIR)/share/icons
+	-mkdir -p $(DISTDIR)/share/glib-2.0
+	-mkdir -p $(DISTDIR)/share/glib-2.0/schemas
+
+#
 # Build and run tests
 #
 test: $(OBJFILES) $(OBJFILES_TEST)
-	-rm $(TESTDIR)$(TEST_NAME)
+	-mkdir $(TESTDIR)
+	-rm $(TESTDIR)/$(TEST_NAME)
 	-$(LINK_TEST)
-	-ldd $(TESTDIR)$(TEST_NAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{} cp -u "{}" $(TESTDIR)
-	-$(TESTDIR)$(TEST_NAME)
+	-ldd $(TESTDIR)/$(TEST_NAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{} cp -u "{}" $(TESTDIR)/
+	-$(TESTDIR)/$(TEST_NAME)
 
 #
 # Build the data target
 #
-build: $(OBJFILES)
-	-mkdir ./dist
-	-mkdir ./dist/bin
-	-mkdir ./dist/share
-	-mkdir ./dist/share/icons
-	-mkdir ./dist/share/glib-2.0
-	-mkdir ./dist/share/glib-2.0/schemas
+build: dirs $(OBJFILES)
 	$(LINK)
-	-ldd $(PROGDIR)$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{} cp -u "{}" $(PROGDIR)
-	-cp -u ./res/* ./dist/bin/
-	-cp -uR /usr/local/share/icons/* ./dist/share/icons/
-	-cp -uR /usr/local/share/glib-2.0/schemas/* ./dist/share/glib-2.0/schemas/
+	-ldd $(PROGDIR)/$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{} cp -u "{}" $(PROGDIR)/
+	-cp -u ./res/* $(DISTDIR)/bin/
+	-cp -uR /usr/local/share/icons/* $(DISTDIR)/share/icons/
+	-cp -uR /usr/local/share/glib-2.0/schemas/* $(DISTDIR)/share/glib-2.0/schemas/
 
 #
 # Object files depend on cpp files.
 #
-$(OBJFILES): $(OBJDIR)%.o: ./src/%.cpp $(OBJDIR)%.d
+$(OBJFILES): $(OBJDIR)/%.o: ./src/%.cpp $(OBJDIR)/%.d dirs
 	$(COMPILE) $< -o$@
 	$(POSTCOMPILE)
 
-$(OBJFILES_TEST): $(OBJDIR)%.o: ./test/src/%.cpp $(OBJDIR)%.d
+$(OBJFILES_TEST): $(OBJDIR)/%.o: ./test/src/%.cpp $(OBJDIR)/%.d
 	$(COMPILE) $< -o$@
 	$(POSTCOMPILE)
 
 #
 # Make a target to automatically...OK, I'm not sure, I got this from the internet
 #
-$(OBJDIR)%.d: ;
+$(OBJDIR)/%.d: ;
 
 #
 # Include depenencies
 #
-include $(patsubst %,$(OBJDIR)%.d,$(basename $(notdir $(SRCS))))
+include $(patsubst %,$(OBJDIR)/%.d,$(basename $(notdir $(SRCS))))
 
 #
 # Clean up!
@@ -130,5 +139,6 @@ include $(patsubst %,$(OBJDIR)%.d,$(basename $(notdir $(SRCS))))
 clean:
 	-cd $(OBJDIR) && rm *.o *.d
 	-cd $(PROGDIR) && rm *
-	-cd ./test/bin && rm *
+	-cd $(TESTDIR) && rm *
+	-rm -rf $(DISTDIR)
 	
