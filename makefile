@@ -1,7 +1,7 @@
 #
 # Target directory and name of library
 #
-PROGDIR   = ./bin/
+PROGDIR   = ./dist/bin/
 TESTDIR   = ./test/bin/
 PROGNAME  = IMETGeo.exe
 TEST_NAME = IMETGeo_Unittests.exe
@@ -91,9 +91,17 @@ test: $(OBJFILES) $(OBJFILES_TEST)
 # Build the data target
 #
 build: $(OBJFILES)
+	-mkdir ./dist
+	-mkdir ./dist/bin
+	-mkdir ./dist/share
+	-mkdir ./dist/share/icons
+	-mkdir ./dist/share/glib-2.0
+	-mkdir ./dist/share/glib-2.0/schemas
 	$(LINK)
 	-ldd $(PROGDIR)$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{} cp -u "{}" $(PROGDIR)
-	-cp -u ./res/* ./bin/
+	-cp -u ./res/* ./dist/bin/
+	-cp -uR /usr/local/share/icons/* ./dist/share/icons/
+	-cp -uR /usr/local/share/glib-2.0/schemas/* ./dist/share/glib-2.0/schemas/
 
 #
 # Object files depend on cpp files.
