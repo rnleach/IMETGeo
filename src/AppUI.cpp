@@ -343,22 +343,87 @@ void AppUI::onDeleteClicked()
   std::cerr << "Delete Button Clicked. Not implemented.\n";
 }
 
+void AppUI::addSource(const string& title, Gtk::FileChooserAction action, 
+  const string& filterName, const vector<string>& filterPatterns)
+{
+  Gtk::FileChooserDialog dialog(title, action);
+  dialog.set_transient_for(*mainWindow_);
+
+  //Add response buttons the the dialog:
+  if( action == Gtk::FILE_CHOOSER_ACTION_OPEN)
+  {
+    dialog.add_button("_Open", Gtk::RESPONSE_OK);
+  } 
+  else
+  {
+    dialog.add_button("Select", Gtk::RESPONSE_OK);
+  }
+  dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+
+  if( action == Gtk::FILE_CHOOSER_ACTION_OPEN)
+  {
+    //Add filters, so that only certain file types can be selected:
+    auto filter = Gtk::FileFilter::create();
+    filter->set_name(filterName);
+    for(uint i = 0; i < filterPatterns.size(); i++)
+    {
+      filter->add_pattern(filterPatterns[i]);
+    }
+    dialog.add_filter(filter);
+  }
+
+  //Show the dialog and wait for a user response:
+  int result = dialog.run();
+
+  //Handle the response:
+  if(result == Gtk::RESPONSE_OK)
+  {
+    std::string filename = dialog.get_filename();
+    try
+    {
+      appCon_->addSource(filename);
+    }
+    catch(const std::runtime_error& e)
+    {
+      std::cerr << e.what() << std::endl;
+      // TODO - post a message to user....
+    }
+    // Update the UI to reflect the newly added source
+    updateUI();
+    // TODO set the currently selected layer to be the first in the newly added
+    // TODO make sure the fields on the right are updated correctly
+  }
+}
+
 void AppUI::onAddShapefile()
 {
-  // TODO
-  std::cerr << "Add shape file requested. Not implemented.\n";
+  vector<string> patterns {"*.shp","*.SHP"};
+
+  addSource(
+    "Add a shapefile", 
+    Gtk::FILE_CHOOSER_ACTION_OPEN, 
+    "Shapefiles", 
+    patterns);
 }
 
 void AppUI::onAddKML()
 {
-  // TODO
-  std::cerr << "Add KML requested. Not implemented.\n";
+  vector<string> patterns {"*.kml","*.kmz","*.KML","*.KMZ"};
+  addSource(
+    "Add a KML/KMZ", 
+    Gtk::FILE_CHOOSER_ACTION_OPEN, 
+    "KML/KMZ", 
+    patterns);
 }
 
 void AppUI::onAddGDB()
 {
-  // TODO
-  std::cerr << "Add file geo-database requested. Not implemented.\n";
+  vector<string> patterns {"*.gdb","*.GDB"};
+  addSource(
+    "Add a file geo-database", 
+    Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER, 
+    "geo-database", 
+    patterns);
 }
 
 void AppUI::onLabelFieldChange()
@@ -423,5 +488,53 @@ void AppUI::onExportKMLClicked()
 void AppUI::updateUI()
 {
   // TODO
-  std::cerr << "updateUI() not implemented yet.\n";
+  std::cerr << "updateUI() not fully implemented yet.\n";
+
+  // TODO remember the path of the last selected layer
+
+  // Clear out the tree
+  treeStore_->clear();
+
+  // Get a list of sources, update the tree sources
+  vector<string> sources = appCon_->getSources();
+  if(sources.size() > 0)
+  {
+    string& path = sources[0];
+    size_t idx = path.find_last_of('/');
+    string lyrName = path.substr(idx + 1 , string::npos);
+    string srcName = path.substr(0, idx);
+
+    Gtk::TreeModel::Row row = *(treeStore_->append());
+    row[columns_.sourceName] = srcName;
+    row[columns_.layerName] = srcName;
+
+    Gtk::TreeModel::Row childrow = *(treeStore_->append(row.children()));
+    childrow[columns_.sourceName] = srcName;
+    childrow[columns_.layerName] = lyrName;
+    string lastSrc = srcName;
+
+    for(uint i = 1; i < sources.size(); i++)
+    {
+      path = sources[i];
+      idx = path.find_last_of('/');
+      lyrName = path.substr(idx + 1 , string::npos);
+      srcName = path.substr(0, idx);
+
+      if(lastSrc != srcName)
+      {
+        row = *(treeStore_->append());
+        row[columns_.sourceName] = srcName;
+        row[columns_.layerName] = srcName;
+      }
+      childrow = *(treeStore_->append(row.children()));
+      childrow[columns_.sourceName] = srcName;
+      childrow[columns_.layerName] = lyrName;
+      string lastSrc = srcName;
+    }
+  }
+
+  // TODO select the last selected layer again - if not deleted. Otherwise,
+  //      select the first available layer
+
+  // Update the GUI elements on the right.
 }

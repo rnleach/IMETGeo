@@ -33,7 +33,8 @@ public:
   // Summarize the properties of the given layer.
   string& summarizeLayerProperties(const string& sourcePath);
 
-  // Open a file and add the resource to the project. Return the path of the first layer in the file.
+  // Open a file and add the resource to the project. Return the path of the 
+  // first layer in the file.
   string addSource(const string& path);
 
   // Validate this sourcePath. Sometimes the tree in the GUI will erroneously
@@ -76,7 +77,8 @@ private:
     // Convert polygons to strings
     bool polyAsLine;
 
-    // Constructor - default options are to not use layer, and make it's color white.
+    // Constructor - default options are to not use layer, and make it's color
+    //               white.
     explicit LayerOptions(string lField = DO_NOT_USE_LAYER, 
                           PlaceFileColor clr = PlaceFileColor(),
                           bool polyAsLine = true);

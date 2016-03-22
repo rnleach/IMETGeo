@@ -76,8 +76,10 @@ string AppController::addSource(const string& path)
   try
   {
     // Parse out  the file name
-    string fileName = path.substr(path.find_last_of("\\") + 1);
-
+    size_t idx = path.find_last_of("\\");
+    if(idx == string::npos) idx = path.find_last_of("/");
+    string fileName = path.substr(idx + 1);
+    
     // Now get the data source
     OGRDataSourceWrapper src{ path, false };
 

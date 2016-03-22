@@ -4,6 +4,7 @@
  *  programming.
  */
 #include <memory>
+#include <vector>
 
 #include <gtkmm.h>
 
@@ -110,5 +111,11 @@ namespace GeoConv
     // Make sure the UI elements are consistent.
     //
     void updateUI();
+
+    //
+    // Called by various menu items to add a source (e.g. shapefile, kml, .gdb)
+    //
+    void addSource(const string& title, Gtk::FileChooserAction action, 
+        const string& filterName, const vector<string>& filterPatterns);
   };
 }
