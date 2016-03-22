@@ -10,6 +10,8 @@
 
 #include "AppController.h"
 
+ using uint = unsigned int;
+
 // Name space for application code.
 namespace GeoConv
 {
