@@ -133,8 +133,10 @@ AppUI::AppUI() :
   refBuilder->get_widget("labelFieldChoice", labelField_);
   if(labelField_)
   {
-    labelField_->signal_changed().connect(sigc::mem_fun(*this, 
+    auto conn = labelField_->signal_changed().connect(sigc::mem_fun(*this, 
       &AppUI::onLabelFieldChange));
+
+    connections_.push_back(move(conn));
   }
   else
   {
@@ -145,8 +147,10 @@ AppUI::AppUI() :
   refBuilder->get_widget("layerColor", layerColor_);
   if(layerColor_)
   {
-    layerColor_->signal_color_set().connect(sigc::mem_fun(*this, 
+    auto conn = layerColor_->signal_color_set().connect(sigc::mem_fun(*this, 
       &AppUI::onLayerColorSelect));
+
+    connections_.push_back(move(conn));
   }
   else
   {
@@ -157,8 +161,10 @@ AppUI::AppUI() :
   refBuilder->get_widget("filledPolygonsCheck", filledPolygon_);
   if(filledPolygon_)
   {
-    filledPolygon_ ->signal_toggled().connect(sigc::mem_fun(*this, 
+    auto conn = filledPolygon_ ->signal_toggled().connect(sigc::mem_fun(*this, 
       &AppUI::onFilledPolygonToggle));
+
+    connections_.push_back(move(conn));
   }
   else
   {
@@ -169,8 +175,10 @@ AppUI::AppUI() :
   refBuilder->get_widget("displayThresholdSpinner", displayThreshold_);
   if(displayThreshold_)
   {
-    displayThreshold_->signal_value_changed().connect(sigc::mem_fun(*this, 
-      &AppUI::onDisplayThresholdChanged));
+    auto conn = displayThreshold_->signal_value_changed().connect(
+      sigc::mem_fun(*this, &AppUI::onDisplayThresholdChanged));
+
+    connections_.push_back(move(conn));
   }
   else
   {
@@ -386,6 +394,8 @@ void AppUI::addSource(const string& title, Gtk::FileChooserAction action,
     string filename = dialog.get_filename();
     try
     {
+      SignalBlocker block(*this);
+
       const string newSrc = appCon_->addSource(filename);
       
       const vector<string> layers = appCon_->getLayers(newSrc);
@@ -414,7 +424,6 @@ void AppUI::addSource(const string& title, Gtk::FileChooserAction action,
       }
       // Expand the parent row.
       layersTree_->expand_row(treeStore_->get_path(row), true);
-      cerr << "Select first child." << endl;
       treeSelection_->select(firstChild);
 
     }
@@ -426,7 +435,6 @@ void AppUI::addSource(const string& title, Gtk::FileChooserAction action,
   }
 
   // Update the UI to reflect the newly added source
-  cerr << "Update" << endl;
   updateUI();
 }
 
@@ -471,11 +479,8 @@ void AppUI::onLabelFieldChange()
     Gtk::TreeModel::Row row = *iter;
     const Glib::ustring srcName = row[columns_.sourceName];
     const Glib::ustring lyrName = row[columns_.layerName];
-    cerr << "Triggered with label " <<  labelField_->get_active_text() << endl;
     appCon_->setLabel(srcName, lyrName, labelField_->get_active_text());
   }
-  // TODO
-  cerr << "Label field change requested. Not implemented.\n";
 }
 
 void AppUI::onLayerColorSelect()
@@ -533,6 +538,11 @@ void AppUI::onExportKMLClicked()
 void AppUI::updateUI()
 {
   // TODO
+
+  // Turn of signals to widgets that might cause a recursive loop of callbacks.
+  // This is managed with RAII, so when it goes out of scope, widgets are
+  // unblocked.
+  SignalBlocker block(*this);
 
   // Get the number of sources we currently have.
   if(appCon_->getNumSources() == 0)
@@ -600,7 +610,6 @@ void AppUI::updateUI()
         labelField_->append(*it);
       }
       // Set the active text correctly
-      cerr << " Retrieved label " << appCon_->getLabel(srcName, lyrName) << endl;
       labelField_->set_active_text(appCon_->getLabel(srcName, lyrName));
 
       //
@@ -627,4 +636,22 @@ void AppUI::updateUI()
   }
 
   cerr << "updateUI() not fully implemented yet.\n";
+}
+/*==============================================================================
+ *                         Inner class SignalBlocker
+ *============================================================================*/
+AppUI::SignalBlocker::SignalBlocker(AppUI& app) : app_(app)
+{
+  for(auto it = app_.connections_.begin(); it != app_.connections_.end(); ++it)
+  {
+    it->block();
+  }
+}
+
+AppUI::SignalBlocker::~SignalBlocker()
+{
+  for(auto it = app_.connections_.begin(); it != app_.connections_.end(); ++it)
+  {
+    it->unblock();
+  }
 }

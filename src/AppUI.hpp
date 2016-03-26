@@ -124,5 +124,22 @@ namespace GeoConv
     //
     void addSource(const string& title, Gtk::FileChooserAction action, 
         const string& filterName, const vector<string>& filterPatterns);
+
+    //
+    // Hold the sigc::connection objects from all the editable widgets, and use
+    // it to block them before making GUI updates to prevent infinite loops of
+    // signal cascades.
+    //
+    vector<sigc::connection> connections_;
+    
+    // Use RAII to block the controls.
+    class SignalBlocker
+    {
+    public:
+        SignalBlocker(AppUI& app);
+        ~SignalBlocker();
+    private:
+      AppUI& app_;
+    };
   };
 }

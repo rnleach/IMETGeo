@@ -419,13 +419,9 @@ string const AppController::getLabel(const string& source, const string& layer)
 void AppController::setLabel(const string& source, 
   const string& layer, string label)
 {
-  cerr << "Old label is " << layers_.at(source).at(layer).labelField << endl;
   auto& opts = layers_.at(source).at(layer);
 
   opts.labelField = label;
-
-  cerr << "New label is " << layers_.at(source).at(layer).labelField <<
-    " but should be " << label << endl;
 }
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
