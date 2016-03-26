@@ -18,43 +18,19 @@ public:
   explicit AppController();
   ~AppController();
 
-  // Get a list of sources, this is files and layers. Returns a list of strings
-  // in the form file1/layer1 file1/layer2 file2/layer1 etc.
+  // Get a list of sources, this is files only
   const vector<string> getSources();
 
-  // Get the fields associated with a source/layer, this fields can be used as
-  // potential labels for each feature generated. Also include keys to indicate
-  // to not use this layer at all, or to not label features from this layer.
-  //
-  // field value of "**No Label**" means do not label.
-  // field value of "**Do Not Use Layer**" means do not convert this layer.
-  const vector<string> getFields(const string& sourcePath); 
+  // Get a list of layers for the given source.
+  const vector<string> getLayers(const string& source);
   
   // Summarize the properties of the given layer.
-  string& summarizeLayerProperties(const string& sourcePath);
+  const string& summarizeLayerProperties(const string& source, 
+    const string& layer);
 
-  // Open a file and add the resource to the project. Return the path of the 
-  // first layer in the file.
+  // Open a file and add the resource to the project. Return the name of the 
+  // source as it would be returned in the list returned by getSource().
   string addSource(const string& path);
-
-  // Validate this sourcePath. Sometimes the tree in the GUI will erroneously
-  // select a path without a layer. You have to click, hold, and drag the mouse
-  // to do it, but it can be done. To prevent this from causing a seg-fault
-  // check to make sure it is a valid path using this method first. Abort if
-  // not.
-  bool validPath(const string& sourcePath);
-
-  // Get/set the label for a given source path. 
-  string getLabel(const string& sourcePath);
-  void   setLabel(const string& sourcePath, string label);
-
-  // Get/set the color for a given source path.
-  PlaceFileColor getColor(const string& sourcePath);
-  void           setColor(const string& sourcePath, PlaceFileColor& newColor);
-
-  // Get/set the filled polygon option
-  bool getFilled(const string& sourcePath);
-  void setFilled(const string& sourcePath, const bool filled);
 
   // Save a place file
   void savePlaceFile(const string& fileName, unsigned int threshold, 
@@ -63,7 +39,14 @@ public:
   // Save a KML file
   void saveKMLFile(const string& fileName);
 
-private:
+  // Cause a layer to be hidden, if all layers in a source are hidden it is
+  // deleted via deleteSource
+  void hideLayer(const string& source, const string& layer);
+
+  // Delete a source, called by hideLayer if all the layers of a source are
+  // hidden.
+  void deleteSource(const string& source);
+
   // A nested class to keep track of the options associated with a layer.
   class LayerOptions
   {
@@ -77,27 +60,32 @@ private:
     // Convert polygons to strings
     bool polyAsLine;
 
-    // Constructor - default options are to not use layer, and make it's color
-    //               white.
-    explicit LayerOptions(string lField = DO_NOT_USE_LAYER, 
-                          PlaceFileColor clr = PlaceFileColor(),
-                          bool polyAsLine = true);
+    // Has this been deleted from the tree view?
+    bool visible;
+
+    // Display threshold
+    int displayThresh;
+
+    // Summary string
+    const string summary;
+
+    // Constructor 
+    explicit LayerOptions(string lField, PlaceFileColor clr, bool polyAsLine, 
+                          bool vsbl, int dispThresh, const string smry);
 
   };
 
+private:
+
   // Map a simple file name (no path) to an OGRDataSource
   unordered_map<string,OGRDataSourceWrapper> srcs_;
-  using srcsPair = pair<string, OGRDataSourceWrapper>;
+  using SrcsPair = pair<string, OGRDataSourceWrapper>;
 
-  // Map a "source/layer" string, like those returned by getSources to
-  // a set of options
-  unordered_map<string, LayerOptions> layerOptions_;
-  using optPair = pair<string, LayerOptions>;
-
-  // Map a "source/layer" string, like those returned by getSources to
-  // a string that summarizes the layer properties.
-  unordered_map<string, string> layerProperties_;
-  using propPair = pair<string, string>;
+  // Map sources to layers to options.
+  unordered_map<string,unordered_map<string,LayerOptions>> layers_;
+  using SrcsInfoPair = pair<string,unordered_map<string,LayerOptions>>;
+  using LayerInfo = unordered_map<string,LayerOptions>;
+  using LayerInfoPair = pair<string,LayerOptions>;
 
   static const string DO_NOT_USE_LAYER; // = "**Do Not Use Layer**";
   static const string NO_LABEL;         // = "**No Label**";

@@ -8,6 +8,7 @@
 #include "ogr_api.h"
 
 using namespace GeoConv;
+using namespace std;
 
 GeoConv::AppUI& AppUI::getInstance()
 {
@@ -16,7 +17,7 @@ GeoConv::AppUI& AppUI::getInstance()
   return instance;
 }
 
-void AppUI::setController(std::unique_ptr<AppController>&& ctr)
+void AppUI::setController(unique_ptr<AppController>&& ctr)
 {
   appCon_ = move(ctr);
 }
@@ -24,7 +25,7 @@ void AppUI::setController(std::unique_ptr<AppController>&& ctr)
 Gtk::Window& AppUI::appWindow()
 {
   if(mainWindow_) return *mainWindow_;
-  else throw std::runtime_error("Error, mainWindow_ is nullptr.");
+  else throw runtime_error("Error, mainWindow_ is nullptr.");
 }
 
 AppUI::~AppUI()
@@ -35,7 +36,7 @@ AppUI::~AppUI()
   // Clean up GDAL.
   OGRCleanupAll();
   
-  std::cerr << "Destruction and shutdown.\n";
+  cerr << "Destruction and shutdown.\n";
 }
 
 /*==============================================================================
@@ -52,7 +53,9 @@ AppUI::AppUI() :
   titleEntry_(nullptr),
   refreshMinutes_(nullptr)
 {
+  //
   // Initialize GDAL
+  //
   OGRRegisterAll();
 
   //
@@ -65,21 +68,21 @@ AppUI::AppUI() :
   }
   catch(const Glib::FileError& ex)
   {
-    std::cerr << "FileError: " << ex.what() << std::endl;
+    cerr << "FileError: " << ex.what() << endl;
     throw ex;
   }
   catch(const Glib::MarkupError& ex)
   {
-    std::cerr << "MarkupError: " << ex.what() << std::endl;
+    cerr << "MarkupError: " << ex.what() << endl;
     throw ex;
   }
   catch(const Gtk::BuilderError& ex)
   {
-    std::cerr << "BuilderError: " << ex.what() << std::endl;
+    cerr << "BuilderError: " << ex.what() << endl;
     throw ex;
   }
   refBuilder->get_widget("mainWindow", mainWindow_);
-  if(!mainWindow_) throw std::runtime_error("Unable to load main window.");
+  if(!mainWindow_) throw runtime_error("Unable to load main window.");
 
   //
   // Attach signal handlers to buttons
@@ -93,7 +96,7 @@ AppUI::AppUI() :
   }
   else
   {
-    throw std::runtime_error("Unable to connect delete button.");
+    throw runtime_error("Unable to connect delete button.");
   }
 
   //
@@ -111,8 +114,8 @@ AppUI::AppUI() :
     }
     else
     {
-      std::string msg = std::string("Error connecting menu item ") + id;
-      throw std::runtime_error(msg.c_str());
+      string msg = string("Error connecting menu item ") + id;
+      throw runtime_error(msg.c_str());
     }
   };
 
@@ -133,7 +136,7 @@ AppUI::AppUI() :
   }
   else
   {
-    throw std::runtime_error("Unable to connect label field combo box.");
+    throw runtime_error("Unable to connect label field combo box.");
   }
 
   // layerColor_
@@ -145,7 +148,7 @@ AppUI::AppUI() :
   }
   else
   {
-    throw std::runtime_error("Unable to connect layer color button.");
+    throw runtime_error("Unable to connect layer color button.");
   }
 
   // filledPolygon_
@@ -157,7 +160,7 @@ AppUI::AppUI() :
   }
   else
   {
-    throw std::runtime_error("Unable to connect filled polygon button.");
+    throw runtime_error("Unable to connect filled polygon button.");
   }
 
   // displayThreshold_
@@ -169,17 +172,17 @@ AppUI::AppUI() :
   }
   else
   {
-    throw std::runtime_error("Unable to connect displayThreshold_.");
+    throw runtime_error("Unable to connect displayThreshold_.");
   }
   /************************* start delete code *********************************
   *****************************************************************************
   *****************************************************************************/
-  std::cerr << "Setting display threshold in constructor.\n";
+  cerr << "Setting display threshold in constructor.\n";
   displayThreshold_->set_value(234);
-  std::cerr << "Done setting threshold in constructor, was signal called?\n";
-  std::cerr << "Setting display threshold in constructor again.\n";
+  cerr << "Done setting threshold in constructor, was signal called?\n";
+  cerr << "Setting display threshold in constructor again.\n";
   displayThreshold_->set_value(234);
-  std::cerr << "Done setting threshold in constructor again, was signal called again?\n";
+  cerr << "Done setting threshold in constructor again, was signal called again?\n";
   /*****************************************************************************
   *****************************************************************************
   ***************************** end delete code *******************************/
@@ -187,7 +190,7 @@ AppUI::AppUI() :
   // textBuffer_
   Gtk::TextView *textArea = nullptr;
   refBuilder->get_widget("textArea", textArea);
-  if(!textArea) throw std::runtime_error("Unable to connect textArea.");
+  if(!textArea) throw runtime_error("Unable to connect textArea.");
   textBuffer_ = textArea->get_buffer();
   /************************* start delete code *********************************
   *****************************************************************************
@@ -202,7 +205,7 @@ AppUI::AppUI() :
   //
   // layersTree_
   refBuilder->get_widget("layersTree", layersTree_);
-  if(!layersTree_) throw std::runtime_error("Unable to connect tree view.");
+  if(!layersTree_) throw runtime_error("Unable to connect tree view.");
 
   treeStore_ = Gtk::TreeStore::create(columns_);
   layersTree_->set_model(treeStore_);
@@ -212,42 +215,12 @@ AppUI::AppUI() :
     &AppUI::onSelectionChanged) );
   treeSelection_->set_select_function(sigc::mem_fun(*this, 
     &AppUI::isSelectable) );
-
-  /************************* start delete code *********************************
-  *****************************************************************************
-  *****************************************************************************/
-  Gtk::TreeModel::Row row = *(treeStore_->append());
-  row[columns_.sourceName] = "file1";
-  row[columns_.layerName] = "file1";
-
-  Gtk::TreeModel::Row childrow = *(treeStore_->append(row.children()));
-  childrow[columns_.sourceName] = "file1";
-  childrow[columns_.layerName] = "file1-layer1";
-
-  childrow = *(treeStore_->append(row.children()));
-  childrow[columns_.sourceName] = "file1";
-  childrow[columns_.layerName] = "file1-layer2";
-
-  row = *(treeStore_->append());
-  row[columns_.sourceName] = "file2";
-  row[columns_.layerName] = "file2";
-
-  childrow = *(treeStore_->append(row.children()));
-  childrow[columns_.sourceName] = "file2";
-  childrow[columns_.layerName] = "file2-layer1";
-
-  childrow = *(treeStore_->append(row.children()));
-  childrow[columns_.sourceName] = "file2";
-  childrow[columns_.layerName] = "file2-layer2";
-  /*****************************************************************************
-  *****************************************************************************
-  ***************************** end delete code *******************************/
   
   // titleEntry_
   refBuilder->get_widget("titleText", titleEntry_);
   if(!titleEntry_)
   {
-    throw std::runtime_error("Unable to connect title entry.");
+    throw runtime_error("Unable to connect title entry.");
   }
   /************************* start delete code *********************************
   *****************************************************************************
@@ -261,14 +234,14 @@ AppUI::AppUI() :
   refBuilder->get_widget("refreshMinutesSpinner", refreshMinutes_);
   if(!refreshMinutes_)
   {
-    throw std::runtime_error("Unable to connect refreshMinutes_.");
+    throw runtime_error("Unable to connect refreshMinutes_.");
   }
   /************************* start delete code *********************************
   *****************************************************************************
   *****************************************************************************/
-  std::cerr << "Setting refresh minutes in constructor.\n";
+  cerr << "Setting refresh minutes in constructor.\n";
   refreshMinutes_->set_value(234);
-  std::cerr << "Done setting refreshMinutes_ in constructor.\n";
+  cerr << "Done setting refreshMinutes_ in constructor.\n";
   /*****************************************************************************
   *****************************************************************************
   ***************************** end delete code *******************************/
@@ -282,7 +255,7 @@ AppUI::AppUI() :
   }
   else
   {
-    throw std::runtime_error("Unable to connect export placefile button.");
+    throw runtime_error("Unable to connect export placefile button.");
   }
 
   Gtk::Button *exportKMLButton = nullptr;
@@ -294,7 +267,7 @@ AppUI::AppUI() :
   }
   else
   {
-    throw std::runtime_error("Unable to connect export KML button.");
+    throw runtime_error("Unable to connect export KML button.");
   }
 
   //
@@ -304,7 +277,7 @@ AppUI::AppUI() :
   refBuilder->get_widget("gdalImage", gdalImage);
   if(!gdalImage)
   {
-    throw std::runtime_error("Unable to connect gdalImage.");
+    throw runtime_error("Unable to connect gdalImage.");
   }
   gdalImage->set("trac_logo.png");
 
@@ -312,15 +285,18 @@ AppUI::AppUI() :
   refBuilder->get_widget("gtkImage", gtkImage);
   if(!gtkImage)
   {
-    throw std::runtime_error("Unable to connect gtkImage.");
+    throw runtime_error("Unable to connect gtkImage.");
   }
   gtkImage->set("GTK-plus_1.png");
 
+  //
+  // Set labels for links to gdal and GTK
+  //
   Gtk::LinkButton *gdalButton = nullptr;
   refBuilder->get_widget("gdalLinkButton", gdalButton);
   if(!gdalButton)
   {
-    throw std::runtime_error("Unable to connect gdalButton.");
+    throw runtime_error("Unable to connect gdalButton.");
   }
   gdalButton->set_label("gdal.org");
 
@@ -328,10 +304,9 @@ AppUI::AppUI() :
   refBuilder->get_widget("GTKlinkButton", gtkButton);
   if(!gtkButton)
   {
-    throw std::runtime_error("Unable to connect gtkButton.");
+    throw runtime_error("Unable to connect gtkButton.");
   }
   gtkButton->set_label("www.gtk.org");
-
 }
 
 /*==============================================================================
@@ -339,8 +314,37 @@ AppUI::AppUI() :
  *============================================================================*/
 void AppUI::onDeleteClicked()
 {
-  // TODO
-  std::cerr << "Delete Button Clicked. Not implemented.\n";
+  if(treeSelection_->count_selected_rows() > 0)
+  {
+    Gtk::TreeModel::iterator iter = treeSelection_->get_selected();
+    if(iter)
+    {
+      Gtk::TreeModel::Row row = *iter;
+      const Glib::ustring srcName = row[columns_.sourceName];
+      const Glib::ustring lyrName = row[columns_.layerName];
+
+      // Remember the parent in case we need to delete it
+      Gtk::TreeModel::iterator parent = iter->parent();
+
+      // Hide it, and possibly delete it from the underlying data.
+      appCon_->hideLayer(srcName, lyrName);
+
+      // Check if this source remains.
+      auto srcs = appCon_->getSources();
+      if( find(srcs.begin(), srcs.end(), srcName) == srcs.end() )
+      {
+        // Delete the parent, this was the last visible layer
+        treeStore_->erase(parent);
+      }
+      else
+      {
+        // Just delete this item, others remain
+        treeStore_->erase(iter);
+      }
+    }
+  }
+
+  updateUI();
 }
 
 void AppUI::addSource(const string& title, Gtk::FileChooserAction action, 
@@ -378,21 +382,49 @@ void AppUI::addSource(const string& title, Gtk::FileChooserAction action,
   //Handle the response:
   if(result == Gtk::RESPONSE_OK)
   {
-    std::string filename = dialog.get_filename();
+    string filename = dialog.get_filename();
     try
     {
-      appCon_->addSource(filename);
+      const string newSrc = appCon_->addSource(filename);
+      
+      const vector<string> layers = appCon_->getLayers(newSrc);
+      
+      // Add the parent row for the source.
+      Gtk::TreeModel::Row row = *(treeStore_->append());
+      row[columns_.sourceName] = newSrc;
+      row[columns_.layerName] = newSrc;
+
+      Gtk::TreeModel::Row firstChild;
+
+      for(auto lyrIter = layers.begin(); lyrIter != layers.end(); ++lyrIter)
+      {
+        const string& lyrName = *lyrIter;
+
+        // Add the layers as children
+        Gtk::TreeModel::Row childrow = *(treeStore_->append(row.children()));
+        childrow[columns_.sourceName] = newSrc;
+        childrow[columns_.layerName] = lyrName;
+
+        if(lyrIter == layers.begin())
+        {
+          firstChild = childrow;
+        }
+
+      }
+      // Expand the parent row.
+      layersTree_->expand_row(treeStore_->get_path(row), true);
+      treeSelection_->select(firstChild);
+
     }
-    catch(const std::runtime_error& e)
+    catch(const runtime_error& e)
     {
-      std::cerr << e.what() << std::endl;
+      cerr << e.what() << endl;
       // TODO - post a message to user....
     }
-    // Update the UI to reflect the newly added source
-    updateUI();
-    // TODO set the currently selected layer to be the first in the newly added
-    // TODO make sure the fields on the right are updated correctly
   }
+
+  // Update the UI to reflect the newly added source
+  updateUI();
 }
 
 void AppUI::onAddShapefile()
@@ -429,38 +461,32 @@ void AppUI::onAddGDB()
 void AppUI::onLabelFieldChange()
 {
   // TODO
-  std::cerr << "Label field change requested. Not implemented.\n";
+  cerr << "Label field change requested. Not implemented.\n";
 }
 
 void AppUI::onLayerColorSelect()
 {
   // TODO
-  std::cerr << "Layer color select requested. Not implemented.\n";
+  cerr << "Layer color select requested. Not implemented.\n";
 }
 
 void AppUI::onFilledPolygonToggle()
 {
   // TODO
-  std::cerr << "Filled polygon toggled. Not implemented.\n";
+  cerr << "Filled polygon toggled. Not implemented.\n";
 }
 
 void AppUI::onDisplayThresholdChanged()
 {
   // TODO
-  std::cerr << "Display threshold changed. Not implemented.\n";
-  std::cerr << "    " << displayThreshold_->get_value() << "\n";
+  cerr << "Display threshold changed. Not implemented.\n";
+  cerr << "    " << displayThreshold_->get_value() << "\n";
 }
 
 void AppUI::onSelectionChanged()
 {
-  // TODO
-  Gtk::TreeModel::iterator iter = treeSelection_->get_selected();
-  if(iter)
-  {
-    Gtk::TreeModel::Row row = *iter;
-    std::cerr << "Row Selected source=" << row[columns_.sourceName] <<
-      " layer=" << row[columns_.layerName] << std::endl;
-  }
+  // Just update the UI via updateUI
+  updateUI();
 }
 
 bool AppUI::isSelectable(const Glib::RefPtr<Gtk::TreeModel>& model, 
@@ -473,13 +499,13 @@ bool AppUI::isSelectable(const Glib::RefPtr<Gtk::TreeModel>& model,
 void AppUI::onExportPlacefileClicked()
 {
   // TODO
-  std::cerr << "Export Placefile Button Clicked. Not implemented.\n";
+  cerr << "Export Placefile Button Clicked. Not implemented.\n";
 }
 
 void AppUI::onExportKMLClicked()
 {
   // TODO
-  std::cerr << "Export KML Button Clicked. Not implemented.\n";
+  cerr << "Export KML Button Clicked. Not implemented.\n";
 }
 
 /*==============================================================================
@@ -488,53 +514,20 @@ void AppUI::onExportKMLClicked()
 void AppUI::updateUI()
 {
   // TODO
-  std::cerr << "updateUI() not fully implemented yet.\n";
 
-  // TODO remember the path of the last selected layer
+  // Get the number of rows in the treeview. If it is zero, disable everything.
+  // Except the add source button. If it is not zero, enable the export buttons.
+  // Clear summary if it is zero.
 
-  // Clear out the tree
-  treeStore_->clear();
+  // Get the number of selected items
 
-  // Get a list of sources, update the tree sources
-  vector<string> sources = appCon_->getSources();
-  if(sources.size() > 0)
-  {
-    string& path = sources[0];
-    size_t idx = path.find_last_of('/');
-    string lyrName = path.substr(idx + 1 , string::npos);
-    string srcName = path.substr(0, idx);
+    // If it is 0, disable all controls on the right and the delete button, 
+    // clear summary.
 
-    Gtk::TreeModel::Row row = *(treeStore_->append());
-    row[columns_.sourceName] = srcName;
-    row[columns_.layerName] = srcName;
+    // If it is not 0, enable the delete button and show summary, then...
 
-    Gtk::TreeModel::Row childrow = *(treeStore_->append(row.children()));
-    childrow[columns_.sourceName] = srcName;
-    childrow[columns_.layerName] = lyrName;
-    string lastSrc = srcName;
+      // If it is a recognized format, enable all buttons on right and update
+      // values.
 
-    for(uint i = 1; i < sources.size(); i++)
-    {
-      path = sources[i];
-      idx = path.find_last_of('/');
-      lyrName = path.substr(idx + 1 , string::npos);
-      srcName = path.substr(0, idx);
-
-      if(lastSrc != srcName)
-      {
-        row = *(treeStore_->append());
-        row[columns_.sourceName] = srcName;
-        row[columns_.layerName] = srcName;
-      }
-      childrow = *(treeStore_->append(row.children()));
-      childrow[columns_.sourceName] = srcName;
-      childrow[columns_.layerName] = lyrName;
-      string lastSrc = srcName;
-    }
-  }
-
-  // TODO select the last selected layer again - if not deleted. Otherwise,
-  //      select the first available layer
-
-  // Update the GUI elements on the right.
+  cerr << "updateUI() not fully implemented yet.\n";
 }
