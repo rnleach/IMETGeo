@@ -21,6 +21,9 @@ public:
   // Get a list of sources, this is files only
   const vector<string> getSources();
 
+  // Get the number of sources.
+  inline size_t getNumSources(){ return srcs_.size(); }
+
   // Get a list of layers for the given source.
   const vector<string> getLayers(const string& source);
   
@@ -46,6 +49,15 @@ public:
   // Delete a source, called by hideLayer if all the layers of a source are
   // hidden.
   void deleteSource(const string& source);
+
+  // Get the fields available to use as labels
+  vector<string> const getFields(const string & source, const string & layer);
+
+  // Get the field that is currently being used as the label
+  string const getLabel(const string & source, const string & layer);
+
+  // Set the label field for a given source and layer
+  void setLabel(const string& source, const string& layer, string label);
 
   // A nested class to keep track of the options associated with a layer.
   class LayerOptions

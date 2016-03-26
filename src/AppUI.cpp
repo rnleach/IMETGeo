@@ -44,6 +44,7 @@ AppUI::~AppUI()
  *============================================================================*/
 AppUI::AppUI() :
   mainWindow_(nullptr), 
+  delButton_(nullptr),
   labelField_(nullptr),
   layerColor_(nullptr),
   filledPolygon_(nullptr),
@@ -51,7 +52,9 @@ AppUI::AppUI() :
   textBuffer_(nullptr),
   layersTree_(nullptr),
   titleEntry_(nullptr),
-  refreshMinutes_(nullptr)
+  refreshMinutes_(nullptr),
+  exportPlaceFileButton_(nullptr),
+  exportKMLButton_(nullptr)
 {
   //
   // Initialize GDAL
@@ -87,11 +90,10 @@ AppUI::AppUI() :
   //
   // Attach signal handlers to buttons
   //
-  Gtk::Button *delButton = nullptr;
-  refBuilder->get_widget("deleteButton", delButton);
-  if(delButton)
+  refBuilder->get_widget("deleteButton", delButton_);
+  if(delButton_)
   {
-    delButton->signal_clicked().connect(
+    delButton_->signal_clicked().connect(
       sigc::mem_fun(*this, &AppUI::onDeleteClicked) );
   }
   else
@@ -246,11 +248,10 @@ AppUI::AppUI() :
   *****************************************************************************
   ***************************** end delete code *******************************/
 
-  Gtk::Button *exportPlaceFileButton = nullptr;
-  refBuilder->get_widget("exportPlacefile", exportPlaceFileButton);
-  if(exportPlaceFileButton)
+  refBuilder->get_widget("exportPlacefile", exportPlaceFileButton_);
+  if(exportPlaceFileButton_)
   {
-    exportPlaceFileButton->signal_clicked().connect(
+    exportPlaceFileButton_->signal_clicked().connect(
       sigc::mem_fun(*this, &AppUI::onExportPlacefileClicked) );
   }
   else
@@ -258,11 +259,10 @@ AppUI::AppUI() :
     throw runtime_error("Unable to connect export placefile button.");
   }
 
-  Gtk::Button *exportKMLButton = nullptr;
-  refBuilder->get_widget("exportKML", exportKMLButton);
-  if(exportKMLButton)
+  refBuilder->get_widget("exportKML", exportKMLButton_);
+  if(exportKMLButton_)
   {
-    exportKMLButton->signal_clicked().connect(
+    exportKMLButton_->signal_clicked().connect(
       sigc::mem_fun(*this, &AppUI::onExportKMLClicked) );
   }
   else
@@ -414,6 +414,7 @@ void AppUI::addSource(const string& title, Gtk::FileChooserAction action,
       }
       // Expand the parent row.
       layersTree_->expand_row(treeStore_->get_path(row), true);
+      cerr << "Select first child." << endl;
       treeSelection_->select(firstChild);
 
     }
@@ -425,6 +426,7 @@ void AppUI::addSource(const string& title, Gtk::FileChooserAction action,
   }
 
   // Update the UI to reflect the newly added source
+  cerr << "Update" << endl;
   updateUI();
 }
 
@@ -461,6 +463,17 @@ void AppUI::onAddGDB()
 
 void AppUI::onLabelFieldChange()
 {
+  // Get the selected item
+  Gtk::TreeModel::iterator iter = treeSelection_->get_selected();
+  if(iter)
+  {
+    // Get the source and layer names
+    Gtk::TreeModel::Row row = *iter;
+    const Glib::ustring srcName = row[columns_.sourceName];
+    const Glib::ustring lyrName = row[columns_.layerName];
+    cerr << "Triggered with label " <<  labelField_->get_active_text() << endl;
+    appCon_->setLabel(srcName, lyrName, labelField_->get_active_text());
+  }
   // TODO
   cerr << "Label field change requested. Not implemented.\n";
 }
@@ -521,19 +534,97 @@ void AppUI::updateUI()
 {
   // TODO
 
-  // Get the number of rows in the treeview. If it is zero, disable everything.
-  // Except the add source button. If it is not zero, enable the export buttons.
-  // Clear summary if it is zero.
+  // Get the number of sources we currently have.
+  if(appCon_->getNumSources() == 0)
+  {
+    // No data!! So disable lots of stuff...
+    // There MUST also be zero things selected, so all those things will also
+    // disabled.
+
+    // Disable the export buttons
+    exportPlaceFileButton_->set_sensitive(false);
+    exportKMLButton_->set_sensitive(false);
+  }
+  else
+  {
+    // Ensure the export buttons are enabled.
+    exportPlaceFileButton_->set_sensitive(true);
+    exportKMLButton_->set_sensitive(true);
+  }
 
   // Get the number of selected items
-
+  if(treeSelection_->count_selected_rows() == 0)
+  {
     // If it is 0, disable all controls on the right and the delete button, 
     // clear summary.
 
-    // If it is not 0, enable the delete button and show summary, then...
+    // Clear the text area
+    textBuffer_->set_text(" ");
 
-      // If it is a recognized format, enable all buttons on right and update
-      // values.
+    // Disable the delete button
+    delButton_->set_sensitive(false);
+
+    // Disable the properties
+    labelField_->set_sensitive(false);
+    layerColor_->set_sensitive(false);
+    filledPolygon_->set_sensitive(false);
+    displayThreshold_->set_sensitive(false);
+  }
+  else
+  {
+    // Get the selected item
+    Gtk::TreeModel::iterator iter = treeSelection_->get_selected();
+    if(iter)
+    {
+      // Get the source and layer names
+      Gtk::TreeModel::Row row = *iter;
+      const Glib::ustring srcName = row[columns_.sourceName];
+      const Glib::ustring lyrName = row[columns_.layerName];
+      
+      //
+      // Set the text summary
+      //
+      textBuffer_->set_text(
+        appCon_->summarizeLayerProperties(srcName, lyrName));
+
+      // Enable and update other controls.
+
+      //
+      // Update the labelField
+      //
+      labelField_->set_sensitive(true);
+      labelField_->remove_all();
+      const vector<string> fields = appCon_->getFields(srcName, lyrName);
+      for(auto it = fields.begin(); it != fields.end(); ++it)
+      {
+        labelField_->append(*it);
+      }
+      // Set the active text correctly
+      cerr << " Retrieved label " << appCon_->getLabel(srcName, lyrName) << endl;
+      labelField_->set_active_text(appCon_->getLabel(srcName, lyrName));
+
+      //
+      // Update the color chooser
+      //
+      layerColor_->set_sensitive(true);
+      // TODO - update field
+
+      //
+      // Update the filledPolygon option
+      //
+      filledPolygon_->set_sensitive(true);
+      // TODO - update field
+
+      //
+      // Update the display threshold
+      //
+      displayThreshold_->set_sensitive(true);
+      // TODO - update field
+    }
+    
+    // Enable the delete button
+    delButton_->set_sensitive(true);
+  }
 
   cerr << "updateUI() not fully implemented yet.\n";
 }

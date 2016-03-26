@@ -71,10 +71,39 @@ string AppController::addSource(const string& path)
       OGRLayer *layer = src->GetLayer(l);
       string layerName = layer->GetName();
 
+      // Assume this is a recognized layer type and we want to see it.
+      bool makeVisible = true;
+
+      // Now check to see if it is recognizable
+      // Geometry type
+      OGRwkbGeometryType geoType = wkbFlatten(layer->GetGeomType());
+      string geometryType;
+      switch (geoType)
+      {
+        case wkbMultiPoint:
+        case wkbPoint:
+        case wkbMultiLineString:
+        case wkbLineString:
+        case wkbMultiPolygon:
+        case wkbPolygon:               break; // Leave makeVisible as true
+        default:         makeVisible = false; // Don't know what it is, hide it!
+      }
+
+      // Don't even bother to add it if it will not be visible
+      if(!makeVisible) continue;
+
       LayerOptions lp = LayerOptions(DO_NOT_USE_LAYER, PlaceFileColor(),
-        true, true, 999, move(summarize(layer)));
+        true, makeVisible, 999, move(summarize(layer)));
 
       lyrInfo.insert(LayerInfoPair { layerName, move(lp)} );
+    }
+
+    // Check to make sure at least some layers are visible
+    if(lyrInfo.size() == 0)
+    {
+      throw runtime_error(string("Cannot add ") + fileName + 
+        ", none of the layers are recognizable as geographic data that can "
+        "be used in a Placefile.");
     }
 
     layers_.insert(SrcsInfoPair {fileName, move(lyrInfo)} );
@@ -344,12 +373,9 @@ void AppController::deleteSource(const string& source)
   layers_.erase(source);
   srcs_.erase(source);
 }
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
-/*
-const vector<string> AppController::getFields(const string & sourcePath)
+const vector<string> AppController::getFields(
+  const string & source, const string & lyr)
 {
   vector<string> toRet;
 
@@ -358,29 +384,54 @@ const vector<string> AppController::getFields(const string & sourcePath)
   toRet.push_back(NO_LABEL);
   try
   {
-    auto splitIdx = sourcePath.find_first_of("/");
-    string fileNameKey = sourcePath.substr(0, splitIdx);
-    string layerNameKey = sourcePath.substr(splitIdx + 1);
 
-    OGRLayer* layer = srcs_.at(fileNameKey)->GetLayerByName(layerNameKey.c_str());
+    OGRLayer* layer = srcs_.at(source)->GetLayerByName(lyr.c_str());
 
     auto numFields = layer->GetLayerDefn()->GetFieldCount();
 
     toRet.reserve(numFields);
     for (int i = 0; i != numFields; ++i)
     {
-      toRet.push_back(string(layer->GetLayerDefn()->GetFieldDefn(i)->GetNameRef()));
+      toRet.push_back( string(
+        layer->GetLayerDefn()->GetFieldDefn(i)->GetNameRef() )
+      );
     }
   }
   catch (exception const& e)
   {
     string msg = string("Error getting fields: ");
-    msg.append(sourcePath).append("\n").append(e.what());
+    msg.append(source).
+        append(" -> ").
+        append(lyr).
+        append("\n").
+        append(e.what());
     throw runtime_error(msg.c_str());
   }
 
   return toRet;
 }
+
+string const AppController::getLabel(const string& source, const string& layer)
+{
+  return layers_.at(source).at(layer).labelField;
+}
+
+void AppController::setLabel(const string& source, 
+  const string& layer, string label)
+{
+  cerr << "Old label is " << layers_.at(source).at(layer).labelField << endl;
+  auto& opts = layers_.at(source).at(layer);
+
+  opts.labelField = label;
+
+  cerr << "New label is " << layers_.at(source).at(layer).labelField <<
+    " but should be " << label << endl;
+}
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+/*
 
 bool AppController::validPath(const string & sourcePath)
 {
@@ -389,32 +440,6 @@ bool AppController::validPath(const string & sourcePath)
     if (it->first == sourcePath) return true;
   }
   return false;
-}
-
-string AppController::getLabel(const string& sourcePath)
-{
-  // Test if source path is in layerOptions_
-  auto iter = layerOptions_.find(sourcePath);
-  if(iter == layerOptions_.end())
-  {
-    throw runtime_error("Invalid state - no options set for source.");
-  }
-
-  // Get it and return it
-  return iter->second.labelField;
-}
-
-void AppController::setLabel(const string& sourcePath, string label)
-{
-  auto iter = layerOptions_.find(sourcePath);
-  if (iter == layerOptions_.end())
-  {
-    throw runtime_error("Invalid state - no options set for source.");
-  }
-  else
-  {
-    layerOptions_.at(sourcePath).labelField = label;
-  }
 }
 
 PlaceFileColor AppController::getColor(const string & sourcePath)

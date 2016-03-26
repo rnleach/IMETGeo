@@ -64,6 +64,8 @@ namespace GeoConv
     //
     Gtk::Window *mainWindow_;
 
+    Gtk::Button *delButton_;
+
     Gtk::ComboBoxText *labelField_;
     Gtk::ColorButton *layerColor_;
     Gtk::CheckButton *filledPolygon_;
@@ -79,6 +81,9 @@ namespace GeoConv
     // The output section
     Gtk::Entry *titleEntry_;
     Gtk::SpinButton *refreshMinutes_;
+
+    Gtk::Button *exportPlaceFileButton_;
+    Gtk::Button *exportKMLButton_;
 
     //
     // Private constructor to enforce singleton
