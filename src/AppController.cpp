@@ -324,8 +324,9 @@ AppController::LayerOptions::LayerOptions(string lField, PlaceFileColor clr,
 
 void AppController::hideLayer(const string& source, const string& layer)
 {
-  auto layers = layers_.at(source);
-  layers.at(layer).visible = false;
+  auto& layers = layers_.at(source);
+  auto& lyr = layers.at(layer);
+  lyr.visible = false;
   bool anyVisible = false;
   for(auto it = layers.begin(); it != layers.end(); ++it)
   {

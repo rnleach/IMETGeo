@@ -343,8 +343,9 @@ void AppUI::onDeleteClicked()
       }
     }
   }
-
-  updateUI();
+  // Update not needed, deleting a row triggers a selection change, which
+  // causes an update.
+  //updateUI();
 }
 
 void AppUI::addSource(const string& title, Gtk::FileChooserAction action, 
@@ -493,7 +494,12 @@ bool AppUI::isSelectable(const Glib::RefPtr<Gtk::TreeModel>& model,
   const Gtk::TreeModel::Path& path, bool)
 {
   const Gtk::TreeModel::iterator iter = model->get_iter(path);
-  return iter->children().empty(); // only allow leaf nodes to be selected
+
+  const Gtk::TreeModel::Row row = *iter;
+  const Glib::ustring srcName = row[columns_.sourceName];
+  const Glib::ustring lyrName = row[columns_.layerName];
+
+  return srcName != lyrName; // only allow leaf nodes to be selected
 }
 
 void AppUI::onExportPlacefileClicked()
