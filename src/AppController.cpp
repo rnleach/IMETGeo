@@ -77,7 +77,6 @@ string AppController::addSource(const string& path)
       // Now check to see if it is recognizable
       // Geometry type
       OGRwkbGeometryType geoType = wkbFlatten(layer->GetGeomType());
-      string geometryType;
       switch (geoType)
       {
         case wkbMultiPoint:
