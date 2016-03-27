@@ -1,0 +1,32 @@
+
+/*
+  Class used for the text wind that displays a summary of the layer with a gray
+  background.
+ */
+.grayBack
+{
+  background-color: #cccccc;
+  color: #333333;
+  font-family: "Monospace";
+  font-size: 0.95em;
+}
+
+/*
+  Style the Export buttons!
+ */
+#exportPlaceFile
+{
+  color: black;
+  background-image: -gtk-gradient(linear, left top, left bottom, from(#00cc00),
+    to(#005500));
+}
+#exportKML
+{
+  color: white;
+  background-image: -gtk-gradient(linear, left top, left bottom, from(#888888),
+    to(#000000));
+}
+.exportButton
+{
+  font-size: 2.0em;
+}

@@ -54,7 +54,8 @@ AppUI::AppUI() :
   titleEntry_(nullptr),
   refreshMinutes_(nullptr),
   exportPlaceFileButton_(nullptr),
-  exportKMLButton_(nullptr)
+  exportKMLButton_(nullptr),
+  css_(Gtk::CssProvider::create())
 {
   //
   // Initialize GDAL
@@ -69,23 +70,24 @@ AppUI::AppUI() :
   {
     refBuilder->add_from_file("imetgeo.glade");
   }
-  catch(const Glib::FileError& ex)
+  catch(const exception& ex)
   {
-    cerr << "FileError: " << ex.what() << endl;
+    cerr << "Error loading interface: " << ex.what() << endl;
     throw ex;
   }
-  catch(const Glib::MarkupError& ex)
-  {
-    cerr << "MarkupError: " << ex.what() << endl;
-    throw ex;
-  }
-  catch(const Gtk::BuilderError& ex)
-  {
-    cerr << "BuilderError: " << ex.what() << endl;
-    throw ex;
-  }
+  
+  //
+  // Get the main window
+  //
   refBuilder->get_widget("mainWindow", mainWindow_);
   if(!mainWindow_) throw runtime_error("Unable to load main window.");
+
+  //
+  // Set up css provider and apply css formatting to widgets.
+  //
+  css_->load_from_path("geo-conv.css");
+  mainWindow_->get_style_context()->add_provider_for_screen(
+    Gdk::Screen::get_default(), css_, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
   //
   // Attach signal handlers to buttons
@@ -126,7 +128,7 @@ AppUI::AppUI() :
   attachMenuItem("addKMLItem", &AppUI::onAddKML);
 
   //
-  // Add signal handlers to  controls in properties section, 
+  // Add signal handlers to controls in properties section, 
   //     e.g. label field, color, etc.
   //
   // labelField_
@@ -136,6 +138,7 @@ AppUI::AppUI() :
     auto conn = labelField_->signal_changed().connect(sigc::mem_fun(*this, 
       &AppUI::onLabelFieldChange));
 
+    // Add to list of connections that need disabled when updating UI
     connections_.push_back(move(conn));
   }
   else
@@ -150,6 +153,7 @@ AppUI::AppUI() :
     auto conn = layerColor_->signal_color_set().connect(sigc::mem_fun(*this, 
       &AppUI::onLayerColorSelect));
 
+    // Add to list of connections that need disabled when updating UI
     connections_.push_back(move(conn));
   }
   else
@@ -164,6 +168,7 @@ AppUI::AppUI() :
     auto conn = filledPolygon_ ->signal_toggled().connect(sigc::mem_fun(*this, 
       &AppUI::onFilledPolygonToggle));
 
+    // Add to list of connections that need disabled when updating UI
     connections_.push_back(move(conn));
   }
   else
@@ -178,37 +183,19 @@ AppUI::AppUI() :
     auto conn = displayThreshold_->signal_value_changed().connect(
       sigc::mem_fun(*this, &AppUI::onDisplayThresholdChanged));
 
+    // Add to list of connections that need disabled when updating UI
     connections_.push_back(move(conn));
   }
   else
   {
     throw runtime_error("Unable to connect displayThreshold_.");
   }
-  /************************* start delete code *********************************
-  *****************************************************************************
-  *****************************************************************************/
-  cerr << "Setting display threshold in constructor.\n";
-  displayThreshold_->set_value(234);
-  cerr << "Done setting threshold in constructor, was signal called?\n";
-  cerr << "Setting display threshold in constructor again.\n";
-  displayThreshold_->set_value(234);
-  cerr << "Done setting threshold in constructor again, was signal called again?\n";
-  /*****************************************************************************
-  *****************************************************************************
-  ***************************** end delete code *******************************/
 
   // textBuffer_
   Gtk::TextView *textArea = nullptr;
   refBuilder->get_widget("textArea", textArea);
   if(!textArea) throw runtime_error("Unable to connect textArea.");
   textBuffer_ = textArea->get_buffer();
-  /************************* start delete code *********************************
-  *****************************************************************************
-  *****************************************************************************/
-  textBuffer_->set_text("Hello from constructor.");
-  /*****************************************************************************
-  *****************************************************************************
-  ***************************** end delete code *******************************/
 
   //
   // Set up the tree view
@@ -225,20 +212,18 @@ AppUI::AppUI() :
     &AppUI::onSelectionChanged) );
   treeSelection_->set_select_function(sigc::mem_fun(*this, 
     &AppUI::isSelectable) );
-  
+
+  //
+  // Set up the placefile global values widgets, and give them default values
+  //
   // titleEntry_
   refBuilder->get_widget("titleText", titleEntry_);
   if(!titleEntry_)
   {
     throw runtime_error("Unable to connect title entry.");
   }
-  /************************* start delete code *********************************
-  *****************************************************************************
-  *****************************************************************************/
-  titleEntry_->set_text("I was set in the constructor.");
-  /*****************************************************************************
-  *****************************************************************************
-  ***************************** end delete code *******************************/
+  // Set default title
+  titleEntry_->set_text("Made by GeoConvert");
 
   // refreshMinutes_
   refBuilder->get_widget("refreshMinutesSpinner", refreshMinutes_);
@@ -246,16 +231,12 @@ AppUI::AppUI() :
   {
     throw runtime_error("Unable to connect refreshMinutes_.");
   }
-  /************************* start delete code *********************************
-  *****************************************************************************
-  *****************************************************************************/
-  cerr << "Setting refresh minutes in constructor.\n";
-  refreshMinutes_->set_value(234);
-  cerr << "Done setting refreshMinutes_ in constructor.\n";
-  /*****************************************************************************
-  *****************************************************************************
-  ***************************** end delete code *******************************/
+  refreshMinutes_->set_value(1);
 
+  //
+  // Connect signal handlers for the export buttons
+  //
+  // export placefile
   refBuilder->get_widget("exportPlacefile", exportPlaceFileButton_);
   if(exportPlaceFileButton_)
   {
@@ -267,6 +248,7 @@ AppUI::AppUI() :
     throw runtime_error("Unable to connect export placefile button.");
   }
 
+  // export KML
   refBuilder->get_widget("exportKML", exportKMLButton_);
   if(exportKMLButton_)
   {
@@ -279,8 +261,9 @@ AppUI::AppUI() :
   }
 
   //
-  // Load Images
+  // Load Images - TODO move this to css
   //
+  // gdal logo
   Gtk::Image *gdalImage = nullptr;
   refBuilder->get_widget("gdalImage", gdalImage);
   if(!gdalImage)
@@ -289,6 +272,7 @@ AppUI::AppUI() :
   }
   gdalImage->set("trac_logo.png");
 
+  // Gtk logo
   Gtk::Image *gtkImage = nullptr;
   refBuilder->get_widget("gtkImage", gtkImage);
   if(!gtkImage)
@@ -300,6 +284,7 @@ AppUI::AppUI() :
   //
   // Set labels for links to gdal and GTK
   //
+  // gdal
   Gtk::LinkButton *gdalButton = nullptr;
   refBuilder->get_widget("gdalLinkButton", gdalButton);
   if(!gdalButton)
@@ -308,6 +293,7 @@ AppUI::AppUI() :
   }
   gdalButton->set_label("gdal.org");
 
+  // gtk
   Gtk::LinkButton *gtkButton = nullptr;
   refBuilder->get_widget("GTKlinkButton", gtkButton);
   if(!gtkButton)
@@ -394,6 +380,12 @@ void AppUI::addSource(const string& title, Gtk::FileChooserAction action,
     string filename = dialog.get_filename();
     try
     {
+      // Stop signals from selected widgets while updating GUI to prevent
+      // near infinite recursion as the GUI updates signal and trigger further
+      // updates which signal, etc. To add a signal handler to the block list,
+      // add it to the connections_ vector. This blocker is a class and uses 
+      // scope (e.g. RAII), so at the end of this scope it goes away and the 
+      // destructor unblocks all the signals.
       SignalBlocker block(*this);
 
       const string newSrc = appCon_->addSource(filename);
@@ -420,12 +412,10 @@ void AppUI::addSource(const string& title, Gtk::FileChooserAction action,
         {
           firstChild = childrow;
         }
-
       }
       // Expand the parent row.
       layersTree_->expand_row(treeStore_->get_path(row), true);
       treeSelection_->select(firstChild);
-
     }
     catch(const runtime_error& e)
     {
@@ -477,8 +467,8 @@ void AppUI::onLabelFieldChange()
   {
     // Get the source and layer names
     Gtk::TreeModel::Row row = *iter;
-    const Glib::ustring srcName = row[columns_.sourceName];
-    const Glib::ustring lyrName = row[columns_.layerName];
+    const Glib::ustring& srcName = row[columns_.sourceName];
+    const Glib::ustring& lyrName = row[columns_.layerName];
     appCon_->setLabel(srcName, lyrName, labelField_->get_active_text());
   }
 }
@@ -514,10 +504,12 @@ bool AppUI::isSelectable(const Glib::RefPtr<Gtk::TreeModel>& model,
   const Gtk::TreeModel::iterator iter = model->get_iter(path);
 
   const Gtk::TreeModel::Row row = *iter;
-  const Glib::ustring srcName = row[columns_.sourceName];
-  const Glib::ustring lyrName = row[columns_.layerName];
+  const Glib::ustring& srcName = row[columns_.sourceName];
+  const Glib::ustring& lyrName = row[columns_.layerName];
 
-  return srcName != lyrName; // only allow leaf nodes to be selected
+  // If the source and layer name are the same, this is a parent node, so it 
+  // should not be selectable.
+  return srcName != lyrName;
 }
 
 void AppUI::onExportPlacefileClicked()
@@ -539,7 +531,7 @@ void AppUI::updateUI()
 {
   // TODO
 
-  // Turn of signals to widgets that might cause a recursive loop of callbacks.
+  // Turn off signals to widgets that might cause a recursive loop of callbacks.
   // This is managed with RAII, so when it goes out of scope, widgets are
   // unblocked.
   SignalBlocker block(*this);
@@ -548,14 +540,15 @@ void AppUI::updateUI()
   if(appCon_->getNumSources() == 0)
   {
     // No data!! So disable lots of stuff...
-    // There MUST also be zero things selected, so all those things will also
-    // disabled.
+    // There MUST also be zero things selected, so all those things disabled 
+    // under that check below will also be disable and need not be repeated
+    // here.
 
     // Disable the export buttons
     exportPlaceFileButton_->set_sensitive(false);
     exportKMLButton_->set_sensitive(false);
   }
-  else
+  else // We have some sources remaining, enable the export buttons.
   {
     // Ensure the export buttons are enabled.
     exportPlaceFileButton_->set_sensitive(true);
@@ -566,7 +559,7 @@ void AppUI::updateUI()
   if(treeSelection_->count_selected_rows() == 0)
   {
     // If it is 0, disable all controls on the right and the delete button, 
-    // clear summary.
+    // clear the summary and label fields.
 
     // Clear the text area
     textBuffer_->set_text(" ");
@@ -576,11 +569,12 @@ void AppUI::updateUI()
 
     // Disable the properties
     labelField_->set_sensitive(false);
+    labelField_->remove_all();
     layerColor_->set_sensitive(false);
     filledPolygon_->set_sensitive(false);
     displayThreshold_->set_sensitive(false);
   }
-  else
+  else // We have a selection! So update the properties and summary.
   {
     // Get the selected item
     Gtk::TreeModel::iterator iter = treeSelection_->get_selected();
@@ -588,8 +582,8 @@ void AppUI::updateUI()
     {
       // Get the source and layer names
       Gtk::TreeModel::Row row = *iter;
-      const Glib::ustring srcName = row[columns_.sourceName];
-      const Glib::ustring lyrName = row[columns_.layerName];
+      const Glib::ustring& srcName = row[columns_.sourceName];
+      const Glib::ustring& lyrName = row[columns_.layerName];
       
       //
       // Set the text summary
@@ -602,7 +596,6 @@ void AppUI::updateUI()
       //
       // Update the labelField
       //
-      labelField_->set_sensitive(true);
       labelField_->remove_all();
       const vector<string> fields = appCon_->getFields(srcName, lyrName);
       for(auto it = fields.begin(); it != fields.end(); ++it)
@@ -611,6 +604,7 @@ void AppUI::updateUI()
       }
       // Set the active text correctly
       labelField_->set_active_text(appCon_->getLabel(srcName, lyrName));
+      labelField_->set_sensitive(true);
 
       //
       // Update the color chooser

@@ -85,6 +85,9 @@ namespace GeoConv
     Gtk::Button *exportPlaceFileButton_;
     Gtk::Button *exportKMLButton_;
 
+    // CSS provider
+    Glib::RefPtr<Gtk::CssProvider> css_;
+
     //
     // Private constructor to enforce singleton
     //
