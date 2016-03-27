@@ -419,8 +419,20 @@ void AppController::setLabel(const string& source,
   const string& layer, string label)
 {
   auto& opts = layers_.at(source).at(layer);
-
   opts.labelField = label;
+}
+
+bool AppController::getPolygonDisplayedAsLine(const string& source, 
+  const string& layer)
+{
+  return layers_.at(source).at(layer).polyAsLine;
+}
+
+void AppController::setPolygonDisplayedAsLine(const string& source, 
+    const string& layer, bool asLine)
+{
+  auto& opts = layers_.at(source).at(layer);
+  opts.polyAsLine = asLine;
 }
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -474,18 +486,5 @@ bool AppController::getFilled(const string& sourcePath)
 
   // Get it and return it
   return !(iter->second.polyAsLine);
-}
-
-void AppController::setFilled(const string& sourcePath, const bool filled)
-{
-  auto iter = layerOptions_.find(sourcePath);
-  if (iter == layerOptions_.end())
-  {
-    throw runtime_error("Invalid state - no options set for source.");
-  }
-  else
-  {
-    layerOptions_.at(sourcePath).polyAsLine = !filled;
-  }
 }
 */

@@ -9,11 +9,12 @@
 
 using namespace GeoConv;
 using namespace std;
-
+/*==============================================================================
+ *                 Public methods for use in main
+ *============================================================================*/
 GeoConv::AppUI& AppUI::getInstance()
 {
   static AppUI instance;
-
   return instance;
 }
 
@@ -35,8 +36,6 @@ AppUI::~AppUI()
 
   // Clean up GDAL.
   OGRCleanupAll();
-  
-  cerr << "Destruction and shutdown.\n";
 }
 
 /*==============================================================================
@@ -481,8 +480,18 @@ void AppUI::onLayerColorSelect()
 
 void AppUI::onFilledPolygonToggle()
 {
-  // TODO
-  cerr << "Filled polygon toggled. Not implemented.\n";
+  // Get the selected item
+  Gtk::TreeModel::iterator iter = treeSelection_->get_selected();
+  if(iter)
+  {
+    // Get the source and layer names
+    Gtk::TreeModel::Row row = *iter;
+    const Glib::ustring& srcName = row[columns_.sourceName];
+    const Glib::ustring& lyrName = row[columns_.layerName];
+
+    appCon_->setPolygonDisplayedAsLine(srcName, lyrName, 
+      filledPolygon_->get_active());
+  }
 }
 
 void AppUI::onDisplayThresholdChanged()
@@ -615,8 +624,9 @@ void AppUI::updateUI()
       //
       // Update the filledPolygon option
       //
+      filledPolygon_->set_active(
+        appCon_->getPolygonDisplayedAsLine(srcName, lyrName));
       filledPolygon_->set_sensitive(true);
-      // TODO - update field
 
       //
       // Update the display threshold

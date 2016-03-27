@@ -59,6 +59,12 @@ public:
   // Set the label field for a given source and layer
   void setLabel(const string& source, const string& layer, string label);
 
+  // Get/Set the polygon as line. This causes polygons to translated into lines
+  // when true. That way they are not filled and solid, just an outline.
+  bool getPolygonDisplayedAsLine(const string& source, const string& layer);
+  void setPolygonDisplayedAsLine(const string& source, 
+    const string& layer, bool asLine);
+
   // A nested class to keep track of the options associated with a layer.
   class LayerOptions
   {
