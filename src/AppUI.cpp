@@ -2,6 +2,7 @@
 
 #include <exception>
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include "ogrsf_frmts.h"
@@ -474,8 +475,26 @@ void AppUI::onLabelFieldChange()
 
 void AppUI::onLayerColorSelect()
 {
-  // TODO
-  cerr << "Layer color select requested. Not implemented.\n";
+  // Used for conversions
+  numeric_limits<unsigned char> ucharLims;
+
+  // Get the selected item
+  Gtk::TreeModel::iterator iter = treeSelection_->get_selected();
+  if(iter)
+  {
+    // Get the source and layer names
+    Gtk::TreeModel::Row row = *iter;
+    const Glib::ustring& srcName = row[columns_.sourceName];
+    const Glib::ustring& lyrName = row[columns_.layerName];
+
+    auto color = layerColor_->get_rgba();
+    PlaceFileColor clr;
+    clr.red   = static_cast<unsigned char>(color.get_red()   * ucharLims.max());
+    clr.green = static_cast<unsigned char>(color.get_green() * ucharLims.max());
+    clr.blue  = static_cast<unsigned char>(color.get_blue()  * ucharLims.max());
+
+    appCon_->setColor(srcName, lyrName, clr);
+  }
 }
 
 void AppUI::onFilledPolygonToggle()
@@ -508,9 +527,6 @@ void AppUI::onDisplayThresholdChanged()
     appCon_->setDisplayThreshold(srcName, lyrName, 
       displayThreshold_->get_value_as_int());
   }
-  // TODO
-  cerr << "Display threshold changed. Not implemented.\n";
-  cerr << "    " << displayThreshold_->get_value() << "\n";
 }
 
 void AppUI::onSelectionChanged()
@@ -550,8 +566,6 @@ void AppUI::onExportKMLClicked()
  *============================================================================*/
 void AppUI::updateUI()
 {
-  // TODO
-
   // Turn off signals to widgets that might cause a recursive loop of callbacks.
   // This is managed with RAII, so when it goes out of scope, widgets are
   // unblocked.
@@ -630,12 +644,19 @@ void AppUI::updateUI()
       //
       // Update the color chooser
       //
+      numeric_limits<unsigned char> ucharLims;
+      PlaceFileColor clr = appCon_->getColor(srcName, lyrName);
+      Gdk::RGBA color;
+      color.set_red(   (double) clr.red   / (double)ucharLims.max());
+      color.set_green( (double) clr.green / (double)ucharLims.max());
+      color.set_blue(  (double) clr.blue  / (double)ucharLims.max());
+      layerColor_->set_rgba(color);
       layerColor_->set_sensitive(true);
-      // TODO - update field
 
       //
       // Update the filledPolygon option
       //
+      // TODO check if this is a polygon or not
       filledPolygon_->set_active(
         appCon_->getPolygonDisplayedAsLine(srcName, lyrName));
       filledPolygon_->set_sensitive(true);
@@ -651,8 +672,6 @@ void AppUI::updateUI()
     // Enable the delete button
     delButton_->set_sensitive(true);
   }
-
-  cerr << "updateUI() not fully implemented yet.\n";
 }
 /*==============================================================================
  *                         Inner class SignalBlocker

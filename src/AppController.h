@@ -70,6 +70,10 @@ public:
   void setDisplayThreshold(const string& source, 
     const string& layer, int thresh);
 
+  // Get/Set the color
+  PlaceFileColor getColor(const string& source, const string& layer);
+  void setColor(const string& source, const string& layer, PlaceFileColor clr);
+
   // A nested class to keep track of the options associated with a layer.
   class LayerOptions
   {

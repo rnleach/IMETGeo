@@ -446,6 +446,19 @@ void AppController::setDisplayThreshold(const string& source,
   auto& opts = layers_.at(source).at(layer);
   opts.displayThresh = thresh;
 }
+
+PlaceFileColor AppController::getColor(const string& source, 
+  const string& layer)
+{
+  return layers_.at(source).at(layer).color;
+}
+
+void AppController::setColor(const string& source, 
+  const string& layer, PlaceFileColor clr)
+{
+  auto& opts = layers_.at(source).at(layer);
+  opts.color = clr;
+}
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
