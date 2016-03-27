@@ -434,6 +434,18 @@ void AppController::setPolygonDisplayedAsLine(const string& source,
   auto& opts = layers_.at(source).at(layer);
   opts.polyAsLine = asLine;
 }
+
+int AppController::getDisplayThreshold(const string& source, const string& layer)
+{
+  return layers_.at(source).at(layer).displayThresh;
+}
+
+void AppController::setDisplayThreshold(const string& source, 
+    const string& layer, int thresh)
+{
+  auto& opts = layers_.at(source).at(layer);
+  opts.displayThresh = thresh;
+}
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

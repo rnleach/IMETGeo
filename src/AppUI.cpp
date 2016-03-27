@@ -496,6 +496,18 @@ void AppUI::onFilledPolygonToggle()
 
 void AppUI::onDisplayThresholdChanged()
 {
+  // Get the selected item
+  Gtk::TreeModel::iterator iter = treeSelection_->get_selected();
+  if(iter)
+  {
+    // Get the source and layer names
+    Gtk::TreeModel::Row row = *iter;
+    const Glib::ustring& srcName = row[columns_.sourceName];
+    const Glib::ustring& lyrName = row[columns_.layerName];
+
+    appCon_->setDisplayThreshold(srcName, lyrName, 
+      displayThreshold_->get_value_as_int());
+  }
   // TODO
   cerr << "Display threshold changed. Not implemented.\n";
   cerr << "    " << displayThreshold_->get_value() << "\n";
@@ -631,8 +643,9 @@ void AppUI::updateUI()
       //
       // Update the display threshold
       //
+      displayThreshold_->set_value(
+        appCon_->getDisplayThreshold(srcName, lyrName));
       displayThreshold_->set_sensitive(true);
-      // TODO - update field
     }
     
     // Enable the delete button

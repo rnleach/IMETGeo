@@ -65,6 +65,11 @@ public:
   void setPolygonDisplayedAsLine(const string& source, 
     const string& layer, bool asLine);
 
+  // Get/Set the displayThreshold
+  int getDisplayThreshold(const string& source, const string& layer);
+  void setDisplayThreshold(const string& source, 
+    const string& layer, int thresh);
+
   // A nested class to keep track of the options associated with a layer.
   class LayerOptions
   {
