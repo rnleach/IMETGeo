@@ -163,6 +163,7 @@ AppUI::AppUI(unique_ptr<AppController>&& ctr) :
   {
     auto conn = layerColor_->signal_color_set().connect(sigc::mem_fun(*this, 
       &AppUI::onLayerColorSelect));
+    layerColor_->set_use_alpha(false);
 
     // Add to list of connections that need disabled when updating UI
     connections_.push_back(move(conn));
@@ -759,6 +760,7 @@ void AppUI::updateUI()
       color.set_red(   (double) clr.red   / (double)ucharLims.max());
       color.set_green( (double) clr.green / (double)ucharLims.max());
       color.set_blue(  (double) clr.blue  / (double)ucharLims.max());
+      color.set_alpha(1.0);
       layerColor_->set_rgba(color);
       layerColor_->set_sensitive(true);
 
