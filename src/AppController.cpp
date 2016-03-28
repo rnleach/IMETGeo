@@ -148,11 +148,11 @@ void AppController::savePlaceFile(const string& fileName,
       const bool polyAsLine       = lIt->second.polyAsLine;
       const int displayThresh     = lIt->second.displayThresh;
 
-      // /*
+      /*
       cerr << "srcName " << srcName << endl;
       cerr << "layerName " << layerName << endl;
       cerr << "labelField " << labelField << endl << endl;
-      // */
+      */
 
       if (labelField == DO_NOT_USE_LAYER) continue;
 
@@ -219,11 +219,11 @@ void AppController::saveKMLFile(const string & fileName)
       const string& layerName     = lIt->first;
       const string& labelField    = lIt->second.labelField;
 
-      // /*
+      /*
       cerr << "srcName " << srcName << endl;
       cerr << "layerName " << layerName << endl;
       cerr << "labelField " << labelField << endl << endl;
-      // */
+      */
 
       if (labelField == DO_NOT_USE_LAYER) continue;
 
