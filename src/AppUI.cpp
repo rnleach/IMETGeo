@@ -534,7 +534,7 @@ void AppUI::onFilledPolygonToggle()
     const Glib::ustring& lyrName = row[columns_.layerName];
 
     appCon_->setPolygonDisplayedAsLine(srcName, lyrName, 
-      filledPolygon_->get_active());
+      !filledPolygon_->get_active());
   }
 }
 
@@ -681,10 +681,17 @@ void AppUI::updateUI()
       //
       // Update the filledPolygon option
       //
-      // TODO check if this is a polygon or not
-      filledPolygon_->set_active(
-        appCon_->getPolygonDisplayedAsLine(srcName, lyrName));
-      filledPolygon_->set_sensitive(true);
+      if(appCon_->isPolygonLayer(srcName, lyrName))
+      {
+        filledPolygon_->set_active(
+          !appCon_->getPolygonDisplayedAsLine(srcName, lyrName));
+        filledPolygon_->set_sensitive(true);
+      }
+      else
+      {
+        filledPolygon_->set_active(false);
+        filledPolygon_->set_sensitive(false);
+      }
 
       //
       // Update the display threshold

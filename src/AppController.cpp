@@ -423,10 +423,7 @@ void AppController::setLabel(const string& source,
 }
 
 bool AppController::getPolygonDisplayedAsLine(const string& source, 
-  const string& layer)
-{
-  return layers_.at(source).at(layer).polyAsLine;
-}
+  const string& layer) { return layers_.at(source).at(layer).polyAsLine; }
 
 void AppController::setPolygonDisplayedAsLine(const string& source, 
     const string& layer, bool asLine)
@@ -435,10 +432,8 @@ void AppController::setPolygonDisplayedAsLine(const string& source,
   opts.polyAsLine = asLine;
 }
 
-int AppController::getDisplayThreshold(const string& source, const string& layer)
-{
-  return layers_.at(source).at(layer).displayThresh;
-}
+int AppController::getDisplayThreshold(const string& source, 
+  const string& layer) { return layers_.at(source).at(layer).displayThresh; }
 
 void AppController::setDisplayThreshold(const string& source, 
     const string& layer, int thresh)
@@ -448,10 +443,7 @@ void AppController::setDisplayThreshold(const string& source,
 }
 
 PlaceFileColor AppController::getColor(const string& source, 
-  const string& layer)
-{
-  return layers_.at(source).at(layer).color;
-}
+  const string& layer) { return layers_.at(source).at(layer).color; }
 
 void AppController::setColor(const string& source, 
   const string& layer, PlaceFileColor clr)
@@ -459,57 +451,25 @@ void AppController::setColor(const string& source,
   auto& opts = layers_.at(source).at(layer);
   opts.color = clr;
 }
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
-/*
-
-bool AppController::validPath(const string & sourcePath)
+bool AppController::isPolygonLayer(const string & source, const string & lyr)
 {
-  for (auto it = layerOptions_.begin(); it != layerOptions_.end(); ++it)
-  {
-    if (it->first == sourcePath) return true;
-  }
-  return false;
-}
 
-PlaceFileColor AppController::getColor(const string & sourcePath)
-{
-  // Test if source path is in layerOptions_
-  auto iter = layerOptions_.find(sourcePath);
-  if (iter == layerOptions_.end())
+  try
   {
-    throw runtime_error("Invalid state - no options set for source.");
-  }
+    OGRLayer* layer = srcs_.at(source)->GetLayerByName(lyr.c_str());
 
-  // Get it and return it
-  return iter->second.color;
-}
+    // Geometry type
+    OGRwkbGeometryType geoType = wkbFlatten(layer->GetGeomType());
 
-void AppController::setColor(const string & sourcePath, PlaceFileColor & newColor)
-{
-  auto iter = layerOptions_.find(sourcePath);
-  if (iter == layerOptions_.end())
-  {
-    throw runtime_error("Invalid state - no options set for source.");
+    if(geoType == wkbMultiPolygon || geoType == wkbPolygon)
+      return true;
+
+    return false;
   }
-  else
+  catch(const exception& e)
   {
-    layerOptions_.at(sourcePath).color = newColor;
+    cerr << "Error checking layer for type.\n\n" << e.what() << endl << endl;
+    return false;
   }
 }
-
-bool AppController::getFilled(const string& sourcePath)
-{
-  // Test if source path is in layerOptions_
-  auto iter = layerOptions_.find(sourcePath);
-  if(iter == layerOptions_.end())
-  {
-    throw runtime_error("Invalid state - no options set for source.");
-  }
-
-  // Get it and return it
-  return !(iter->second.polyAsLine);
-}
-*/

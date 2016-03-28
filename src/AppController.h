@@ -74,6 +74,9 @@ public:
   PlaceFileColor getColor(const string& source, const string& layer);
   void setColor(const string& source, const string& layer, PlaceFileColor clr);
 
+  // Determine if this layer is a polygon or not.
+  bool isPolygonLayer(const string& source, const string& layer);
+
   // A nested class to keep track of the options associated with a layer.
   class LayerOptions
   {
