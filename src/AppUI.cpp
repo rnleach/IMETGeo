@@ -602,16 +602,28 @@ void AppUI::onExportPlacefileClicked()
   //Handle the response:
   if(result == Gtk::RESPONSE_OK)
   {
-    string filename = dialog.get_filename();
+    try
+    {
+      string filename = dialog.get_filename();
 
-    // Get the refresh minutes from the UI
-    int refreshMin = refreshMinutes_->get_value_as_int();
+      // Get the refresh minutes from the UI
+      int refreshMin = refreshMinutes_->get_value_as_int();
 
-    // Get the title from the UI
-    string title = titleEntry_->get_text();
+      // Get the title from the UI
+      string title = titleEntry_->get_text();
 
-    // Save the placefile.
-    appCon_->savePlaceFile(filename, 999, refreshMin, title);
+      // Save the placefile.
+      appCon_->savePlaceFile(filename, 999, refreshMin, title);
+    }
+    catch(const exception& e)
+    {
+      cerr << "Error saving place file.\n\n" << e.what() << endl;
+
+      Gtk::MessageDialog msgBox(*mainWindow_, "Unable to Save.", 
+        false, Gtk::MESSAGE_WARNING);
+      msgBox.set_secondary_text(e.what());
+      msgBox.run();
+    }
   }
 }
 
