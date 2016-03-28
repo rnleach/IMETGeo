@@ -613,9 +613,6 @@ void AppUI::onExportPlacefileClicked()
     // Save the placefile.
     appCon_->savePlaceFile(filename, 999, refreshMin, title);
   }
-
-  // TODO
-  cerr << "Export Placefile Button Clicked. Not implemented.\n";
 }
 
 void AppUI::onExportKMLClicked()
