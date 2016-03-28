@@ -436,7 +436,16 @@ void AppUI::addSource(const string& title, Gtk::FileChooserAction action,
     catch(const runtime_error& e)
     {
       cerr << e.what() << endl;
-      // TODO - post a message to user....
+
+      string msg = "Error loading source: ";
+      msg.append(filename);
+      msg.append("\n");
+      msg.append(e.what());
+
+      Gtk::MessageDialog msgBox(*mainWindow_, "Unable to load data", 
+        false, Gtk::MESSAGE_WARNING);
+      msgBox.set_secondary_text(msg);
+      msgBox.run();
     }
   }
 
