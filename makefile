@@ -1,4 +1,18 @@
 #
+# System info
+#
+SYS = $(shell gcc -dumpmachine)
+ifneq (,$(findstring linux, $(SYS)))
+  SYS = linux
+else 
+  ifneq (,$(findstring mingw, $(SYS)))
+    SYS = mingw
+  else
+    SYS = 
+  endif
+endif
+
+#
 # Target directory and name of library
 #
 DISTDIR   = ./dist
@@ -36,7 +50,10 @@ COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c
 #
 # Linker directories, flags, and program
 #
-LINKFLAGS = 
+LINKFLAGS =
+ifeq ( $(SYS), mingw)
+  LINKFLAGS += -mwindows
+endif
 LIBS      = `pkg-config --libs gtkmm-3.0` `gdal-config --libs`
 LINK      = g++ -o $(PROGDIR)/$(PROGNAME) $(LINKFLAGS) $(OBJFILES) $(LIBS)
 LINK_TEST = g++ -o $(TESTDIR)/$(TEST_NAME) $(OBJFILES) $(OBJFILES_TEST)
@@ -44,6 +61,7 @@ LINK_TEST = g++ -o $(TESTDIR)/$(TEST_NAME) $(OBJFILES) $(OBJFILES_TEST)
 #
 # Output all variables to terminal for inspection during build process....
 #
+$(info SYS                = $(SYS)               )
 $(info DISTDIR            = $(DISTDIR)           )
 $(info PROGDIR            = $(PROGDIR)           )
 $(info TESTDIR            = $(TESTDIR)           )

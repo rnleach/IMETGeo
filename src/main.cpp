@@ -20,8 +20,7 @@ int main(int argc, char** argv)
   auto app = Gtk::Application::create(argc, argv);
 
   // Initialize my program interface
-  AppUI& appUI = AppUI::getInstance();
-  appUI.setController(move(ctr));
+  AppUI& appUI = AppUI::getInstance(move(ctr));
 
   // Get the main window and run event loop.
   app->run(appUI.appWindow());

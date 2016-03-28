@@ -19,11 +19,9 @@ namespace GeoConv
   {
   public:
 
-    /// Get the instance
-    static AppUI& getInstance();
-
-    /// Set the application controller.
-    void setController(std::unique_ptr<AppController>&& ctr);
+    /// Get the instance - on the very first call you must pass a pointer to
+    /// an AppController so that can be set. After that, no argument is needed.
+    static AppUI& getInstance(std::unique_ptr<AppController>&& ctr = nullptr);
 
     /// Get the main window for the run method
     Gtk::Window& appWindow();
@@ -91,7 +89,7 @@ namespace GeoConv
     //
     // Private constructor to enforce singleton
     //
-    AppUI();
+    AppUI(std::unique_ptr<AppController>&& ctr);
 
     //
     // Signal handlers

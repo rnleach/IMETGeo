@@ -13,15 +13,25 @@ using namespace std;
 /*==============================================================================
  *                 Public methods for use in main
  *============================================================================*/
-GeoConv::AppUI& AppUI::getInstance()
+GeoConv::AppUI& AppUI::getInstance(unique_ptr<AppController>&& ctr)
 {
-  static AppUI instance;
-  return instance;
-}
+  static unique_ptr<AppUI> instance;
 
-void AppUI::setController(unique_ptr<AppController>&& ctr)
-{
-  appCon_ = move(ctr);
+  if(!instance && ctr)
+  {
+    instance = unique_ptr<AppUI>(new AppUI(move(ctr)));
+  } 
+  else if(!instance)
+  {
+    throw runtime_error("AppController not yet initialized, call without "
+      "using default argument.");
+  }
+  else if(instance && ctr)
+  {
+    throw runtime_error("AppController already set!");
+  }
+  
+  return *instance;
 }
 
 Gtk::Window& AppUI::appWindow()
@@ -42,7 +52,8 @@ AppUI::~AppUI()
 /*==============================================================================
  *                 Constructor - a lot of GUI initialization
  *============================================================================*/
-AppUI::AppUI() :
+AppUI::AppUI(std::unique_ptr<AppController>&& ctr) :
+  appCon_(move(ctr)),
   mainWindow_(nullptr), 
   delButton_(nullptr),
   labelField_(nullptr),
@@ -301,6 +312,11 @@ AppUI::AppUI() :
     throw runtime_error("Unable to connect gtkButton.");
   }
   gtkButton->set_label("www.gtk.org");
+
+  //
+  // Finally, update the state of the UI.
+  //
+  updateUI();
 }
 
 /*==============================================================================
