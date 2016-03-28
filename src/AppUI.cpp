@@ -629,8 +629,45 @@ void AppUI::onExportPlacefileClicked()
 
 void AppUI::onExportKMLClicked()
 {
-  // TODO
-  cerr << "Export KML Button Clicked. Not implemented.\n";
+  Gtk::FileChooserDialog dialog(*mainWindow_, "Save KML/KMZ",
+    Gtk::FILE_CHOOSER_ACTION_SAVE);
+
+  //Add response buttons the the dialog:
+  dialog.add_button("_Save", Gtk::RESPONSE_OK);
+  dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+
+  //Add filters, so that only certain file types can be selected:
+  auto filter = Gtk::FileFilter::create();
+  filter->set_name("KML/KMZ");
+  filter->add_pattern("*.kml");
+  filter->add_pattern("*.KML");
+  filter->add_pattern("*.kmz");
+  filter->add_pattern("*.KMZ");
+  dialog.add_filter(filter);
+
+  //Show the dialog and wait for a user response:
+  int result = dialog.run();
+
+  //Handle the response:
+  if(result == Gtk::RESPONSE_OK)
+  {
+    try
+    {
+      string filename = dialog.get_filename();
+
+      // Save the KML/KMZ.
+      appCon_->saveKMLFile(filename);
+    }
+    catch(const exception& e)
+    {
+      cerr << "Error saving KML/KMZ.\n\n" << e.what() << endl;
+
+      Gtk::MessageDialog msgBox(*mainWindow_, "Unable to Save.", 
+        false, Gtk::MESSAGE_WARNING);
+      msgBox.set_secondary_text(e.what());
+      msgBox.run();
+    }
+  }
 }
 
 /*==============================================================================
