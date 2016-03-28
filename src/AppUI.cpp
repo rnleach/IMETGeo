@@ -52,7 +52,7 @@ AppUI::~AppUI()
 /*==============================================================================
  *                 Constructor - a lot of GUI initialization
  *============================================================================*/
-AppUI::AppUI(std::unique_ptr<AppController>&& ctr) :
+AppUI::AppUI(unique_ptr<AppController>&& ctr) :
   appCon_(move(ctr)),
   mainWindow_(nullptr), 
   delButton_(nullptr),
@@ -576,6 +576,44 @@ bool AppUI::isSelectable(const Glib::RefPtr<Gtk::TreeModel>& model,
 
 void AppUI::onExportPlacefileClicked()
 {
+  Gtk::FileChooserDialog dialog(*mainWindow_, "Save Placefile",
+    Gtk::FILE_CHOOSER_ACTION_SAVE);
+
+  //Add response buttons the the dialog:
+  dialog.add_button("_Save", Gtk::RESPONSE_OK);
+  dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+
+  //Add filters, so that only certain file types can be selected:
+  auto filter = Gtk::FileFilter::create();
+  filter->set_name("Placefile");
+  filter->add_pattern("*.txt");
+  filter->add_pattern("*.TXT");
+  dialog.add_filter(filter);
+
+  // All files filter
+  filter = Gtk::FileFilter::create();
+  filter->set_name("All Files");
+  filter->add_pattern("*");
+  dialog.add_filter(filter);
+
+  //Show the dialog and wait for a user response:
+  int result = dialog.run();
+
+  //Handle the response:
+  if(result == Gtk::RESPONSE_OK)
+  {
+    string filename = dialog.get_filename();
+
+    // Get the refresh minutes from the UI
+    int refreshMin = refreshMinutes_->get_value_as_int();
+
+    // Get the title from the UI
+    string title = titleEntry_->get_text();
+
+    // Save the placefile.
+    appCon_->savePlaceFile(filename, 999, refreshMin, title);
+  }
+
   // TODO
   cerr << "Export Placefile Button Clicked. Not implemented.\n";
 }
