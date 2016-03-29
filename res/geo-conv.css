@@ -8,7 +8,7 @@
   background-color: #cccccc;
   color: #333333;
   font-family: "Monospace";
-  font-size: 0.85em;
+  font-size: 0.60em;
 }
 
 /*
@@ -28,5 +28,5 @@
 }
 .exportButton
 {
-  font-size: 1.5em;
+  font-size: 1.25em;
 }

@@ -14,13 +14,13 @@ int main(int argc, char** argv)
   using namespace GeoConv;
 
   // Create an application controller.
-  std::unique_ptr<AppController> ctr (new AppController());
+  std::shared_ptr<AppController> ctr (new AppController());
 
   // Set up event loop and memory manager, etc
   auto app = Gtk::Application::create(argc, argv);
 
   // Initialize my program interface
-  AppUI& appUI = AppUI::getInstance(move(ctr));
+  AppUI& appUI = AppUI::getInstance(ctr);
 
   // Get the main window and run event loop.
   app->run(appUI.appWindow());

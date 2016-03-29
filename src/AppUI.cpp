@@ -1,9 +1,12 @@
 #include "AppUI.hpp"
 
+#include <chrono>
 #include <exception>
+#include <future>
 #include <iostream>
 #include <limits>
 #include <string>
+#include <thread>
 
 #include "ogrsf_frmts.h"
 #include "ogr_api.h"
@@ -13,7 +16,7 @@ using namespace std;
 /*==============================================================================
  *                 Public methods for use in main
  *============================================================================*/
-GeoConv::AppUI& AppUI::getInstance(unique_ptr<AppController>&& ctr)
+GeoConv::AppUI& AppUI::getInstance(shared_ptr<AppController> ctr)
 {
   static unique_ptr<AppUI> instance;
 
@@ -52,8 +55,8 @@ AppUI::~AppUI()
 /*==============================================================================
  *                 Constructor - a lot of GUI initialization
  *============================================================================*/
-AppUI::AppUI(unique_ptr<AppController>&& ctr) :
-  appCon_(move(ctr)),
+AppUI::AppUI(shared_ptr<AppController> ctr) :
+  appCon_(ctr),
   mainWindow_(nullptr), 
   delButton_(nullptr),
   labelField_(nullptr),
@@ -577,36 +580,40 @@ bool AppUI::isSelectable(const Glib::RefPtr<Gtk::TreeModel>& model,
 
 void AppUI::onExportPlacefileClicked()
 {
-  Gtk::FileChooserDialog dialog(*mainWindow_, "Save Placefile",
-    Gtk::FILE_CHOOSER_ACTION_SAVE);
+  int result;
+  string filename;
 
-  //Add response buttons the the dialog:
-  dialog.add_button("_Save", Gtk::RESPONSE_OK);
-  dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
-
-  //Add filters, so that only certain file types can be selected:
-  auto filter = Gtk::FileFilter::create();
-  filter->set_name("Placefile");
-  filter->add_pattern("*.txt");
-  filter->add_pattern("*.TXT");
-  dialog.add_filter(filter);
-
-  // All files filter
-  filter = Gtk::FileFilter::create();
-  filter->set_name("All Files");
-  filter->add_pattern("*");
-  dialog.add_filter(filter);
-
-  //Show the dialog and wait for a user response:
-  int result = dialog.run();
+  {
+    Gtk::FileChooserDialog dialog(*mainWindow_, "Save Placefile",
+      Gtk::FILE_CHOOSER_ACTION_SAVE);
+  
+    //Add response buttons the the dialog:
+    dialog.add_button("_Save", Gtk::RESPONSE_OK);
+    dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+  
+    //Add filters, so that only certain file types can be selected:
+    auto filter = Gtk::FileFilter::create();
+    filter->set_name("Placefile");
+    filter->add_pattern("*.txt");
+    filter->add_pattern("*.TXT");
+    dialog.add_filter(filter);
+  
+    // All files filter
+    filter = Gtk::FileFilter::create();
+    filter->set_name("All Files");
+    filter->add_pattern("*");
+    dialog.add_filter(filter);
+  
+    //Show the dialog and wait for a user response:
+    result = dialog.run();
+    filename = dialog.get_filename();
+  }
 
   //Handle the response:
   if(result == Gtk::RESPONSE_OK)
   {
     try
     {
-      string filename = dialog.get_filename();
-
       // Get the refresh minutes from the UI
       int refreshMin = refreshMinutes_->get_value_as_int();
 
@@ -614,7 +621,32 @@ void AppUI::onExportPlacefileClicked()
       string title = titleEntry_->get_text();
 
       // Save the placefile.
-      appCon_->savePlaceFile(filename, 999, refreshMin, title);
+      auto future = async(launch::async, &AppController::savePlaceFile,
+        appCon_, filename, 999, refreshMin, title);
+      auto status = future.wait_for(chrono::milliseconds(0));
+
+      Gtk::ProgressBar pb;
+      pb.set_text("Saving Placefile");
+      pb.set_show_text(true);
+      pb.set_pulse_step(0.02);
+      pb.set_size_request(400,30);
+
+      Gtk::Dialog diag(string("Saving Placefile"), *mainWindow_, true);
+      diag.get_content_area()->pack_start(pb, true, true, 20);
+      diag.property_deletable().set_value(false);
+      diag.property_decorated().set_value(false);
+
+      diag.show_all();
+      diag.show();
+
+      while(status != future_status::ready)
+      {
+        pb.pulse();
+        while(Gtk::Main::events_pending()) Gtk::Main::iteration(false);
+        status = future.wait_for(chrono::milliseconds(50));
+      }
+
+      diag.hide();
     }
     catch(const exception& e)
     {
@@ -630,34 +662,63 @@ void AppUI::onExportPlacefileClicked()
 
 void AppUI::onExportKMLClicked()
 {
-  Gtk::FileChooserDialog dialog(*mainWindow_, "Save KML/KMZ",
-    Gtk::FILE_CHOOSER_ACTION_SAVE);
+  int result;
+  string filename;
 
-  //Add response buttons the the dialog:
-  dialog.add_button("_Save", Gtk::RESPONSE_OK);
-  dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+  {
+    Gtk::FileChooserDialog dialog(*mainWindow_, "Save KML/KMZ",
+      Gtk::FILE_CHOOSER_ACTION_SAVE);
 
-  //Add filters, so that only certain file types can be selected:
-  auto filter = Gtk::FileFilter::create();
-  filter->set_name("KML/KMZ");
-  filter->add_pattern("*.kml");
-  filter->add_pattern("*.KML");
-  filter->add_pattern("*.kmz");
-  filter->add_pattern("*.KMZ");
-  dialog.add_filter(filter);
+    //Add response buttons the the dialog:
+    dialog.add_button("_Save", Gtk::RESPONSE_OK);
+    dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
 
-  //Show the dialog and wait for a user response:
-  int result = dialog.run();
+    //Add filters, so that only certain file types can be selected:
+    auto filter = Gtk::FileFilter::create();
+    filter->set_name("KML/KMZ");
+    filter->add_pattern("*.kml");
+    filter->add_pattern("*.KML");
+    filter->add_pattern("*.kmz");
+    filter->add_pattern("*.KMZ");
+    dialog.add_filter(filter);
+
+    //Show the dialog and wait for a user response:
+    result = dialog.run();
+    filename = dialog.get_filename();
+  }
 
   //Handle the response:
   if(result == Gtk::RESPONSE_OK)
   {
     try
     {
-      string filename = dialog.get_filename();
+      // Save the KML
+      auto future = async(launch::async, &AppController::saveKMLFile,
+        appCon_, filename);
+      auto status = future.wait_for(chrono::milliseconds(0));
 
-      // Save the KML/KMZ.
-      appCon_->saveKMLFile(filename);
+      Gtk::ProgressBar pb;
+      pb.set_text("Saving KML/KMZ");
+      pb.set_show_text(true);
+      pb.set_pulse_step(0.02);
+      pb.set_size_request(400,30);
+
+      Gtk::Dialog diag(string("Saving KML/KMZ"), *mainWindow_, true);
+      diag.get_content_area()->pack_start(pb, true, true, 20);
+      diag.property_deletable().set_value(false);
+      diag.property_decorated().set_value(false);
+
+      diag.show_all();
+      diag.show();
+
+      while(status != future_status::ready)
+      {
+        pb.pulse();
+        while(Gtk::Main::events_pending()) Gtk::Main::iteration(false);
+        status = future.wait_for(chrono::milliseconds(50));
+      }
+
+      diag.hide();
     }
     catch(const exception& e)
     {
