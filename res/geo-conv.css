@@ -2,6 +2,11 @@
 /*
   Class used for the text wind that displays a summary of the layer with a gray
   background.
+
+  This doen't work in windows with the MSYS2 version of GTK3 3.20.1, at least
+  for the TextView widget. The code for the buttons seems to work. If you want
+  to change these colors, see the overrides made for the TextView widget in the
+  AppUI.cpp file.
  */
 .grayBack
 {

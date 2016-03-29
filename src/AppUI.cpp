@@ -211,6 +211,18 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   refBuilder->get_widget("textArea", textArea);
   if(!textArea) throw runtime_error("Unable to connect textArea.");
   textBuffer_ = textArea->get_buffer();
+  // This should not be needed, but css does not always work in windows.
+  // This is a pain, because these cannot be updated from the css, so the 
+  // formatting information is in 2 places!
+  //
+  // I have gtk+ version 3.10 in Ubuntu, and 3.20.1 in windows, so I'm not sure
+  // if windows or the different version numbers is the culprit. But I have to
+  // use these functions in version 3.20.1 on windows, and they were deprecated
+  // in version 3.16!
+  auto background = Gdk::RGBA("#cccccc");
+  auto foreground = Gdk::RGBA("#333333");
+  textArea->override_background_color(background);
+  textArea->override_color(foreground);
 
   //
   // Set up the tree view
