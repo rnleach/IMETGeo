@@ -52,13 +52,30 @@ string AppController::addSource(const string& path)
 {
   try
   {
+    //
     // Parse out  the file name
+    //
     size_t idx = path.find_last_of("\\");
     if(idx == string::npos) idx = path.find_last_of("/");
     string fileName = path.substr(idx + 1);
+
+    //
+    // Check if this is a duplicate.
+    //
+    if(srcs_.count(fileName) > 0)
+    {
+      throw runtime_error(string("Cannot add ") + fileName + 
+        ", a file with this name has already been added.");
+    }
     
+    //
     // Now get the data source
+    //
     OGRDataSourceWrapper src{ path, false };
+
+    //
+    // Parse the layers.
+    //
 
     // Make a map of layer info for this source
     LayerInfo lyrInfo;
@@ -105,9 +122,10 @@ string AppController::addSource(const string& path)
         "be used in a Placefile.");
     }
 
+    //
+    // Save the layer info and the handle to the source data.
+    //
     layers_.insert(SrcsInfoPair {fileName, move(lyrInfo)} );
-
-    // Finally,  store the source via a move
     srcs_.insert(SrcsPair{fileName, move(src)});
 
     //
@@ -118,7 +136,7 @@ string AppController::addSource(const string& path)
   catch (exception const& e)
   {
     string msg = string("Error adding source: ");
-    msg.append(path).append("\n").append(e.what());
+    msg.append(path).append("\n\n").append(e.what()).append("\n\n");
     throw runtime_error(msg.c_str());
   }
 }
