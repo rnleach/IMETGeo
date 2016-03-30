@@ -11,14 +11,14 @@ char PFB::PointFeature::textSymbol = '+';
 PFB::PointFeature::PointFeature(double latitude, double longitude) : 
   Feature(), _lat(latitude), _lon(longitude) {}
 
-PFB::PointFeature::PointFeature(const string & label, const PlaceFileColor & color, point pnt)
-  : Feature(label, color), _lat{ pnt.latitude }, _lon{pnt.longitude}{}
+PFB::PointFeature::PointFeature(const string & label, const PlaceFileColor & color, point pnt, int displayThresh)
+  : Feature(label, color, displayThresh), _lat{ pnt.latitude }, _lon{pnt.longitude}{}
 
-PFB::PointFeature::PointFeature(const string& label, const PlaceFileColor& color, double latitude, double longitude) :
-  Feature(label, color), _lat(latitude), _lon (longitude){}
+PFB::PointFeature::PointFeature(const string& label, const PlaceFileColor& color, double latitude, double longitude, int displayThresh) :
+  Feature(label, color, displayThresh), _lat(latitude), _lon (longitude){}
 
-PFB::PointFeature::PointFeature(const string& label, const PlaceFileColor& color, const OGRPoint & point) :
-  Feature(label, color), _lat(point.getY()), _lon(point.getX()){}
+PFB::PointFeature::PointFeature(const string& label, const PlaceFileColor& color, const OGRPoint & point, int displayThresh) :
+  Feature(label, color, displayThresh), _lat(point.getY()), _lon(point.getX()){}
 
 PFB::PointFeature::PointFeature(PointFeature && src)
   : Feature(move(src)),_lat(src._lat),_lon(src._lon){}
@@ -39,6 +39,7 @@ ostream & PFB::PointFeature::put(ostream & ost) const
   const bool allWhiteSpace = label.find_first_not_of(" \t") == string::npos;
 
   if(includeColor_) ost << "\n" << getColorString() << "\n";
+  if(includeThreshold_) ost << "\nThreshold: " << getDisplayThreshold() << "\n";
 
   if (!allWhiteSpace)
   {

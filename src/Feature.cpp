@@ -7,16 +7,21 @@ PFB::Feature::Feature()
   // Default initialize to empty string and color white.
   _label = "";
   _color = PlaceFileColor();
+  displayThreshold_ = 999;
 }
 
-PFB::Feature::Feature(Feature && src)
-  :_label(std::move(src._label)), _color(src._color){}
+PFB::Feature::Feature(Feature && src) :
+  _label(std::move(src._label)), 
+  _color(src._color), 
+  displayThreshold_(src.displayThreshold_)
+{}
 
-PFB::Feature::Feature(const std::string& label, const PlaceFileColor& color)
-{
-  _label = std::string(label); // Keep our own copy
-  _color = color;
-}
+PFB::Feature::Feature(const std::string& label, const PlaceFileColor& color,
+  int displayThreshold) : 
+  _label(std::string(label)), 
+  _color(color), 
+  displayThreshold_(displayThreshold)
+{}
 
 PFB::Feature::~Feature() {}
 
@@ -24,14 +29,12 @@ Feature & PFB::Feature::operator=(Feature && src)
 {
   _label = std::string(std::move(src._label));
   _color = src._color;
+  displayThreshold_ = src.displayThreshold_;
 
   return *this;
 }
 
-std::string PFB::Feature::getLabelString() const
-{
-  return _label;
-}
+std::string PFB::Feature::getLabelString() const { return _label; }
 
 void PFB::Feature::setLabelString(const std::string& label)
 {

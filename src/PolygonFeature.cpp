@@ -2,8 +2,9 @@
 
 using PFB::PolygonFeature;
 
-PFB::PolygonFeature::PolygonFeature(const std::string & label, const PlaceFileColor & color, const OGRPolygon & polygon)
-  :Feature(label, color)
+PFB::PolygonFeature::PolygonFeature(const std::string & label, 
+  const PlaceFileColor & color, const OGRPolygon & polygon, int displayThresh)
+  :Feature(label, color, displayThresh)
 {
   int numLines = polygon.getNumInteriorRings() + 1; // +1 for exterior ring.
 
@@ -64,6 +65,7 @@ PolygonFeature & PFB::PolygonFeature::operator=(PolygonFeature && src)
 std::ostream & PFB::PolygonFeature::put(std::ostream & ost) const
 {
   if(includeColor_) ost << "\n" << getColorString() << "\n";
+  if(includeThreshold_) ost << "\nThreshold: " << getDisplayThreshold() << "\n";
   
   //ost << "Polygon: " << getLabelString() << "\n";
   ost << "Polygon: " << getLabelString() << "\n";

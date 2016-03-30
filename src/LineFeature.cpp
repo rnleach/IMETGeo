@@ -7,7 +7,8 @@ using namespace std;
 
 PFB::LineFeature::LineFeature(const std::string& label, 
   const PlaceFileColor& color, const std::vector<double>& lats, 
-  const std::vector<double>& lons): Feature(label, color)
+  const std::vector<double>& lons, int dispThresh)
+: Feature(label, color, dispThresh)
 {
   // Initialize _coords
   _coords.reserve(lats.size());
@@ -18,10 +19,12 @@ PFB::LineFeature::LineFeature(const std::string& label,
 }
 
 PFB::LineFeature::LineFeature(const string & label, const PlaceFileColor & color, 
-  const std::vector<point>& coords) :Feature(label, color), _coords{ coords }{}
+  const std::vector<point>& coords, int dispThresh) 
+: Feature(label, color, dispThresh), _coords{ coords }{}
 
 PFB::LineFeature::LineFeature(const string& label, const PlaceFileColor& color,
-  const OGRLineString& lineString, bool forceClosed):Feature(label,color)
+  const OGRLineString& lineString, int dispThresh, bool forceClosed)
+:Feature(label, color, dispThresh)
 {
   int numPoints = lineString.getNumPoints();
 
@@ -42,7 +45,7 @@ PFB::LineFeature::LineFeature(const string& label, const PlaceFileColor& color,
 }
 
 vector<LP> PFB::LineFeature::PolygonToLines(const string & label, 
-  const PlaceFileColor & color, const OGRPolygon & polygon)
+  const PlaceFileColor & color, const OGRPolygon & polygon, int dispThresh)
 {
   using VLF = vector<LP>;
   // Get the number of lines in this polygon
@@ -64,7 +67,8 @@ vector<LP> PFB::LineFeature::PolygonToLines(const string & label,
     {
       ls = polygon.getInteriorRing(l - 1);
     }
-    result.push_back(move(LP( new LineFeature(label, color, *ls, true))));
+    result.push_back(move(LP( 
+      new LineFeature(label, color, *ls, dispThresh, true))));
   }
 
   return result;
@@ -86,6 +90,7 @@ std::ostream & LineFeature::put(std::ostream & ost) const
 {
   // Eventually add width to Feature and use here instead of 2
   if(includeColor_) ost << "\n" << getColorString() << "\n";
+  if(includeThreshold_) ost << "\nThreshold: " << getDisplayThreshold() << "\n";
 
   string label = getLabelString();
   /*Need to strip leading whitespace from the string*/

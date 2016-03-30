@@ -29,15 +29,15 @@ namespace PFB
 
     /// Create a point feature with a simple lat-lon par
     PointFeature(const std::string& label, const PlaceFileColor& color,
-      point pnt);
+      point pnt, int displayThresh);
 
     /// Create a point from a latitude and longitude.
     PointFeature(const std::string& label, const PlaceFileColor& color,
-      double latitude, double longitude);
+      double latitude, double longitude, int displayThresh);
 
     /// Create a point from a feature loaded in via GDAL library
     PointFeature(const std::string& label, const PlaceFileColor& color,
-      const OGRPoint& point);
+      const OGRPoint& point, int displayThresh);
 
     /// Move constructor
     PointFeature(PointFeature&& src);

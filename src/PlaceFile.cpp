@@ -33,8 +33,9 @@ void PFB::PlaceFile::addFeature(FP ft)
   _features[_nextKey++] = move(ft);
 }
 
-void PFB::PlaceFile::addOGRGeometry(const string& label, const PlaceFileColor& color, 
-  OGRGeometry& ft, OGRCoordinateTransformation *trans, bool PolyAsString)
+void PFB::PlaceFile::addOGRGeometry(const string& label, 
+  const PlaceFileColor& color, OGRGeometry& ft, 
+  OGRCoordinateTransformation *trans, bool PolyAsString, int displayThresh)
 {
   FP newFeature;
   vector<Feature*> multiGeo;
@@ -57,7 +58,7 @@ void PFB::PlaceFile::addOGRGeometry(const string& label, const PlaceFileColor& c
   case wkbPoint:
     poPoint = (OGRPoint *)&ft;
     if (trans != nullptr) poPoint->transform(trans);
-    newFeature = FP(new PointFeature(label, color, *poPoint));
+    newFeature = FP(new PointFeature(label, color, *poPoint, displayThresh));
     break;
 
   // LinearRing is a subclass of LineString and works with the same interface.
@@ -70,7 +71,7 @@ void PFB::PlaceFile::addOGRGeometry(const string& label, const PlaceFileColor& c
     // that GRAnalyst errors on.
     if (poLine->getNumPoints() > 1)
     {
-      newFeature = FP(new LineFeature(label, color, *poLine));
+      newFeature = FP(new LineFeature(label, color, *poLine, displayThresh));
     }
     break;
 
@@ -83,7 +84,8 @@ void PFB::PlaceFile::addOGRGeometry(const string& label, const PlaceFileColor& c
       * Opt to get the vector of lines, add those, and return instead of       *
       * setting a value for feature and going to the end of the function.      *
       *************************************************************************/
-      vector<LP> lines = LineFeature::PolygonToLines(label, color, *poPoly);
+      vector<LP> lines = 
+          LineFeature::PolygonToLines(label, color, *poPoly, displayThresh);
       while(!lines.empty())
       {
         _features[_nextKey++] = move(lines.back());
@@ -93,7 +95,7 @@ void PFB::PlaceFile::addOGRGeometry(const string& label, const PlaceFileColor& c
     }
     else
     {
-      newFeature = FP(new PolygonFeature(label, color, *poPoly));
+      newFeature = FP(new PolygonFeature(label, color, *poPoly, displayThresh));
     }
     break;
 
@@ -105,14 +107,15 @@ void PFB::PlaceFile::addOGRGeometry(const string& label, const PlaceFileColor& c
     for (int i = 0; i != numGeos; ++i)
     {
       tmp = coll->getGeometryRef(i);
-      addOGRGeometry(label, color, *tmp, trans, PolyAsString);
+      addOGRGeometry(label, color, *tmp, trans, PolyAsString, displayThresh);
     }
     break;
 
   default:
     
     throw runtime_error(
-      (std::string("Unable to handle or unrecognized OGRGeometry type. ") + ft.getGeometryName()).c_str()
+      (std::string("Unable to handle or unrecognized OGRGeometry type. ") + 
+        ft.getGeometryName()).c_str()
       );
   }
 
@@ -189,6 +192,7 @@ ostream& PFB::operator<<(ostream& ost, const PlaceFile& pf)
   // Loop through 3 times, once for each geometry type. Put out polygons first,
   // then lines, then points.
   string colorString;
+  int displayThresh = pf.getThreshold();
   for (int tp = 0; tp < 3; tp++)
   {
     FeatureType tp_ = static_cast<FeatureType>(tp);
@@ -205,6 +209,15 @@ ostream& PFB::operator<<(ostream& ost, const PlaceFile& pf)
       {
         colorString = ib->second.get()->getColorString();
         ib->second.get()->setUseColor(true);
+      }
+      if (ib->second.get()->getDisplayThreshold() == displayThresh)
+      {
+        ib->second.get()->setUseDisplayThreshold(false);
+      }
+      else
+      {
+        displayThresh = ib->second.get()->getDisplayThreshold();
+        ib->second.get()->setUseDisplayThreshold(true);
       }
       ost << *(ib->second.get());
     }

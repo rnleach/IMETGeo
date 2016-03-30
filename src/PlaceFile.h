@@ -58,8 +58,9 @@ namespace PFB
     /// Also supports adding many features if the supplied OGRGeometry is a
     /// multi-geometry. Each sub geometry in the multi-geometry will have the
     /// same label as the feature.
-    void addOGRGeometry(const string& label, const PlaceFileColor& color, OGRGeometry& ft, 
-      OGRCoordinateTransformation* trans = nullptr, bool PolyAsString = false);
+    void addOGRGeometry(const string& label, const PlaceFileColor& color, 
+      OGRGeometry& ft, OGRCoordinateTransformation* trans = nullptr, 
+      bool PolyAsString = false, int displayThresh = 999);
 
     /// Remove a feature from this PlaceFile
     void deleteFeature(const size_t key);

@@ -203,8 +203,7 @@ void AppController::savePlaceFile(const string& fileName,
 
         OGRGeometry *geo = feature->GetGeometryRef();
 
-        // TODO add display threshold!
-        pf.addOGRGeometry(label, color, *geo, trans, polyAsLine);
+        pf.addOGRGeometry(label, color, *geo, trans, polyAsLine, displayThresh);
       }
 
       if(trans != nullptr) 
