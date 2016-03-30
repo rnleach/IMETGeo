@@ -51,7 +51,7 @@ namespace PFB
       const OGRLineString& lineString, bool forceClosed = false);
 
     /// Create a vector of lines from a polygon feature loaded in via GDAL
-    using LP = unique_ptr<LineFeature>;
+    using LP = std::unique_ptr<LineFeature>;
     static vector<LP> PolygonToLines(const string& label, 
       const PlaceFileColor& color, const OGRPolygon& polygon);
 

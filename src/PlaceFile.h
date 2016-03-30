@@ -26,14 +26,17 @@ Revisions:
 #include "Feature.h"
 #include "OGRFeatureWrapper.h"
 
-using namespace std;
+using std::map;
+using std::ostream;
+using std::string;
+using std::vector;
 
 namespace PFB
 {
   class PlaceFile
   {
   public:
-    using FP = unique_ptr<Feature>;
+    using FP = std::unique_ptr<Feature>;
 
     /// Default Constructor.
     PlaceFile();

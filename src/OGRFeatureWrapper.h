@@ -3,8 +3,6 @@
 #include <string>
 #include <ogrsf_frmts.h>
 
-using namespace std;
-
 namespace PFB
 {
   /*

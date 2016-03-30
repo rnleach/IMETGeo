@@ -4,13 +4,15 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
-using namespace std;
 
 #include "OGRDataSourceWrapper.h"
 #include "OGRFeatureWrapper.h"
 #include "PlaceFile.h"
 #include "PlaceFileColor.h"
 using namespace PFB;
+
+using std::pair;
+using std::unordered_map;
 
 class AppController
 {

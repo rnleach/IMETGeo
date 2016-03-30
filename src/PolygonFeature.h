@@ -1,5 +1,6 @@
 /*
-PolygonFeature class semantically codes up the Polygon tag/feature in a PlaceFile.
+PolygonFeature class semantically codes up the Polygon tag/feature in a 
+PlaceFile.
 
 This class is a subclass of Feature.
 

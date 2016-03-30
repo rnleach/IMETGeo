@@ -10,6 +10,8 @@
 
 #include "AppController.h"
 
+using  std::shared_ptr;
+
 using uint = unsigned int;
 
 // Name space for application code.

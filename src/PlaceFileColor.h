@@ -10,7 +10,6 @@ Revisions:
 #pragma once
 
 #include <string>
-using namespace std;
 
 namespace PFB
 {
@@ -33,7 +32,7 @@ namespace PFB
     */
 
     /// Return a string formatted like a color statement in a PlaceFile.
-    string getPlaceFileColorString() const;
+    std::string getPlaceFileColorString() const;
 
     // Leave these public for easy read access.
     unsigned char red;

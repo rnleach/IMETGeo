@@ -1,7 +1,11 @@
 #pragma once
 #include <string>
 #include <fstream>
-using namespace std;
+
+using std::ios;
+using std::ios_base;
+using std::ofstream;
+using std::string;
 
 namespace PFB
 {

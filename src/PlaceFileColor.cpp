@@ -1,6 +1,7 @@
 #include "PlaceFileColor.h"
 #include <cstdio>
 
+using namespace std;
 using PFB::PlaceFileColor;
 
 PlaceFileColor::PlaceFileColor():PlaceFileColor(255U, 255U, 255U){}

@@ -4,7 +4,8 @@
 #include <ogrsf_frmts.h>
 #include "cpl_port.h"
 
-using namespace std;
+using std::string;
+using std::runtime_error;
 
 namespace PFB
 {
@@ -22,7 +23,8 @@ namespace PFB
       : _src(OGRSFDriverRegistrar::Open(path.c_str(), update))
     {
       if (!_src)
-        throw runtime_error((string("Error Opening Source: ") + path + "\n" + CPLGetLastErrorMsg()).c_str());
+        throw runtime_error((string("Error Opening Source: ") + path + "\n" + 
+          CPLGetLastErrorMsg()).c_str());
     }
 
     // Construct from raw pointer
