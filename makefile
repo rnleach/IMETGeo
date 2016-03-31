@@ -51,7 +51,7 @@ COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c
 # Linker directories, flags, and program
 #
 LINKFLAGS =
-ifeq ( $(SYS), mingw)
+ifeq ($(SYS),mingw)
   LINKFLAGS += -mwindows
 endif
 LIBS      = `pkg-config --libs gtkmm-3.0` `gdal-config --libs`
