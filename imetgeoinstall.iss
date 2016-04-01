@@ -17,10 +17,10 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={pf}\{#MyAppName}
 DisableProgramGroupPage=yes
-OutputDir=C:\msys64\home\Ryan\sources\IMETGeo\dist
-OutputBaseFilename=setup
-SetupIconFile=C:\msys64\home\Ryan\sources\IMETGeo\dist\bin\imet.ico
-UninstallDisplayIcon=C:\msys64\home\Ryan\sources\IMETGeo\dist\bin\imet.ico
+OutputDir=dist
+OutputBaseFilename=IMETGeoInstaller
+SetupIconFile=dist\bin\imet.ico
+UninstallDisplayIcon=dist\bin\imet.ico
 Compression=lzma
 SolidCompression=yes
 ArchitecturesAllowed=x64
@@ -33,8 +33,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "C:\msys64\home\Ryan\sources\IMETGeo\dist\bin\*"; DestDir: "{app}\bin"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\msys64\home\Ryan\sources\IMETGeo\dist\share\*"; DestDir: "{app}\share"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
