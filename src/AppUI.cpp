@@ -82,7 +82,7 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   auto refBuilder = Gtk::Builder::create();
   try
   {
-    refBuilder->add_from_file("imetgeo.glade");
+    refBuilder->add_from_file("../res/imetgeo.glade");
   }
   catch(const exception& ex)
   {
@@ -99,7 +99,7 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   //
   // Set up css provider and apply css formatting to widgets.
   //
-  css_->load_from_path("geo-conv.css");
+  css_->load_from_path("../res/geo-conv.css");
   mainWindow_->get_style_context()->add_provider_for_screen(
     Gdk::Screen::get_default(), css_, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
@@ -297,7 +297,7 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   {
     throw runtime_error("Unable to connect gdalImage.");
   }
-  gdalImage->set("trac_logo.png");
+  gdalImage->set("../res/trac_logo.png");
 
   // Gtk logo
   Gtk::Image *gtkImage = nullptr;
@@ -306,7 +306,7 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   {
     throw runtime_error("Unable to connect gtkImage.");
   }
-  gtkImage->set("GTK-plus_1.png");
+  gtkImage->set("../res/GTK-plus_1.png");
 
   //
   // Set labels for links to gdal and GTK

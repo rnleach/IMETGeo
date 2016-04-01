@@ -125,6 +125,7 @@ distDirs:
 	-mkdir -p $(DISTDIR)/share/icons
 	-mkdir -p $(DISTDIR)/share/glib-2.0
 	-mkdir -p $(DISTDIR)/share/glib-2.0/schemas
+	-mkdir -p $(DISTDIR)/res
 
 objDir:
 	-mkdir -p $(OBJDIR)
@@ -148,7 +149,7 @@ build: distDirs $(OBJFILES) $(RESFILE)
 	$(WINDRES)
 	$(LINK)
 	-ldd $(PROGDIR)/$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{}  cp -u "{}" $(PROGDIR)/
-	-cp -u ./res/* $(DISTDIR)/bin/
+	-cp -u ./res/* $(DISTDIR)/res/
 	-cp -uR /usr/local/share/icons/* $(DISTDIR)/share/icons/
 	-cp -uR /usr/local/share/glib-2.0/schemas/* $(DISTDIR)/share/glib-2.0/schemas/
 

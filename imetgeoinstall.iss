@@ -19,12 +19,13 @@ DefaultDirName={pf}\{#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=dist
 OutputBaseFilename=IMETGeoInstaller
-SetupIconFile=dist\bin\imet.ico
-UninstallDisplayIcon=dist\bin\imet.ico
+SetupIconFile=dist\res\imet.ico
+UninstallDisplayIcon=dist\res\imet.ico
 Compression=lzma
 SolidCompression=yes
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
+LicenseFile=dist\res\Licenses.txt
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
