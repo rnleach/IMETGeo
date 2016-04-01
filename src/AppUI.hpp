@@ -65,6 +65,7 @@ namespace GeoConv
     Gtk::Window *mainWindow_;
 
     Gtk::Button *delButton_;
+    Gtk::Button *aboutButton_;
 
     Gtk::ComboBoxText *labelField_;
     Gtk::ColorButton *layerColor_;
@@ -98,6 +99,7 @@ namespace GeoConv
     //
     /* Add remove */
     void onDeleteClicked();
+    void onAboutClicked();
     void onAddShapefile();
     void onAddKML();
     void onAddGDB();

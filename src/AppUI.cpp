@@ -2,11 +2,14 @@
 
 #include <chrono>
 #include <exception>
+#include <fstream>
 #include <future>
 #include <iostream>
 #include <limits>
+#include <sstream>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include "ogrsf_frmts.h"
 #include "ogr_api.h"
@@ -59,6 +62,7 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   appCon_(ctr),
   mainWindow_(nullptr), 
   delButton_(nullptr),
+  aboutButton_(nullptr),
   labelField_(nullptr),
   layerColor_(nullptr),
   filledPolygon_(nullptr),
@@ -104,20 +108,6 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
     Gdk::Screen::get_default(), css_, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
   //
-  // Attach signal handlers to buttons
-  //
-  refBuilder->get_widget("deleteButton", delButton_);
-  if(delButton_)
-  {
-    delButton_->signal_clicked().connect(
-      sigc::mem_fun(*this, &AppUI::onDeleteClicked) );
-  }
-  else
-  {
-    throw runtime_error("Unable to connect delete button.");
-  }
-
-  //
   // Add signal handlers to menu items, including add menu button items
   //
   // lambda to attach menu items
@@ -140,6 +130,33 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   attachMenuItem("addShapefileItem", &AppUI::onAddShapefile);
   attachMenuItem("addFileGeoDatabaseItem", &AppUI::onAddGDB);
   attachMenuItem("addKMLItem", &AppUI::onAddKML);
+
+  //
+  // Attach signal handlers to buttons
+  //
+  // delete button
+  refBuilder->get_widget("deleteButton", delButton_);
+  if(delButton_)
+  {
+    delButton_->signal_clicked().connect(
+      sigc::mem_fun(*this, &AppUI::onDeleteClicked) );
+  }
+  else
+  {
+    throw runtime_error("Unable to connect delete button.");
+  }
+
+  // about button
+  refBuilder->get_widget("aboutButton", aboutButton_);
+  if(aboutButton_)
+  {
+    aboutButton_->signal_clicked().connect(
+      sigc::mem_fun(*this, &AppUI::onAboutClicked) );
+  }
+  else
+  {
+    throw runtime_error("Unable to connect about button.");
+  }
 
   //
   // Add signal handlers to controls in properties section, 
@@ -372,6 +389,35 @@ void AppUI::onDeleteClicked()
   // Update not needed, deleting a row triggers a selection change, which
   // causes an update.
   //updateUI();
+}
+
+void AppUI::onAboutClicked()
+{
+  Gtk::AboutDialog about;
+
+  // Set general information
+  about.set_program_name("IMETGeo");
+  about.set_version("1.0");
+
+  // Set the author
+  vector<Glib::ustring> authors {"Ryan Leach"};
+  about.set_authors(authors);
+
+  // Load and set the license
+  ifstream f("../res/Licenses.txt");
+  stringstream s;
+  s << f.rdbuf();
+  about.set_license(s.str());
+  about.set_wrap_license(true);
+
+  // Load and set the logo
+  auto logo = Gdk::Pixbuf::create_from_file("../res/imet.ico");
+  about.set_logo(logo);
+
+  // Make it bigger than default behavior.
+  about.set_default_size(500,600);
+
+  about.run();
 }
 
 void AppUI::addSource(const string& title, Gtk::FileChooserAction action, 
