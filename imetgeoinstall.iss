@@ -20,6 +20,7 @@ DisableProgramGroupPage=yes
 OutputDir=C:\msys64\home\Ryan\sources\IMETGeo\dist
 OutputBaseFilename=setup
 SetupIconFile=C:\msys64\home\Ryan\sources\IMETGeo\dist\bin\imet.ico
+UninstallDisplayIcon=C:\msys64\home\Ryan\sources\IMETGeo\dist\bin\imet.ico
 Compression=lzma
 SolidCompression=yes
 ArchitecturesAllowed=x64

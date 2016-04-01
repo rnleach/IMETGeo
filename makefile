@@ -45,7 +45,16 @@ POSTCOMPILE = mv -f $(OBJDIR)/$*.Td $(OBJDIR)/$*.d
 #
 CPPFLAGS = -std=c++11 -Wall
 CPP_INCLUDES = `pkg-config --cflags gtkmm-3.0` `gdal-config --cflags`
-COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c 
+COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c
+
+#
+# Compile resources
+#
+RESFILE = $(OBJDIR)/imetgeorc.res
+WINDRES = 
+ifeq ($(SYS),mingw)
+  WINDRES += windres ./src/imetgeo.rc -O coff -o $(RESFILE)
+endif 
 
 #
 # Linker directories, flags, and program
@@ -54,9 +63,13 @@ LINKFLAGS =
 ifeq ($(SYS),mingw)
   LINKFLAGS += -mwindows
 endif
-LIBS      = `pkg-config --libs gtkmm-3.0` `gdal-config --libs`
-LINK      = g++ -o $(PROGDIR)/$(PROGNAME) $(LINKFLAGS) $(OBJFILES) $(LIBS)
-LINK_TEST = g++ -o $(TESTDIR)/$(TEST_NAME) $(OBJFILES) $(OBJFILES_TEST)
+LIBS      =  `pkg-config --libs gtkmm-3.0` `gdal-config --libs`
+LINK      =  g++ -o $(PROGDIR)/$(PROGNAME) $(LINKFLAGS) 
+ifeq ($(SYS),mingw)
+  LINK += $(RESFILE)
+endif
+LINK      += $(OBJFILES) $(LIBS)
+LINK_TEST =  g++ -o $(TESTDIR)/$(TEST_NAME) $(OBJFILES) $(OBJFILES_TEST)
 
 #
 # Output all variables to terminal for inspection during build process....
@@ -85,6 +98,10 @@ $(info                                           )
 $(info CPPFLAGS           = $(CPPFLAGS)          )
 $(info CPP_INCLUDES       = $(CPP_INCLUDES)      )
 $(info COMPILE            = $(COMPILE)           )
+$(info                                           )
+
+$(info RESFILE            = $(RESFILE)           )
+$(info WINDRES            = $(WINDRES)           )
 $(info                                           )
 
 $(info LINKFLAGS          = $(LINKFLAGS)         )
@@ -127,7 +144,8 @@ test: $(OBJFILES) $(OBJFILES_TEST)
 #
 # Build the data target
 #
-build: distDirs $(OBJFILES)
+build: distDirs $(OBJFILES) $(RESFILE)
+	$(WINDRES)
 	$(LINK)
 	-ldd $(PROGDIR)/$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{}  cp -u "{}" $(PROGDIR)/
 	-cp -u ./res/* $(DISTDIR)/bin/
