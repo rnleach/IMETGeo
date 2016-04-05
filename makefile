@@ -50,9 +50,10 @@ COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c
 #
 # Compile resources
 #
-RESFILE = $(OBJDIR)/imetgeorc.res
+RESFILE = 
 WINDRES = 
 ifeq ($(SYS),mingw)
+  RESFILE += $(OBJDIR)/imetgeorc.res
   WINDRES += windres ./src/imetgeo.rc -O coff -o $(RESFILE)
 endif 
 
