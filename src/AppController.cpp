@@ -33,7 +33,7 @@ const vector<string> AppController::getLayers(const string& source)
 {
   vector<string> layerStrings;
 
-  LayerInfo lyrs = layers_.at(source);
+  LayerInfo& lyrs = get<2>(srcs_.at(source));
   for(auto it = lyrs.begin(); it != lyrs.end(); ++ it)
   {
     layerStrings.push_back(it->first);
@@ -45,7 +45,7 @@ const vector<string> AppController::getLayers(const string& source)
 const string& AppController::summarizeLayerProperties(const string & source, 
   const string& layer)
 {
-  return layers_.at(source).at(layer).summary;
+  return get<2>(srcs_.at(source)).at(layer).summary;
 }
 
 string AppController::addSource(const string& path)
@@ -125,9 +125,9 @@ string AppController::addSource(const string& path)
     //
     // Save the layer info and the handle to the source data.
     //
-    layers_.insert(SrcsInfoPair {fileName, move(lyrInfo)} );
-    srcs_.insert(SrcsPair{fileName, move(src)});
-
+    ValTuple t = make_tuple(path, move(src), move(lyrInfo));
+    srcs_.insert( SrcsPair { fileName, move(t) } );
+    
     //
     // Return the path to the first layer
     //
@@ -151,12 +151,12 @@ void AppController::savePlaceFile(const string& fileName,
   pf.setRefreshMinutes(refreshMinutes);
 
   // Add the requested layers
-  for(auto sIt = layers_.begin(); sIt != layers_.end(); ++sIt)
+  for(auto sIt = srcs_.begin(); sIt != srcs_.end(); ++sIt)
   {
     const string& srcName = sIt->first;
-    const LayerInfo& lyrs = sIt->second;
+    const LayerInfo& lyrs = get<2>(sIt->second);
 
-    OGRDataSourceWrapper& src = srcs_.at(srcName);
+    OGRDataSourceWrapper& src = get<1>(sIt->second);
 
     for(auto lIt = lyrs.begin(); lIt != lyrs.end(); ++lIt)
     {
@@ -223,12 +223,12 @@ void AppController::saveKMLFile(const string & fileName)
   OGRDataSourceWrapper kmlSrc{ kmlDriver->CreateDataSource(fileName.c_str()) };
 
 
-  for(auto sIt = layers_.begin(); sIt != layers_.end(); ++sIt)
+  for(auto sIt = srcs_.begin(); sIt != srcs_.end(); ++sIt)
   {
     const string& srcName = sIt->first;
-    const LayerInfo& lyrs = sIt->second;
+    const LayerInfo& lyrs = get<2>(sIt->second);
 
-    OGRDataSourceWrapper& src = srcs_.at(srcName);
+    OGRDataSourceWrapper& src = get<1>(sIt->second);
 
     for(auto lIt = lyrs.begin(); lIt != lyrs.end(); ++lIt)
     {
@@ -369,7 +369,7 @@ AppController::LayerOptions::LayerOptions(string lField, PlaceFileColor clr,
 
 void AppController::hideLayer(const string& source, const string& layer)
 {
-  auto& layers = layers_.at(source);
+  auto& layers = get<2>(srcs_.at(source));
   auto& lyr = layers.at(layer);
   lyr.visible = false;
   bool anyVisible = false;
@@ -386,7 +386,6 @@ void AppController::hideLayer(const string& source, const string& layer)
 
 void AppController::deleteSource(const string& source)
 {
-  layers_.erase(source);
   srcs_.erase(source);
 }
 
@@ -401,7 +400,7 @@ const vector<string> AppController::getFields(
   try
   {
 
-    OGRLayer* layer = srcs_.at(source)->GetLayerByName(lyr.c_str());
+    OGRLayer* layer = get<1>(srcs_.at(source))->GetLayerByName(lyr.c_str());
 
     auto numFields = layer->GetLayerDefn()->GetFieldCount();
 
@@ -429,43 +428,52 @@ const vector<string> AppController::getFields(
 
 string const AppController::getLabel(const string& source, const string& layer)
 {
-  return layers_.at(source).at(layer).labelField;
+  return get<2>(srcs_.at(source)).at(layer).labelField;
 }
 
 void AppController::setLabel(const string& source, 
   const string& layer, string label)
 {
-  auto& opts = layers_.at(source).at(layer);
+  auto& opts = get<2>(srcs_.at(source)).at(layer);
   opts.labelField = label;
 }
 
 bool AppController::getPolygonDisplayedAsLine(const string& source, 
-  const string& layer) { return layers_.at(source).at(layer).polyAsLine; }
+  const string& layer) 
+{ 
+  return get<2>(srcs_.at(source)).at(layer).polyAsLine; 
+}
 
 void AppController::setPolygonDisplayedAsLine(const string& source, 
     const string& layer, bool asLine)
 {
-  auto& opts = layers_.at(source).at(layer);
+  auto& opts = get<2>(srcs_.at(source)).at(layer);
   opts.polyAsLine = asLine;
 }
 
 int AppController::getDisplayThreshold(const string& source, 
-  const string& layer) { return layers_.at(source).at(layer).displayThresh; }
+  const string& layer) 
+{ 
+  return get<2>(srcs_.at(source)).at(layer).displayThresh; 
+}
 
 void AppController::setDisplayThreshold(const string& source, 
     const string& layer, int thresh)
 {
-  auto& opts = layers_.at(source).at(layer);
+  auto& opts = get<2>(srcs_.at(source)).at(layer);
   opts.displayThresh = thresh;
 }
 
 PlaceFileColor AppController::getColor(const string& source, 
-  const string& layer) { return layers_.at(source).at(layer).color; }
+  const string& layer) 
+{ 
+  return get<2>(srcs_.at(source)).at(layer).color; 
+}
 
 void AppController::setColor(const string& source, 
   const string& layer, PlaceFileColor clr)
 {
-  auto& opts = layers_.at(source).at(layer);
+  auto& opts = get<2>(srcs_.at(source)).at(layer);
   opts.color = clr;
 }
 
@@ -474,7 +482,7 @@ bool AppController::isPolygonLayer(const string & source, const string & lyr)
 
   try
   {
-    OGRLayer* layer = srcs_.at(source)->GetLayerByName(lyr.c_str());
+    OGRLayer* layer = get<1>(srcs_.at(source))->GetLayerByName(lyr.c_str());
 
     // Geometry type
     OGRwkbGeometryType geoType = wkbFlatten(layer->GetGeomType());

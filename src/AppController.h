@@ -1,8 +1,9 @@
 #pragma once
+#include <sstream>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
-#include <sstream>
 #include <iomanip>
 
 #include "OGRDataSourceWrapper.h"
@@ -13,6 +14,7 @@ using namespace PFB;
 
 using std::pair;
 using std::unordered_map;
+using std::tuple;
 
 class AppController
 {
@@ -109,21 +111,26 @@ public:
 
 private:
 
-  // Map a simple file name (no path) to an OGRDataSource
-  unordered_map<string,OGRDataSourceWrapper> srcs_;
-  using SrcsPair = pair<string, OGRDataSourceWrapper>;
-
-  // Map sources to layers to options.
-  unordered_map<string,unordered_map<string,LayerOptions>> layers_;
-  using SrcsInfoPair = pair<string,unordered_map<string,LayerOptions>>;
+  // Map a simple file name (no path) to a tuple of the full path, the loaded
+  // data source, and a list of layers and info about those layers.
   using LayerInfo = unordered_map<string,LayerOptions>;
   using LayerInfoPair = pair<string,LayerOptions>;
+  using ValTuple = tuple< string, OGRDataSourceWrapper, LayerInfo >;
+  using SrcsPair = pair<string,ValTuple>;
+  unordered_map< string, ValTuple> srcs_;  
 
   static const string DO_NOT_USE_LAYER; // = "**Do Not Use Layer**";
   static const string NO_LABEL;         // = "**No Label**";
 
   // Given a layer, analyze it's properties and create a string summarizing them
   const string summarize(OGRLayer *lyr);
+
+  /*
+   *  These methods cannot throw exceptions because they are called from the
+   *  constructor and destructor.
+   */
+  void saveState();
+  void loadState();
 
 };
 
