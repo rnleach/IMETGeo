@@ -128,6 +128,7 @@ distDirs:
 	-mkdir -p $(DISTDIR)/share/glib-2.0/schemas
 	-mkdir -p $(DISTDIR)/res
 	-mkdir -p $(DISTDIR)/Source
+	-mkdir -p $(DISTDIR)/config
 
 objDir:
 	-mkdir -p $(OBJDIR)
