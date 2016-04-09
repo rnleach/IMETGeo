@@ -11,9 +11,6 @@
 #include <thread>
 #include <vector>
 
-#include "ogrsf_frmts.h"
-#include "ogr_api.h"
-
 using namespace GeoConv;
 using namespace std;
 /*==============================================================================
@@ -50,9 +47,6 @@ AppUI::~AppUI()
 {
   // Only resource to be deleted, all other widgets are managed.
   if(mainWindow_) delete mainWindow_;
-
-  // Clean up GDAL.
-  OGRCleanupAll();
 }
 
 /*==============================================================================
@@ -75,11 +69,6 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   exportKMLButton_(nullptr),
   css_(Gtk::CssProvider::create())
 {
-  //
-  // Initialize GDAL
-  //
-  OGRRegisterAll();
-
   //
   //Load the GtkBuilder file and instantiate its widgets
   //
@@ -349,6 +338,7 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   //
   // Finally, update the state of the UI.
   //
+  updateTree();
   updateUI();
 }
 
@@ -910,6 +900,55 @@ void AppUI::updateUI()
     delButton_->set_sensitive(true);
   }
 }
+
+void AppUI::updateTree()
+{
+  // Stop signals from selected widgets while updating GUI to prevent
+  // near infinite recursion as the GUI updates signal and trigger further
+  // updates which signal, etc. To add a signal handler to the block list,
+  // add it to the connections_ vector. This blocker is a class and uses 
+  // scope (e.g. RAII), so at the end of this scope it goes away and the 
+  // destructor unblocks all the signals.
+  SignalBlocker block(*this);
+
+// Get all the sources
+  auto sources = appCon_->getSources();
+
+  // For each source, get all the layers and add them in turn
+  Gtk::TreeModel::Row firstChild;
+  for(auto srcIt = sources.begin(); srcIt != sources.end(); ++srcIt)
+  {
+    // Get the layers
+    const vector<string> layers = appCon_->getLayers(*srcIt);
+      
+    // Add the parent row for the source.
+    Gtk::TreeModel::Row row = *(treeStore_->append());
+    row[columns_.sourceName] = *srcIt;
+    row[columns_.layerName] = *srcIt;
+
+    for(auto lyrIter = layers.begin(); lyrIter != layers.end(); ++lyrIter)
+    {
+      const string& lyrName = *lyrIter;
+
+      if( !appCon_->isVisible(*srcIt, lyrName) ) continue;
+
+      // Add the layers as children
+      Gtk::TreeModel::Row childrow = *(treeStore_->append(row.children()));
+      childrow[columns_.sourceName] = *srcIt;
+      childrow[columns_.layerName] = lyrName;
+
+      if( srcIt == sources.begin() && lyrIter == layers.begin() )
+      {
+        firstChild = childrow;
+      }
+    }
+    // Expand the parent row.
+    layersTree_->expand_row(treeStore_->get_path(row), true);
+  }
+
+  treeSelection_->select(firstChild);
+}
+
 /*==============================================================================
  *                         Inner class SignalBlocker
  *============================================================================*/

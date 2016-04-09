@@ -1,20 +1,39 @@
 #include "AppController.h"
 
 #include <exception>
-#include <memory>
+#include <fstream>
 #include <iostream>
+#include <memory>
+#include <sstream>
+#include <cstdlib>
+
+#include "PlaceFileColor.h"
+
+#include "ogrsf_frmts.h"
+#include "ogr_api.h"
 
 using namespace std;
 
-const string AppController::DO_NOT_USE_LAYER = "**Do Not Use Layer**";
-const string AppController::NO_LABEL = "**No Label**";
-
 AppController::AppController()
 {
+  //
+  // Initialize GDAL
+  //
+  OGRRegisterAll();
+
+  //
+  // Load the previous state of the controller
+  //
+  loadState();
 }
 
 AppController::~AppController()
 {
+  // Save the state of the controller for next launch...
+  saveState();
+
+  // Clean up GDAL.
+  OGRCleanupAll();
 }
 
 const vector<string> AppController::getSources()
@@ -33,7 +52,7 @@ const vector<string> AppController::getLayers(const string& source)
 {
   vector<string> layerStrings;
 
-  LayerInfo& lyrs = get<2>(srcs_.at(source));
+  LayerInfo& lyrs = get<IDX_layerInfo>(srcs_.at(source));
   for(auto it = lyrs.begin(); it != lyrs.end(); ++ it)
   {
     layerStrings.push_back(it->first);
@@ -45,7 +64,7 @@ const vector<string> AppController::getLayers(const string& source)
 const string& AppController::summarizeLayerProperties(const string & source, 
   const string& layer)
 {
-  return get<2>(srcs_.at(source)).at(layer).summary;
+  return get<IDX_layerInfo>(srcs_.at(source)).at(layer).summary;
 }
 
 string AppController::addSource(const string& path)
@@ -154,9 +173,9 @@ void AppController::savePlaceFile(const string& fileName,
   for(auto sIt = srcs_.begin(); sIt != srcs_.end(); ++sIt)
   {
     const string& srcName = sIt->first;
-    const LayerInfo& lyrs = get<2>(sIt->second);
+    const LayerInfo& lyrs = get<IDX_layerInfo>(sIt->second);
 
-    OGRDataSourceWrapper& src = get<1>(sIt->second);
+    OGRDataSourceWrapper& src = get<IDX_ogrData>(sIt->second);
 
     for(auto lIt = lyrs.begin(); lIt != lyrs.end(); ++lIt)
     {
@@ -225,10 +244,9 @@ void AppController::saveKMLFile(const string & fileName)
 
   for(auto sIt = srcs_.begin(); sIt != srcs_.end(); ++sIt)
   {
-    const string& srcName = sIt->first;
-    const LayerInfo& lyrs = get<2>(sIt->second);
+    const LayerInfo& lyrs = get<IDX_layerInfo>(sIt->second);
 
-    OGRDataSourceWrapper& src = get<1>(sIt->second);
+    OGRDataSourceWrapper& src = get<IDX_ogrData>(sIt->second);
 
     for(auto lIt = lyrs.begin(); lIt != lyrs.end(); ++lIt)
     {
@@ -250,6 +268,159 @@ void AppController::saveKMLFile(const string & fileName)
     }
   }
 }
+
+void AppController::hideLayer(const string& source, const string& layer)
+{
+  auto& layers = get<IDX_layerInfo>(srcs_.at(source));
+  auto& lyr = layers.at(layer);
+  lyr.visible = false;
+  lyr.labelField = DO_NOT_USE_LAYER;
+  bool anyVisible = false;
+  for(auto it = layers.begin(); it != layers.end(); ++it)
+  {
+    anyVisible = anyVisible || it->second.visible;
+  }
+
+  if(!anyVisible)
+  {
+    deleteSource(source);
+  }
+}
+
+void AppController::deleteSource(const string& source)
+{
+  srcs_.erase(source);
+}
+
+const vector<string> AppController::getFields(
+  const string & source, const string & lyr)
+{
+  vector<string> toRet;
+
+  // Add default options
+  toRet.push_back(DO_NOT_USE_LAYER);
+  toRet.push_back(NO_LABEL);
+  try
+  {
+
+    OGRLayer* layer = get<IDX_ogrData>(
+      srcs_.at(source))->GetLayerByName(lyr.c_str());
+
+    auto numFields = layer->GetLayerDefn()->GetFieldCount();
+
+    toRet.reserve(numFields);
+    for (int i = 0; i != numFields; ++i)
+    {
+      toRet.push_back( string(
+        layer->GetLayerDefn()->GetFieldDefn(i)->GetNameRef() )
+      );
+    }
+  }
+  catch (exception const& e)
+  {
+    string msg = string("Error getting fields: ");
+    msg.append(source).
+        append(" -> ").
+        append(lyr).
+        append("\n").
+        append(e.what());
+    throw runtime_error(msg.c_str());
+  }
+
+  return toRet;
+}
+
+string const AppController::getLabel(const string& source, const string& layer)
+{
+  return get<IDX_layerInfo>(srcs_.at(source)).at(layer).labelField;
+}
+
+void AppController::setLabel(const string& source, 
+  const string& layer, string label)
+{
+  auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
+  opts.labelField = label;
+}
+
+bool AppController::getPolygonDisplayedAsLine(const string& source, 
+  const string& layer) 
+{ 
+  return get<IDX_layerInfo>(srcs_.at(source)).at(layer).polyAsLine; 
+}
+
+void AppController::setPolygonDisplayedAsLine(const string& source, 
+    const string& layer, bool asLine)
+{
+  auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
+  opts.polyAsLine = asLine;
+}
+
+int AppController::getDisplayThreshold(const string& source, 
+  const string& layer) 
+{ 
+  return get<IDX_layerInfo>(srcs_.at(source)).at(layer).displayThresh; 
+}
+
+void AppController::setDisplayThreshold(const string& source, 
+    const string& layer, int thresh)
+{
+  auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
+  opts.displayThresh = thresh;
+}
+
+PlaceFileColor AppController::getColor(const string& source, 
+  const string& layer) 
+{ 
+  return get<IDX_layerInfo>(srcs_.at(source)).at(layer).color; 
+}
+
+void AppController::setColor(const string& source, 
+  const string& layer, PlaceFileColor clr)
+{
+  auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
+  opts.color = clr;
+}
+
+bool AppController::isPolygonLayer(const string & source, const string & lyr)
+{
+
+  try
+  {
+    OGRLayer* layer = get<IDX_ogrData>(
+      srcs_.at(source))->GetLayerByName(lyr.c_str());
+
+    // Geometry type
+    OGRwkbGeometryType geoType = wkbFlatten(layer->GetGeomType());
+
+    if(geoType == wkbMultiPolygon || geoType == wkbPolygon)
+      return true;
+
+    return false;
+  }
+  catch(const exception& e)
+  {
+    cerr << "Error checking layer for type.\n\n" << e.what() << endl << endl;
+    return false;
+  }
+}
+
+bool AppController::isVisible(const string & source, const string & lyr)
+{
+  return get<IDX_layerInfo>(srcs_.at(source)).at(lyr).visible; 
+}
+
+AppController::LayerOptions::LayerOptions(string lField, PlaceFileColor clr,
+    bool pal, bool vsbl, int dispThresh, const string smry) :
+  labelField{ lField }, 
+  color{ clr }, 
+  polyAsLine{ pal },
+  visible{ vsbl },
+  displayThresh{ dispThresh },
+  summary {smry}
+{}
+
+const string AppController::DO_NOT_USE_LAYER = "**Do Not Use Layer**";
+const string AppController::NO_LABEL = "**No Label**";
 
 const string AppController::summarize(OGRLayer * layer)
 {
@@ -357,144 +528,223 @@ const string AppController::summarize(OGRLayer * layer)
   return oss.str();
 }
 
-AppController::LayerOptions::LayerOptions(string lField, PlaceFileColor clr,
-    bool pal, bool vsbl, int dispThresh, const string smry) :
-  labelField{ lField }, 
-  color{ clr }, 
-  polyAsLine{ pal },
-  visible{ vsbl },
-  displayThresh{ dispThresh },
-  summary {smry}
-{}
+const string AppController::pathToStateFile = "../config/appState.txt";
 
-void AppController::hideLayer(const string& source, const string& layer)
+void AppController::saveState()
 {
-  auto& layers = get<2>(srcs_.at(source));
-  auto& lyr = layers.at(layer);
-  lyr.visible = false;
-  bool anyVisible = false;
-  for(auto it = layers.begin(); it != layers.end(); ++it)
-  {
-    anyVisible = anyVisible || it->second.visible;
-  }
+  /*
+      Format of file containing saved state.
 
-  if(!anyVisible)
-  {
-    deleteSource(source);
-  }
-}
-
-void AppController::deleteSource(const string& source)
-{
-  srcs_.erase(source);
-}
-
-const vector<string> AppController::getFields(
-  const string & source, const string & lyr)
-{
-  vector<string> toRet;
-
-  // Add default options
-  toRet.push_back(DO_NOT_USE_LAYER);
-  toRet.push_back(NO_LABEL);
+      Line:  Value:
+         0:  IMETGeo
+         1:  Source Start: srcName
+         2:  Path: path to file
+         3:  Layer Start: layerName
+         4:  labelField: labelField
+         5:  color: rrr ggg bbb
+         6:  polyAsLine: True (or False)
+         7:  visible: True (or False)
+         8:  displayThresh: integer value
+         9:  Layer End: layerName
+        10:  .......
+        . :
+        . :
+        . :  repeat 3-9 for each layer
+        . :
+        . :
+        m :  Source End: srcName
+        . :
+        . :
+        n :  Repeat 1-m for each source
+        . :
+        . :
+        z :  End
+     z + 1:
+  */
   try
   {
+    ofstream statefile (pathToStateFile, ios::trunc);
 
-    OGRLayer* layer = get<1>(srcs_.at(source))->GetLayerByName(lyr.c_str());
-
-    auto numFields = layer->GetLayerDefn()->GetFieldCount();
-
-    toRet.reserve(numFields);
-    for (int i = 0; i != numFields; ++i)
+    if(statefile.is_open())
     {
-      toRet.push_back( string(
-        layer->GetLayerDefn()->GetFieldDefn(i)->GetNameRef() )
-      );
+      statefile << "IMETGeo\n";
+
+      for(auto srcIt = srcs_.begin(); srcIt != srcs_.end(); ++srcIt)
+      {
+        statefile << "Source Start: " << srcIt->first << "\n";
+        statefile << "Path: " << get<IDX_path>(srcIt->second) << "\n";
+
+        auto& lyrInfoMap = get<IDX_layerInfo>(srcIt->second);
+
+        for(auto lyrIt = lyrInfoMap.begin(); lyrIt != lyrInfoMap.end(); ++lyrIt)
+        {
+          statefile << "Layer Start: " << lyrIt->first << "\n";
+
+          // Label
+          statefile << "labelField: " << lyrIt->second.labelField << "\n";
+
+          // Color
+          PlaceFileColor clr = lyrIt->second.color;
+          statefile << "color: " <<
+            static_cast<short>(clr.red)   << " " <<
+            static_cast<short>(clr.green) << " " <<
+            static_cast<short>(clr.blue)  << "\n";
+
+          // PolyAsLine
+          statefile << "polyAsLine: " << 
+            (lyrIt->second.polyAsLine ? "True" : "False") << "\n";
+
+          // visible
+          statefile << "visible: " << 
+            (lyrIt->second.visible ? "True" : "False") << "\n";
+
+          // displayThresh
+          statefile << "displayThresh: " << lyrIt->second.displayThresh << "\n";
+
+          statefile << "Layer End: " << lyrIt->first << "\n";
+        }
+
+        statefile << "Source End: " << srcIt->first << "\n";
+      }
+
+      statefile << "End\n";
+    }
+    else
+    {
+      // Could not open the file for writing?
+      throw runtime_error("Unable to open statefile for writing!");
     }
   }
-  catch (exception const& e)
+  catch(const exception& err)
   {
-    string msg = string("Error getting fields: ");
-    msg.append(source).
-        append(" -> ").
-        append(lyr).
-        append("\n").
-        append(e.what());
-    throw runtime_error(msg.c_str());
+    // This will only happen in a destructor during application shutdown.
+    // So ignore it! But put something out to cerr for debugging.
+    //
+    // Maybe later this can be made a public method and called by the UI when
+    // the window is closed, then it can pop up a warning that something went 
+    // wrong!.
+    cerr << "Error saving controller state:\n" << err.what() << "\n";
   }
-
-  return toRet;
 }
 
-string const AppController::getLabel(const string& source, const string& layer)
+void AppController::loadState()
 {
-  return get<2>(srcs_.at(source)).at(layer).labelField;
-}
-
-void AppController::setLabel(const string& source, 
-  const string& layer, string label)
-{
-  auto& opts = get<2>(srcs_.at(source)).at(layer);
-  opts.labelField = label;
-}
-
-bool AppController::getPolygonDisplayedAsLine(const string& source, 
-  const string& layer) 
-{ 
-  return get<2>(srcs_.at(source)).at(layer).polyAsLine; 
-}
-
-void AppController::setPolygonDisplayedAsLine(const string& source, 
-    const string& layer, bool asLine)
-{
-  auto& opts = get<2>(srcs_.at(source)).at(layer);
-  opts.polyAsLine = asLine;
-}
-
-int AppController::getDisplayThreshold(const string& source, 
-  const string& layer) 
-{ 
-  return get<2>(srcs_.at(source)).at(layer).displayThresh; 
-}
-
-void AppController::setDisplayThreshold(const string& source, 
-    const string& layer, int thresh)
-{
-  auto& opts = get<2>(srcs_.at(source)).at(layer);
-  opts.displayThresh = thresh;
-}
-
-PlaceFileColor AppController::getColor(const string& source, 
-  const string& layer) 
-{ 
-  return get<2>(srcs_.at(source)).at(layer).color; 
-}
-
-void AppController::setColor(const string& source, 
-  const string& layer, PlaceFileColor clr)
-{
-  auto& opts = get<2>(srcs_.at(source)).at(layer);
-  opts.color = clr;
-}
-
-bool AppController::isPolygonLayer(const string & source, const string & lyr)
-{
-
+  // See saveState for file format
   try
   {
-    OGRLayer* layer = get<1>(srcs_.at(source))->GetLayerByName(lyr.c_str());
+    ifstream statefile { pathToStateFile };
 
-    // Geometry type
-    OGRwkbGeometryType geoType = wkbFlatten(layer->GetGeomType());
+    if(statefile.is_open())
+    {
+      string line;
+      getline(statefile, line);
 
-    if(geoType == wkbMultiPolygon || geoType == wkbPolygon)
-      return true;
+      while(line != "End")
+      {
+        // Check for a start of a source
+        if(line.find("Source Start: ") != string::npos)
+        {
+          // Read the next line to get the Path
+          getline(statefile, line);
+          string filePath = line.substr(6);
 
-    return false;
+          // Try adding the source, if it fails, just skip it and move on
+          string srcName;
+          try
+          {
+            srcName = addSource(filePath);
+          }
+          catch(const exception& e)
+          {
+            cerr << "Unable to load: " << filePath << "\n" << e.what() << "\n";
+            getline(statefile, line);
+            continue;
+          }
+
+          // Adding was successful - so lets parse the layers info!
+          // Get the next line!
+          getline(statefile, line);
+          // Keep parsing until end of source
+          while(line.find("Source End:") == string::npos)
+          {
+            if( line.find("Layer Start:") != string::npos)
+            {
+              string lyrName = line.substr(13);
+
+              while( line.find("Layer End: ") == string::npos)
+              {
+                // Parse labelField
+                if( line.find("labelField: ") != string::npos )
+                {
+                  string labelField = line.substr(12);
+                  setLabel(srcName, lyrName, labelField);
+                }
+                // Parse color
+                else if( line.find("color: ") != string::npos )
+                {
+                  // Get the color section of the line
+                  string colorString = line.substr(7);
+
+                  // Tokenize using a string stream
+                  stringstream ss{colorString};
+                  string buffer;
+                  vector<string> tokens;
+                  while( ss >> buffer)
+                  {
+                    tokens.push_back(buffer);
+                  }
+
+                  using uchar = unsigned char;
+                  // Convert to unsigned chars
+                  uchar red =   static_cast<uchar>(atoi(tokens[0].c_str()));
+                  uchar green = static_cast<uchar>(atoi(tokens[1].c_str()));
+                  uchar blue =  static_cast<uchar>(atoi(tokens[2].c_str()));
+
+                  setColor(srcName, lyrName, PlaceFileColor(red, green, blue));
+                }
+                // Parse poly as line
+                else if( line.find("polyAsLine: ") != string::npos )
+                {
+                  bool polyAsLine = line.find("True") != string::npos;
+                  setPolygonDisplayedAsLine(srcName, lyrName, polyAsLine);
+                }
+                // Parse visible
+                else if( line.find("visible: ") != string::npos )
+                {
+                  bool visible = line.find("True") != string::npos;
+                  get<IDX_layerInfo>(srcs_.at(srcName)).at(lyrName).visible = 
+                    visible; 
+                }
+                // Parse display threshold
+                else if( line.find("displayThresh: ") != string::npos )
+                {
+                  int dispThresh = atoi(line.substr(15).c_str());
+                  setDisplayThreshold(srcName, lyrName, dispThresh);
+                }
+                // Get the next line and keep going, look for next parameter
+                getline(statefile, line);
+              }
+              // End of layer
+            } // if Start Layer
+            // Get the next line and keep going, look for next layer
+            getline(statefile, line);
+          }
+          // End of source
+        } // if Start Source
+        // Get the next line and keep going, look for next source
+        getline(statefile, line);
+      }
+      // Reached "End"
+    }
   }
-  catch(const exception& e)
+  catch(const exception& err)
   {
-    cerr << "Error checking layer for type.\n\n" << e.what() << endl << endl;
-    return false;
+    // This will only happen in a constructor during application start up.
+    // So ignore it! But put something out to cerr for debugging.
+    //
+    // Maybe later this can be made a public method and called by the UI after 
+    // it has initialized, then it can pop up a warning that something went 
+    // wrong!.
+    cerr << "Error loading controller state:\n" << err.what() << "\n";
   }
 }

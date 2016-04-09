@@ -123,6 +123,7 @@ namespace GeoConv
     // Make sure the UI elements are consistent.
     //
     void updateUI();
+    void updateTree();
 
     //
     // Called by various menu items to add a source (e.g. shapefile, kml, .gdb)

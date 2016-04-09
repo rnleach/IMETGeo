@@ -81,6 +81,9 @@ public:
   // Determine if this layer is a polygon or not.
   bool isPolygonLayer(const string& source, const string& layer);
 
+  // Determine if this layer should be visible
+  bool isVisible(const string& source, const string& layer);
+
   // A nested class to keep track of the options associated with a layer.
   class LayerOptions
   {
@@ -115,8 +118,14 @@ private:
   // data source, and a list of layers and info about those layers.
   using LayerInfo = unordered_map<string,LayerOptions>;
   using LayerInfoPair = pair<string,LayerOptions>;
+
   using ValTuple = tuple< string, OGRDataSourceWrapper, LayerInfo >;
+  static constexpr uint IDX_path = 0;
+  static constexpr uint IDX_ogrData = 1;
+  static constexpr uint IDX_layerInfo = 2;
+  
   using SrcsPair = pair<string,ValTuple>;
+  // The actual map!
   unordered_map< string, ValTuple> srcs_;  
 
   static const string DO_NOT_USE_LAYER; // = "**Do Not Use Layer**";
@@ -125,10 +134,15 @@ private:
   // Given a layer, analyze it's properties and create a string summarizing them
   const string summarize(OGRLayer *lyr);
 
-  /*
-   *  These methods cannot throw exceptions because they are called from the
+  /* 
+   *  These methods CANNOT throw exceptions because they are called from the
    *  constructor and destructor.
+   *
+   * Call loadState in the constructor, and save state in the destructor. That
+   * way the program can remember the state it was in when shut down and try its
+   * best to return to that state when opening again.
    */
+  static const string pathToStateFile;
   void saveState();
   void loadState();
 
