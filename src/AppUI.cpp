@@ -911,7 +911,7 @@ void AppUI::updateTree()
   // destructor unblocks all the signals.
   SignalBlocker block(*this);
 
-// Get all the sources
+  // Get all the sources
   auto sources = appCon_->getSources();
 
   // For each source, get all the layers and add them in turn

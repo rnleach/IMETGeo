@@ -18,6 +18,8 @@ using std::tuple;
 
 class AppController
 {
+  using uint = unsigned int;
+  
 public:
   explicit AppController();
   ~AppController();
