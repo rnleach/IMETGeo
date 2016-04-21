@@ -233,6 +233,9 @@ void AppController::savePlaceFile(const string& fileName,
   }
   // Save the file
   pf.saveFile(fileName);
+
+  // Remember saving it!
+  lastPlaceFileSaved_ = fileName;
 }
 
 void AppController::saveKMLFile(const string & fileName)
@@ -537,25 +540,26 @@ void AppController::saveState()
 
       Line:  Value:
          0:  IMETGeo
-         1:  Source Start: srcName
-         2:  Path: path to file
-         3:  Layer Start: layerName
-         4:  labelField: labelField
-         5:  color: rrr ggg bbb
-         6:  polyAsLine: True (or False)
-         7:  visible: True (or False)
-         8:  displayThresh: integer value
-         9:  Layer End: layerName
-        10:  .......
+         1:  lastSaved: path to last placefile saved.
+         2:  Source Start: srcName
+         3:  Path: path to file
+         4:  Layer Start: layerName
+         5:  labelField: labelField
+         6:  color: rrr ggg bbb
+         7:  polyAsLine: True (or False)
+         8:  visible: True (or False)
+         9:  displayThresh: integer value
+        10:  Layer End: layerName
+        11:  .......
         . :
         . :
-        . :  repeat 3-9 for each layer
+        . :  repeat 4-10 for each layer
         . :
         . :
         m :  Source End: srcName
         . :
         . :
-        n :  Repeat 1-m for each source
+        n :  Repeat 2-m for each source
         . :
         . :
         z :  End
@@ -568,6 +572,8 @@ void AppController::saveState()
     if(statefile.is_open())
     {
       statefile << "IMETGeo\n";
+
+      statefile << "lastSaved: " << lastPlaceFileSaved_ << "\n";
 
       for(auto srcIt = srcs_.begin(); srcIt != srcs_.end(); ++srcIt)
       {
@@ -731,6 +737,13 @@ void AppController::loadState()
           }
           // End of source
         } // if Start Source
+
+        // Check for lastPlaceSaved
+        if(line.find("lastSaved:") != string::npos)
+        {
+          lastPlaceFileSaved_ = line.substr(11);
+        }
+
         // Get the next line and keep going, look for next source
         getline(statefile, line);
       }

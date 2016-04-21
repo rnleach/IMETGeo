@@ -45,6 +45,9 @@ public:
   void savePlaceFile(const string& fileName, unsigned int threshold, 
     unsigned int refreshMinutes, const string& title);
 
+  // Get the name of the last placefile saved
+  inline string getLastSavedPlaceFile() { return lastPlaceFileSaved_; }
+
   // Save a KML file
   void saveKMLFile(const string& fileName);
 
@@ -128,7 +131,7 @@ private:
   
   using SrcsPair = pair<string,ValTuple>;
   // The actual map!
-  unordered_map< string, ValTuple> srcs_;  
+  unordered_map< string, ValTuple> srcs_;
 
   static const string DO_NOT_USE_LAYER; // = "**Do Not Use Layer**";
   static const string NO_LABEL;         // = "**No Label**";
@@ -145,6 +148,7 @@ private:
    * best to return to that state when opening again.
    */
   static const string pathToStateFile;
+  string lastPlaceFileSaved_ {};
   void saveState();
   void loadState();
 

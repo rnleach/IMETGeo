@@ -629,7 +629,7 @@ bool AppUI::isSelectable(const Glib::RefPtr<Gtk::TreeModel>& model,
 void AppUI::onExportPlacefileClicked()
 {
   int result;
-  string filename;
+  string filename = appCon_->getLastSavedPlaceFile();
 
   {
     Gtk::FileChooserDialog dialog(*mainWindow_, "Save Placefile",
@@ -651,6 +651,11 @@ void AppUI::onExportPlacefileClicked()
     filter->set_name("All Files");
     filter->add_pattern("*");
     dialog.add_filter(filter);
+
+    if(filename != "")
+    {
+      dialog.set_filename(filename);
+    }
   
     //Show the dialog and wait for a user response:
     result = dialog.run();
