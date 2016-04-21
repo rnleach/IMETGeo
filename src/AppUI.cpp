@@ -251,20 +251,38 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   //
   // titleEntry_
   refBuilder->get_widget("titleText", titleEntry_);
-  if(!titleEntry_)
+  if(titleEntry_)
+  {
+    auto conn = titleEntry_->signal_changed().connect(
+      sigc::mem_fun(*this, &AppUI::onTitleChanged));
+
+    // Set default title
+    titleEntry_->set_text(appCon_->getPFTitle());
+
+    // Add to list of connections that need disabled when updating UI
+    connections_.push_back(move(conn));
+  }
+  else
   {
     throw runtime_error("Unable to connect title entry.");
   }
-  // Set default title
-  titleEntry_->set_text("Made by GeoConvert");
 
   // refreshMinutes_
   refBuilder->get_widget("refreshMinutesSpinner", refreshMinutes_);
-  if(!refreshMinutes_)
+  if(refreshMinutes_)
+  {
+    auto conn = refreshMinutes_->signal_value_changed().connect(
+      sigc::mem_fun(*this, &AppUI::onRefreshMinutesChanged));
+
+    refreshMinutes_->set_value(appCon_->getRefreshMinutes());
+
+    // Add to list of connections that need disabled when updating UI
+    connections_.push_back(move(conn));
+  }
+  else
   {
     throw runtime_error("Unable to connect refreshMinutes_.");
   }
-  refreshMinutes_->set_value(1);
 
   //
   // Connect signal handlers for the export buttons
@@ -612,6 +630,16 @@ void AppUI::onSelectionChanged()
   updateUI();
 }
 
+void AppUI::onRefreshMinutesChanged()
+{
+  appCon_->setRefreshMinutes(refreshMinutes_->get_value_as_int());
+}
+
+void AppUI::onTitleChanged()
+{
+  appCon_->setPFTitle(titleEntry_->get_text());
+}
+
 bool AppUI::isSelectable(const Glib::RefPtr<Gtk::TreeModel>& model, 
   const Gtk::TreeModel::Path& path, bool)
 {
@@ -667,15 +695,9 @@ void AppUI::onExportPlacefileClicked()
   {
     try
     {
-      // Get the refresh minutes from the UI
-      int refreshMin = refreshMinutes_->get_value_as_int();
-
-      // Get the title from the UI
-      string title = titleEntry_->get_text();
-
       // Save the placefile.
       auto future = async(launch::async, &AppController::savePlaceFile,
-        appCon_, filename, 999, refreshMin, title);
+        appCon_, filename);
       auto status = future.wait_for(chrono::milliseconds(0));
 
       Gtk::ProgressBar pb;

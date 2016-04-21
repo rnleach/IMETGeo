@@ -115,6 +115,10 @@ namespace GeoConv
     bool isSelectable(const Glib::RefPtr<Gtk::TreeModel>& model, 
         const Gtk::TreeModel::Path& path, bool);
 
+    /* Output properties */
+    void onRefreshMinutesChanged();
+    void onTitleChanged();
+
     /* Export buttons. */
     void onExportPlacefileClicked();
     void onExportKMLClicked();

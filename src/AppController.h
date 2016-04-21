@@ -42,11 +42,18 @@ public:
   string addSource(const string& path);
 
   // Save a place file
-  void savePlaceFile(const string& fileName, unsigned int threshold, 
-    unsigned int refreshMinutes, const string& title);
+  void savePlaceFile(const string& fileName);
 
   // Get the name of the last placefile saved
   inline string getLastSavedPlaceFile() { return lastPlaceFileSaved_; }
+
+  // Get/Set the title of the place file
+  inline string getPFTitle() { return pfTitle_; }
+  inline void setPFTitle(const string& newTitle) { pfTitle_ = newTitle; }
+
+  // Get/Set the refresh minutes of the place file
+  inline int getRefreshMinutes() { return refreshMinutes_; }
+  inline void setRefreshMinutes(int newVal) { refreshMinutes_ = newVal; }
 
   // Save a KML file
   void saveKMLFile(const string& fileName);
@@ -147,8 +154,10 @@ private:
    * way the program can remember the state it was in when shut down and try its
    * best to return to that state when opening again.
    */
-  static const string pathToStateFile;
+  static const string pathToStateFile_;
   string lastPlaceFileSaved_ {};
+  int refreshMinutes_  {1};
+  string pfTitle_ = "Created by IMETGeo";
   void saveState();
   void loadState();
 

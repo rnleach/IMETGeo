@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <cstdlib>
 
 #include "PlaceFileColor.h"
@@ -160,14 +161,13 @@ string AppController::addSource(const string& path)
   }
 }
 
-void AppController::savePlaceFile(const string& fileName, 
-  unsigned int threshold, unsigned int refreshMinutes, const string& title)
+void AppController::savePlaceFile(const string& fileName)
 {
   // Create a placefile to fill with data
   PlaceFile pf;
 
-  pf.setTitle(title);
-  pf.setRefreshMinutes(refreshMinutes);
+  pf.setTitle(pfTitle_);
+  pf.setRefreshMinutes(refreshMinutes_);
 
   // Add the requested layers
   for(auto sIt = srcs_.begin(); sIt != srcs_.end(); ++sIt)
@@ -531,7 +531,7 @@ const string AppController::summarize(OGRLayer * layer)
   return oss.str();
 }
 
-const string AppController::pathToStateFile = "../config/appState.txt";
+const string AppController::pathToStateFile_ = "../config/appState.txt";
 
 void AppController::saveState()
 {
@@ -541,25 +541,27 @@ void AppController::saveState()
       Line:  Value:
          0:  IMETGeo
          1:  lastSaved: path to last placefile saved.
-         2:  Source Start: srcName
-         3:  Path: path to file
-         4:  Layer Start: layerName
-         5:  labelField: labelField
-         6:  color: rrr ggg bbb
-         7:  polyAsLine: True (or False)
-         8:  visible: True (or False)
-         9:  displayThresh: integer value
-        10:  Layer End: layerName
-        11:  .......
+         2:  refreshMinutes: integer
+         3:  title: title text
+         4:  Source Start: srcName
+         5:  Path: path to file
+         6:  Layer Start: layerName
+         7:  labelField: labelField
+         8:  color: rrr ggg bbb
+         9:  polyAsLine: True (or False)
+        10:  visible: True (or False)
+        11:  displayThresh: integer value
+        12:  Layer End: layerName
+        13:  .......
         . :
         . :
-        . :  repeat 4-10 for each layer
+        . :  repeat 6-12 for each layer
         . :
         . :
         m :  Source End: srcName
         . :
         . :
-        n :  Repeat 2-m for each source
+        n :  Repeat 4-m for each source
         . :
         . :
         z :  End
@@ -567,13 +569,15 @@ void AppController::saveState()
   */
   try
   {
-    ofstream statefile (pathToStateFile, ios::trunc);
+    ofstream statefile (pathToStateFile_, ios::trunc);
 
     if(statefile.is_open())
     {
       statefile << "IMETGeo\n";
 
       statefile << "lastSaved: " << lastPlaceFileSaved_ << "\n";
+      statefile << "refreshMinutes: " << refreshMinutes_ << "\n";
+      statefile << "title: " << pfTitle_ << "\n";
 
       for(auto srcIt = srcs_.begin(); srcIt != srcs_.end(); ++srcIt)
       {
@@ -638,7 +642,7 @@ void AppController::loadState()
   // See saveState for file format
   try
   {
-    ifstream statefile { pathToStateFile };
+    ifstream statefile { pathToStateFile_ };
 
     if(statefile.is_open())
     {
@@ -737,6 +741,18 @@ void AppController::loadState()
           }
           // End of source
         } // if Start Source
+
+        // Check for refresh minutes
+        if(line.find("refreshMinutes:") != string::npos)
+        {
+          refreshMinutes_ = stoi(line.substr(16));
+        }
+
+        // Check for title
+        if(line.find("title:") != string::npos)
+        {
+          pfTitle_ = line.substr(7);
+        }
 
         // Check for lastPlaceSaved
         if(line.find("lastSaved:") != string::npos)
