@@ -157,7 +157,7 @@ private:
   static const string pathToStateFile_;
   string lastPlaceFileSaved_ {};
   int refreshMinutes_  {1};
-  string pfTitle_ = "Created by IMETGeo";
+  string pfTitle_ = "Created by PlaceFile Builder";
   void saveState();
   void loadState();
 

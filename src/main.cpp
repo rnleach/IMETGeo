@@ -11,7 +11,7 @@
  */
 int main(int argc, char** argv)
 {
-  using namespace GeoConv;
+  using namespace PFB;
 
   // Create an application controller.
   std::shared_ptr<AppController> ctr (new AppController());

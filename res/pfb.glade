@@ -50,7 +50,7 @@
     <property name="height_request">400</property>
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="title" translatable="yes">IMETGeo</property>
+    <property name="title" translatable="yes">PlaceFile Builder</property>
     <property name="default_width">600</property>
     <property name="default_height">600</property>
     <child>
@@ -394,7 +394,7 @@
                     <property name="margin_right">5</property>
                     <property name="margin_top">5</property>
                     <property name="margin_bottom">5</property>
-                    <property name="text" translatable="yes">Created by IMETGeo</property>
+                    <property name="text" translatable="yes">Created by PlaceFile Builder</property>
                     <property name="progress_pulse_step">0.089999999999999997</property>
                   </object>
                   <packing>

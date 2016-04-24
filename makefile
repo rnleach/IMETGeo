@@ -18,8 +18,8 @@ endif
 DISTDIR   = ./dist
 PROGDIR   = $(DISTDIR)/bin
 TESTDIR   = ./test/bin
-PROGNAME  = IMETGeo.exe
-TEST_NAME = IMETGeo_Unittests.exe
+PROGNAME  = PFB.exe
+TEST_NAME = PFB_Unittests.exe
 
 #
 # Source files
@@ -52,9 +52,11 @@ COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c
 #
 RESFILE = 
 WINDRES = 
+RES_SOURCE = 
 ifeq ($(SYS),mingw)
-  RESFILE += $(OBJDIR)/imetgeorc.res
-  WINDRES += windres ./src/imetgeo.rc -O coff -o $(RESFILE)
+  RES_SOURCE += ./src/pfb.rc
+  RESFILE    += $(OBJDIR)/pfbrc.res
+  WINDRES    += windres $(RES_SOURCE) -O coff -o $(RESFILE)
 endif 
 
 #
@@ -102,6 +104,7 @@ $(info COMPILE            = $(COMPILE)           )
 $(info                                           )
 
 $(info RESFILE            = $(RESFILE)           )
+$(info RES_SOURCE         = $(RES_SOURCE)        )
 $(info WINDRES            = $(WINDRES)           )
 $(info                                           )
 
@@ -149,13 +152,18 @@ test: $(OBJFILES) $(OBJFILES_TEST)
 # Build the data target
 #
 build: distDirs $(OBJFILES) $(RESFILE)
-	$(WINDRES)
 	$(LINK)
 	-ldd $(PROGDIR)/$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{}  cp -u "{}" $(PROGDIR)/
 	-cp -uR ./src/* $(DISTDIR)/Source
 	-cp -uR ./res/* $(DISTDIR)/res/
 	-cp -uR /usr/local/share/icons/* $(DISTDIR)/share/icons/
 	-cp -uR /usr/local/share/glib-2.0/schemas/* $(DISTDIR)/share/glib-2.0/schemas/
+
+#
+# Build the resource file
+#
+$(RESFILE): $(RES_SOURCE) | objDir
+	$(WINDRES)
 
 #
 # Update just my files

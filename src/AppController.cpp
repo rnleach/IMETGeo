@@ -539,7 +539,7 @@ void AppController::saveState()
       Format of file containing saved state.
 
       Line:  Value:
-         0:  IMETGeo
+         0:  PlaceFile Builder
          1:  lastSaved: path to last placefile saved.
          2:  refreshMinutes: integer
          3:  title: title text
@@ -573,7 +573,7 @@ void AppController::saveState()
 
     if(statefile.is_open())
     {
-      statefile << "IMETGeo\n";
+      statefile << "PlaceFile Builder\n";
 
       statefile << "lastSaved: " << lastPlaceFileSaved_ << "\n";
       statefile << "refreshMinutes: " << refreshMinutes_ << "\n";

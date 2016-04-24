@@ -11,12 +11,12 @@
 #include <thread>
 #include <vector>
 
-using namespace GeoConv;
+using namespace PFB;
 using namespace std;
 /*==============================================================================
  *                 Public methods for use in main
  *============================================================================*/
-GeoConv::AppUI& AppUI::getInstance(shared_ptr<AppController> ctr)
+PFB::AppUI& AppUI::getInstance(shared_ptr<AppController> ctr)
 {
   static unique_ptr<AppUI> instance;
 
@@ -75,7 +75,7 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   auto refBuilder = Gtk::Builder::create();
   try
   {
-    refBuilder->add_from_file("../res/imetgeo.glade");
+    refBuilder->add_from_file("../res/pfb.glade");
   }
   catch(const exception& ex)
   {
@@ -92,7 +92,7 @@ AppUI::AppUI(shared_ptr<AppController> ctr) :
   //
   // Set up css provider and apply css formatting to widgets.
   //
-  css_->load_from_path("../res/geo-conv.css");
+  css_->load_from_path("../res/pfb.css");
   mainWindow_->get_style_context()->add_provider_for_screen(
     Gdk::Screen::get_default(), css_, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
@@ -404,7 +404,7 @@ void AppUI::onAboutClicked()
   Gtk::AboutDialog about;
 
   // Set general information
-  about.set_program_name("IMETGeo");
+  about.set_program_name("PlaceFile Builder");
   about.set_version("1.0");
 
   // Set the author
