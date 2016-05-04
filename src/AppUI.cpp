@@ -419,7 +419,7 @@ void AppUI::onAboutClicked()
   about.set_wrap_license(true);
 
   // Load and set the logo
-  auto logo = Gdk::Pixbuf::create_from_file("../res/imet.ico");
+  auto logo = Gdk::Pixbuf::create_from_file("../res/pfbicon.ico");
   about.set_logo(logo);
 
   // Make it bigger than default behavior.
