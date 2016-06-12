@@ -1,7 +1,7 @@
 # PlaceFile Builder
 Tool to convert from common GIS formats to the placefile format used by 
-[GRlevelX](www.grlevelx.com) products, including 
-[GR2Analyst 2.00](www.grlevelx.com/gr2analyst_2/).
+[GRlevelX](http://www.grlevelx.com) products, including 
+[GR2Analyst 2.00](http://www.grlevelx.com/gr2analyst_2/).
 
 ## Development environment
 Developed on MSYS2 with the base-devel, gtkmm3, libkml, PROJ.4, and expat 
