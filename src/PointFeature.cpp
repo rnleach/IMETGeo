@@ -1,4 +1,4 @@
-#include "PointFeature.h"
+#include "PointFeature.hpp"
 
 using namespace std;
 using PFB::PointFeature;

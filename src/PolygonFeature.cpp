@@ -1,4 +1,4 @@
-#include "PolygonFeature.h"
+#include "PolygonFeature.hpp"
 
 using PFB::PolygonFeature;
 

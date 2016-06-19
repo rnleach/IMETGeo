@@ -1,12 +1,12 @@
-#include "PlaceFile.h"
+#include "PlaceFile.hpp"
 
 #include <exception>
 #include <sstream>
 
-#include "PointFeature.h"
-#include "PolygonFeature.h"
-#include "LineFeature.h"
-#include "OFileWrapper.h"
+#include "PointFeature.hpp"
+#include "PolygonFeature.hpp"
+#include "LineFeature.hpp"
+#include "OFileWrapper.hpp"
 
 using namespace std;
 using namespace PFB;

@@ -34,3 +34,5 @@ dist/
 
 # Sublime editor files
 *.sublime-workspace
+*.suo
+*.user

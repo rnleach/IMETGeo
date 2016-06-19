@@ -1,4 +1,4 @@
-#include "LineFeature.h"
+#include "LineFeature.hpp"
 #include <iomanip>
 
 using PFB::LineFeature;

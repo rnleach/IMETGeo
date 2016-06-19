@@ -1,4 +1,4 @@
-#include "AppController.h"
+#include "AppController.hpp"
 
 #include <exception>
 #include <fstream>
@@ -8,7 +8,7 @@
 #include <string>
 #include <cstdlib>
 
-#include "PlaceFileColor.h"
+#include "PlaceFileColor.hpp"
 
 #include "ogrsf_frmts.h"
 #include "ogr_api.h"
