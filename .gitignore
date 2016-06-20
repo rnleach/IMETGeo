@@ -36,3 +36,6 @@ dist/
 *.sublime-workspace
 *.suo
 *.user
+*.opendb
+*.VC.db
+PlaceFileBuilderGUI/x64/
