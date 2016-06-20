@@ -414,12 +414,12 @@ bool AppController::isVisible(const string & source, const string & lyr)
 
 AppController::LayerOptions::LayerOptions(string lField, PlaceFileColor clr,
     bool pal, bool vsbl, int dispThresh, const string smry) :
-  labelField{ lField }, 
+  labelField ( lField ), 
   color{ clr }, 
   polyAsLine{ pal },
   visible{ vsbl },
   displayThresh{ dispThresh },
-  summary {smry}
+  summary (smry)
 {}
 
 const string AppController::DO_NOT_USE_LAYER = "**Do Not Use Layer**";

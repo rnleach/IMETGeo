@@ -132,9 +132,9 @@ private:
   using LayerInfoPair = pair<string,LayerOptions>;
 
   using ValTuple = tuple< string, OGRDataSourceWrapper, LayerInfo >;
-  static constexpr uint IDX_path = 0;
-  static constexpr uint IDX_ogrData = 1;
-  static constexpr uint IDX_layerInfo = 2;
+  static const uint IDX_path = 0;
+  static const uint IDX_ogrData = 1;
+  static const uint IDX_layerInfo = 2;
   
   using SrcsPair = pair<string,ValTuple>;
   // The actual map!

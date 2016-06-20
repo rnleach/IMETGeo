@@ -20,7 +20,7 @@ PFB::LineFeature::LineFeature(const std::string& label,
 
 PFB::LineFeature::LineFeature(const string & label, const PlaceFileColor & color, 
   const std::vector<point>& coords, int dispThresh) 
-: Feature(label, color, dispThresh), _coords{ coords }{}
+: Feature(label, color, dispThresh), _coords( coords ){}
 
 PFB::LineFeature::LineFeature(const string& label, const PlaceFileColor& color,
   const OGRLineString& lineString, int dispThresh, bool forceClosed)
