@@ -4,10 +4,10 @@
 
 using namespace std;
 
-MainWindow::MainWindow(HINSTANCE hInstance) :
+MainWindow::MainWindow(HINSTANCE hInstance, int menuID) :
   wc_(), dwExStyle_{ NULL }, dwStyle_{ NULL }, xPos_{ 0 },
-  yPos_{ 0 }, width_{ 800 }, height_{ 600 }, hMenu_{ NULL },
-  hwnd_{ NULL }, hInstance_{ hInstance }, created_{ false }
+  yPos_{ 0 }, width_{ 800 }, height_{ 600 }, hwnd_{ NULL }, 
+  hInstance_{ hInstance }, created_{ false }
 {
   // Set up the window class
   wc_ = {}; // Forced zero initialization for VS2013, can't use {} in constructor.
@@ -25,6 +25,10 @@ MainWindow::MainWindow(HINSTANCE hInstance) :
 #else
   wc_.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 #endif
+  if (menuID != NULL)
+  {
+    wc_.lpszMenuName = MAKEINTRESOURCE(menuID);
+  }
 
   // No additional extended styles
 
@@ -35,7 +39,7 @@ MainWindow::MainWindow(HINSTANCE hInstance) :
 MainWindow::MainWindow(MainWindow && other) : 
   wc_(move(other.wc_)), dwExStyle_{ other.dwExStyle_ }, dwStyle_{ other.dwStyle_ },
   xPos_{ other.xPos_ }, yPos_{ other.yPos_ }, width_{ other.width_ }, 
-  height_{ other.height_ }, hMenu_{ other.hMenu_ }, hwnd_{ other.hwnd_ }, 
+  height_{ other.height_ }, hwnd_{ other.hwnd_ }, 
   hInstance_{ other.hInstance_ }, created_{other.created_}
 {
   // Update position in the map from handles to objects.
@@ -45,7 +49,7 @@ MainWindow::MainWindow(MainWindow && other) :
 MainWindow::MainWindow(const MainWindow & other) :
   wc_(other.wc_), dwExStyle_{ other.dwExStyle_ }, dwStyle_{ other.dwStyle_ },
   xPos_{ other.xPos_ }, yPos_{ other.yPos_ }, width_{ other.width_ },
-  height_{ other.height_ }, hMenu_{ other.hMenu_ }, hwnd_{ other.hwnd_ },
+  height_{ other.height_ }, hwnd_{ other.hwnd_ },
   hInstance_{ other.hInstance_ }, created_{ other.created_ }
 {
   // Update position in the map from handles to objects.
@@ -72,7 +76,7 @@ void MainWindow::create(int nCmdShow, LPTSTR title)
       width_,             // initial width of the window
       height_,            // initial height
       NULL,               // Main window, so no parent
-      hMenu_,             // Handle to menu for this window.
+      NULL,               // Handle to menu for this window
       hInstance_,         // Program instance
       NULL);              // Additional parameters for CREATESTRUCT
 
@@ -112,10 +116,6 @@ int MainWindow::run()
 }
 
 MainWindow::~MainWindow(){}
-
-HWND MainWindow::getWindowHandle() { return hwnd_; }
-
-HINSTANCE MainWindow::getInstance() { return hInstance_; }
 
 LRESULT MainWindow::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -162,7 +162,14 @@ void MainWindow::HandleFatalError(LPCTSTR file, UINT line)
 
   // Post it to user.
   TCHAR fullMessage[256];
-  _stprintf(fullMessage, _T("FATAL ERROR in file %s on line %u: %s "), file, line, errorMessage);
+  _stprintf_s(
+    fullMessage, 
+    sizeof(fullMessage)/sizeof(TCHAR),
+    _T("FATAL ERROR in file %s on line %u: %s "), 
+    file, 
+    line, 
+    errorMessage);
+
   MessageBoxEx(NULL, fullMessage, _T("FATAL ERROR"), MB_OK | MB_ICONERROR, NULL);
   ::ExitProcess(-1);
 }
