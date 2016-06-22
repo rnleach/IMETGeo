@@ -10,5 +10,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
   // Create a main window
   MainWindow mainWindow = MainWindow(hInstance);
   mainWindow.create(nCmdShow, _T("Test Title."));
-  mainWindow.run();
+
+  // Run the application!
+  return mainWindow.run();
 }
