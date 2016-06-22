@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Windows.h>
+#include <CommCtrl.h>
 #include <tchar.h>
 #include "resource.h"
 
@@ -76,6 +77,10 @@ protected:
   DWORD dwExStyle_; // Extended window style flags
   DWORD dwStyle_;   // Window style flags 
 
+  // Window and instance handles
+  HWND hwnd_;
+  HINSTANCE hInstance_;
+
   // Window position and size
   int xPos_;
   int yPos_;
@@ -85,16 +90,14 @@ protected:
   // Override this function to define your own message handler!
   virtual LRESULT WindowProc(UINT, WPARAM, LPARAM);
 
+  // Give up and die.
+  static void HandleFatalError(LPCTSTR file, UINT line);
+
 private:
-  HWND hwnd_;
-  HINSTANCE hInstance_;
   bool created_;
 
   static std::map<HWND, MainWindow*> map_;
 
   static LRESULT CALLBACK internal_WndProc(HWND, UINT, WPARAM, LPARAM);
-
-  static void HandleFatalError(LPCTSTR file, UINT line);
-  
 };
 

@@ -78,7 +78,7 @@ void MainWindow::create(int nCmdShow, LPTSTR title)
       NULL,               // Main window, so no parent
       NULL,               // Handle to menu for this window
       hInstance_,         // Program instance
-      NULL);              // Additional parameters for CREATESTRUCT
+      this);              // Additional parameters for CREATESTRUCT
 
     // Check for an error
     if (!hwnd_) { HandleFatalError(_T(__FILE__), __LINE__); }
@@ -86,9 +86,6 @@ void MainWindow::create(int nCmdShow, LPTSTR title)
     // Show the window and update it
     ShowWindow(hwnd_, nCmdShow);
     UpdateWindow(hwnd_);
-
-    // Store a pointer to this class in the static memory
-    map_[hwnd_] = this;
 
     // Remember that we created the window.
     created_ = true;
@@ -127,6 +124,15 @@ map<HWND, MainWindow*> MainWindow::map_ = map<HWND, MainWindow*>();
 
 LRESULT MainWindow::internal_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+  // Catch the WM_CREATE message to set up the map.
+  if (msg == WM_CREATE)
+  {
+    LPCREATESTRUCT cs = reinterpret_cast<LPCREATESTRUCT>(lParam);
+    MainWindow* mw = reinterpret_cast<MainWindow*>(cs->lpCreateParams);
+    map_[hwnd] = mw;
+    mw->hwnd_ = hwnd;
+  }
+
   // Find out if this is one of my windows.
   auto it = map_.find(hwnd);
   if (it != map_.end())
@@ -141,7 +147,7 @@ LRESULT MainWindow::internal_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
       return it->second->WindowProc(msg, wParam, lParam);
     }
   }
-  // If this is not one of my windows, do the usual! (Not sure how to even get here).
+  // If this is not one of my windows, do the usual!
   else
   {
     return DefWindowProc(hwnd, msg, wParam, lParam);

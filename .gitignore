@@ -40,3 +40,4 @@ dist/
 *.VC.db
 PlaceFileBuilderGUI/x64/
 *.aps
+PlaceFileBuilderGUI/Win32/
