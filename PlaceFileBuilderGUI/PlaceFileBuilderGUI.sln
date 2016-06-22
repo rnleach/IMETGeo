@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlaceFileBuilderGUI", "Plac
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D095B222-2E6B-488F-905F-EC2BB9E87E51}"
 	ProjectSection(SolutionItems) = preProject
+		..\res\Licenses.txt = ..\res\Licenses.txt
+		..\pfb.iss = ..\pfb.iss
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
