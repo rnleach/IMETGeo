@@ -1,4 +1,5 @@
 #include "MainWindow.hpp"
+
 #include <memory>
 
 using namespace std;
@@ -17,7 +18,13 @@ MainWindow::MainWindow(HINSTANCE hInstance) :
   wc_.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
   wc_.lpfnWndProc = internal_WndProc;
   wc_.hCursor = LoadCursor(NULL, IDC_ARROW);
+
+  // Check if there is a custom application icon defined, and use it if possible.
+#ifdef IDI_PRIMARY_ICON
+  wc_.hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PRIMARY_ICON), IMAGE_ICON, 16, 16, 0);
+#else
   wc_.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+#endif
 
   // No additional extended styles
 
@@ -67,7 +74,7 @@ void MainWindow::create(int nCmdShow, LPTSTR title)
       NULL,               // Main window, so no parent
       hMenu_,             // Handle to menu for this window.
       hInstance_,         // Program instance
-      NULL);              // Additional parameters to pass in to window via CREATESTRUCT
+      NULL);              // Additional parameters for CREATESTRUCT
 
     // Check for an error
     if (!hwnd_) { HandleFatalError(_T(__FILE__), __LINE__); }
