@@ -39,3 +39,4 @@ dist/
 *.opendb
 *.VC.db
 PlaceFileBuilderGUI/x64/
+*.aps

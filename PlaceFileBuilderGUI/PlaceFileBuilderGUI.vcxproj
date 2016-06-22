@@ -154,6 +154,7 @@
     <ClInclude Include="..\src\PointFeature.hpp" />
     <ClInclude Include="..\src\PolygonFeature.hpp" />
     <ClInclude Include="MainWindow.hpp" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\res\pfbicon.ico">
@@ -162,6 +163,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PlaceFileBuilderGUI.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
