@@ -21,18 +21,10 @@ AppController::AppController()
   // Initialize GDAL
   //
   OGRRegisterAll();
-
-  //
-  // Load the previous state of the controller
-  //
-  loadState();
 }
 
 AppController::~AppController()
 {
-  // Save the state of the controller for next launch...
-  saveState();
-
   // Clean up GDAL.
   OGRCleanupAll();
 }
@@ -531,9 +523,7 @@ const string AppController::summarize(OGRLayer * layer)
   return oss.str();
 }
 
-const string AppController::pathToStateFile_ = "../config/appState.txt";
-
-void AppController::saveState()
+void AppController::saveState(const string& pathToStateFile)
 {
   /*
       Format of file containing saved state.
@@ -569,7 +559,7 @@ void AppController::saveState()
   */
   try
   {
-    ofstream statefile (pathToStateFile_, ios::trunc);
+    ofstream statefile (pathToStateFile, ios::trunc);
 
     if(statefile.is_open())
     {
@@ -637,12 +627,13 @@ void AppController::saveState()
   }
 }
 
-void AppController::loadState()
+void AppController::loadState(const string& pathToStateFile)
 {
   // See saveState for file format
   try
   {
-    ifstream statefile { pathToStateFile_ };
+    // Open a stream for reading.
+    ifstream statefile { pathToStateFile };
 
     if(statefile.is_open())
     {

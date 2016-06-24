@@ -96,6 +96,11 @@ public:
   // Determine if this layer should be visible
   bool isVisible(const string& source, const string& layer);
 
+  // Give owners of this object the opportunity to save the state and reload it
+  // at the next startup. Owner determines path to the file.
+  void saveState(const string& pathToStateFile);
+  void loadState(const string& pathToStateFile);
+
   // A nested class to keep track of the options associated with a layer.
   class LayerOptions
   {
@@ -146,20 +151,10 @@ private:
   // Given a layer, analyze it's properties and create a string summarizing them
   const string summarize(OGRLayer *lyr);
 
-  /* 
-   *  These methods CANNOT throw exceptions because they are called from the
-   *  constructor and destructor.
-   *
-   * Call loadState in the constructor, and save state in the destructor. That
-   * way the program can remember the state it was in when shut down and try its
-   * best to return to that state when opening again.
-   */
-  static const string pathToStateFile_;
+   // Variables for saving parameters that affect entire PlaceFile.
   string lastPlaceFileSaved_ {};
   int refreshMinutes_  {1};
   string pfTitle_ = "Created by PlaceFile Builder";
-  void saveState();
-  void loadState();
 
 };
 
