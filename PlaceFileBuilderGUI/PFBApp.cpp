@@ -1,5 +1,9 @@
 #include "PFBApp.hpp"
 
+#include <string>
+
+using namespace std;
+
 // Control Values
 #define IDB_ADD           1001 // Add Button
 #define IDB_ADD_SHAPEFILE 1002 // Add a shapefile
@@ -22,10 +26,20 @@ PFBApp::PFBApp(HINSTANCE hInstance) :
   // Center on screen
   xPos_ = (screen_w - width_) / 2;
   yPos_ = (screen_h - height_) / 2;
+
+  // Load state from the last run of the application
+  WCHAR buff1[MAX_PATH];
+  WCHAR buff2[MAX_PATH];
+  GetModuleFileNameW(NULL, buff1, sizeof(buff1) / sizeof(WCHAR));
+  _wsplitpath_s(buff1, NULL, 0, buff2, sizeof(buff2) / sizeof(WCHAR), NULL, 0, NULL, 0);
+  pathToAppConSavedState_ = narrow(buff2) + "..\\config\\appState.txt";
+  appCon_.loadState(pathToAppConSavedState_);
 }
 
-
-PFBApp::~PFBApp(){}
+PFBApp::~PFBApp()
+{
+  appCon_.saveState(pathToAppConSavedState_);
+}
 
 LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -43,16 +57,14 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       addAction();
       break;
     case IDB_ADD_SHAPEFILE:
-      // TODO
-      MessageBox(hwnd_, _T("Add Shapefile - TODO"), _T("Good news."), MB_ICONINFORMATION | MB_OK);
+      addFileAction(FileTypes::SHP);
       break;
     case IDB_ADD_FILEGDB:
       // TODO
-      MessageBox(hwnd_, _T("Add FileGeoDatabase - TODO"), _T("Good news."), MB_ICONINFORMATION | MB_OK);
+      MessageBoxW(hwnd_, L"Add FileGeoDatabase - TODO", L"Good news.", MB_ICONINFORMATION | MB_OK);
       break;
     case IDB_ADD_KML:
-      // TODO
-      MessageBox(hwnd_, _T("Add KML - TODO"), _T("Good news."), MB_ICONINFORMATION | MB_OK);
+      addFileAction(FileTypes::KML);
       break;
     case IDB_DELETE:
       deleteAction();
@@ -62,7 +74,7 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
   }
 
   // Always check the default handling too.
-  return DefWindowProc(hwnd_, msg, wParam, lParam);
+  return DefWindowProcW(hwnd_, msg, wParam, lParam);
 }
 
 void PFBApp::buildGUI()
@@ -71,40 +83,39 @@ void PFBApp::buildGUI()
   InitCommonControls();
 
   // Create the addButton_
-  addButton_ = CreateWindowEx(
+  addButton_ = CreateWindowExW(
     NULL,
     WC_BUTTON,
-    _T("Add Source"),
+    L"Add Source",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
     5, 5, 100, 30, 
     hwnd_, 
     (HMENU)IDB_ADD, 
     NULL, NULL);
-  if (!addButton_) { HandleFatalError(_T(__FILE__), __LINE__); }
+  if (!addButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
 
   // Create the deleteButton_
-  deleteButton_ = CreateWindowEx(
+  deleteButton_ = CreateWindowExW(
     NULL,
     WC_BUTTON,
-    _T("Delete Layer"),
+    L"Delete Layer",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
     110, 5, 100, 30,
     hwnd_,
     (HMENU)IDB_DELETE,
     NULL, NULL);
-  if (!deleteButton_) { HandleFatalError(_T(__FILE__), __LINE__); }
+  if (!deleteButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
 
   // Add the treeview
-  treeView_ = CreateWindowEx(
+  treeView_ = CreateWindowExW(
     TVS_EX_AUTOHSCROLL,
     WC_TREEVIEW,
-    _T("Layers"),
+    L"Layers",
     WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_DISABLEDRAGDROP | TVS_FULLROWSELECT ,
-    5, 40, 235, 450,
+    5, 40, 290, 450,
     hwnd_,
     (HMENU)IDC_TREEVIEW,
     hInstance_, NULL);
-
 
 }
 
@@ -114,9 +125,9 @@ void PFBApp::addAction()
 
   // Create the menu items
   HMENU popUpMenu = CreatePopupMenu();
-  InsertMenu(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_SHAPEFILE, _T("Add Shapefile")       );
-  InsertMenu(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_FILEGDB,   _T("Add File GeoDatabase"));
-  InsertMenu(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_KML,       _T("Add KML/KMZ")         );
+  InsertMenuW(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_SHAPEFILE, L"Add Shapefile"       );
+  InsertMenuW(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_FILEGDB,   L"Add File GeoDatabase");
+  InsertMenuW(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_KML,       L"Add KML/KMZ"         );
 
   // Get the screen coordinates of the button
   RECT r;
@@ -127,8 +138,57 @@ void PFBApp::addAction()
   TrackPopupMenu(popUpMenu, TPM_TOPALIGN | TPM_LEFTALIGN, r.left, r.bottom, 0, hwnd_, NULL);
 }
 
+void PFBApp::addFileAction(FileTypes tp)
+{
+  // Remember the current working directory
+  MainWindow::RestoreCWD cwd{};
+
+  WCHAR finalPath[MAX_PATH] = { 0 }; // Pass via OPENFILENAME struct to get result
+  LPWSTR filters;            // File filter pattern
+
+  // Set up the file filters
+  switch (tp)
+  {
+  case FileTypes::SHP:
+    filters = L"Shapefiles\0*.shp;*.SHP\0\0";
+    break;
+  case FileTypes::KML:
+    filters = L"KML/KMZ\0*.kml;*.KML;*.kmz;*.KMZ\0\0";
+    break;
+  }
+  
+  OPENFILENAMEW ofn{ 0 };
+  ofn.lStructSize = sizeof(OPENFILENAMEW);
+  ofn.hwndOwner = hwnd_;
+  ofn.lpstrFilter = filters;
+  ofn.nFilterIndex = 1;
+  ofn.lpstrFile = finalPath;
+  ofn.nMaxFile = MAX_PATH;
+  ofn.lpstrInitialDir = L"C:\\";
+  ofn.Flags = OFN_FILEMUSTEXIST | OFN_LONGNAMES;
+
+  // Run the dialog
+  BOOL successful = GetOpenFileNameW(&ofn);
+
+  if (successful)
+  {
+    // TODO
+    MessageBoxW(hwnd_, L"TODO - load file!", L"Good News", MB_OK | MB_ICONINFORMATION);
+  }
+  else // Check if this was an error or canceled.
+  {
+    DWORD errCode = CommDlgExtendedError();
+    if (errCode != 0)
+    {
+      WCHAR errMsg[64];
+      _snwprintf_s(errMsg, sizeof(errMsg) / sizeof(WCHAR), L"Error getting file name from system: code %#06X.", errCode);
+      MessageBoxW(hwnd_, errMsg, L"ERROR", MB_OK | MB_ICONERROR);
+    }
+  }
+}
+
 void PFBApp::deleteAction()
 {
   // TODO
-  MessageBox(hwnd_, _T("Delete Button - TODO"), _T("Good news."), MB_ICONINFORMATION | MB_OK);
+  MessageBoxW(hwnd_, L"Delete Button - TODO", L"Good news.", MB_ICONINFORMATION | MB_OK);
 }

@@ -2,6 +2,9 @@
 
 #include "MainWindow.hpp"
 
+#include <string>
+using std::string;
+
 #include "../src/AppController.hpp"
 
 class PFBApp : public MainWindow
@@ -19,6 +22,7 @@ public:
 
 private:
   AppController appCon_;
+  string pathToAppConSavedState_;
 
   // Buttons
   HWND addButton_;
@@ -32,7 +36,9 @@ private:
   void buildGUI();
 
   // Button handlers
+  enum class FileTypes {SHP, KML}; // Selector for what type of file to add
   void addAction();
+  void addFileAction(FileTypes tp);
   void deleteAction();
 
 };

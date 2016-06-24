@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include <Windows.h>
 #include <CommCtrl.h>
 #include <tchar.h>
@@ -53,7 +55,7 @@ public:
   sub-class, but it is probably better to explicitly call it to be consistent 
   and clear.
   */
-  void create(int nCmdShow, LPTSTR title);
+  void create(int nCmdShow, LPWSTR title);
 
   /*
   Just implements the message loop. Call when you are ready to execute.
@@ -65,6 +67,25 @@ public:
   want to destroy them.
   */
   virtual ~MainWindow();
+
+  /*
+  Use this at the beginning of any scope that might change the current
+  directory, and when that scope exits, the current directory will be restored
+  to what it was at the beginning of the scope. This is useful when using 
+  dialogs like GetOpenFileName that will change the current directory.
+  
+  Example:
+  RestoreCWD cwd();
+  
+  */
+  class RestoreCWD
+  {
+  public:
+    explicit RestoreCWD();
+    ~RestoreCWD();
+  private:
+    WCHAR currentWorkingDirectory_[MAX_PATH];
+  };
 
 protected:
   // Window class definition
@@ -91,13 +112,18 @@ protected:
   virtual LRESULT WindowProc(UINT, WPARAM, LPARAM);
 
   // Give up and die.
-  static void HandleFatalError(LPCTSTR file, UINT line);
+  static void HandleFatalError(LPCWSTR file, UINT line);
 
 private:
   bool created_;
-
   static std::map<HWND, MainWindow*> map_;
-
   static LRESULT CALLBACK internal_WndProc(HWND, UINT, WPARAM, LPARAM);
 };
 
+/*
+Utility functions for dealing with the Windows API and UTF-16 strings.
+*/
+std::string  narrow(const wchar_t *s);
+std::wstring widen(const char *s);
+std::string  narrow(const std::wstring &s);
+std::wstring widen(const std::string &s);

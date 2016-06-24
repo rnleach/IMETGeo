@@ -13,21 +13,21 @@ MainWindow::MainWindow(HINSTANCE hInstance, int menuID) :
   wc_ = {}; // Forced zero initialization for VS2013, can't use {} in constructor.
   wc_.cbSize = sizeof(WNDCLASSEX);
   wc_.style = CS_HREDRAW | CS_VREDRAW;
-  wc_.lpszClassName = _T("MainWindow");
+  wc_.lpszClassName = L"MainWindow";
   wc_.hInstance = hInstance;
   wc_.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
   wc_.lpfnWndProc = internal_WndProc;
-  wc_.hCursor = LoadCursor(NULL, IDC_ARROW);
+  wc_.hCursor = LoadCursorW(NULL, IDC_ARROW);
 
   // Check if there is a custom application icon defined, and use it if possible.
 #ifdef IDI_PRIMARY_ICON
-  wc_.hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PRIMARY_ICON), IMAGE_ICON, 16, 16, 0);
+  wc_.hIcon = (HICON)LoadImageW(GetModuleHandleW(NULL), MAKEINTRESOURCEW(IDI_PRIMARY_ICON), IMAGE_ICON, 16, 16, 0);
 #else
-  wc_.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+  wc_.hIcon = LoadIconW(NULL, IDI_APPLICATION);
 #endif
   if (menuID != NULL)
   {
-    wc_.lpszMenuName = MAKEINTRESOURCE(menuID);
+    wc_.lpszMenuName = MAKEINTRESOURCEW(menuID);
   }
 
   // No additional extended styles
@@ -56,17 +56,17 @@ MainWindow::MainWindow(const MainWindow & other) :
   if (hwnd_) map_[hwnd_] = this;
 }
 
-void MainWindow::create(int nCmdShow, LPTSTR title)
+void MainWindow::create(int nCmdShow, LPWSTR title)
 {
   // Only try to create it once.
   if (!created_)
   {
-    ATOM wcAtom = RegisterClassEx(&wc_);
+    ATOM wcAtom = RegisterClassExW(&wc_);
 
     // Check for an error
-    if (!wcAtom) { HandleFatalError(_T(__FILE__), __LINE__); }
+    if (!wcAtom) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
 
-    hwnd_ = CreateWindowEx(
+    hwnd_ = CreateWindowExW(
       dwExStyle_,         // Extended Styles
       wc_.lpszClassName,  // Window Class Name
       title,              // Title to appear on window title bar
@@ -81,7 +81,7 @@ void MainWindow::create(int nCmdShow, LPTSTR title)
       this);              // Additional parameters for CREATESTRUCT
 
     // Check for an error
-    if (!hwnd_) { HandleFatalError(_T(__FILE__), __LINE__); }
+    if (!hwnd_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
     
     // Show the window and update it
     ShowWindow(hwnd_, nCmdShow);
@@ -101,12 +101,12 @@ int MainWindow::run()
   MSG msg;
   BOOL statusCode;
 
-  while ((statusCode = GetMessage(&msg, NULL, 0, 0)) != 0)
+  while ((statusCode = GetMessageW(&msg, NULL, 0, 0)) != 0)
   {
-    if (statusCode < 0) { HandleFatalError(_T(__FILE__), __LINE__); }
+    if (statusCode < 0) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
 
     TranslateMessage(&msg);
-    DispatchMessage(&msg);
+    DispatchMessageW(&msg);
   }
 
   return (int)msg.wParam;
@@ -117,7 +117,7 @@ MainWindow::~MainWindow(){}
 LRESULT MainWindow::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
 {
   // A really simple, boring default behavior. Please override this class!
-  return DefWindowProc(hwnd_, msg, wParam, lParam);
+  return DefWindowProcW(hwnd_, msg, wParam, lParam);
 }
 
 map<HWND, MainWindow*> MainWindow::map_ = map<HWND, MainWindow*>();
@@ -127,7 +127,7 @@ LRESULT MainWindow::internal_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
   // Catch the WM_CREATE message to set up the map.
   if (msg == WM_CREATE)
   {
-    LPCREATESTRUCT cs = reinterpret_cast<LPCREATESTRUCT>(lParam);
+    LPCREATESTRUCTW cs = reinterpret_cast<LPCREATESTRUCTW>(lParam);
     MainWindow* mw = reinterpret_cast<MainWindow*>(cs->lpCreateParams);
     map_[hwnd] = mw;
     mw->hwnd_ = hwnd;
@@ -150,15 +150,15 @@ LRESULT MainWindow::internal_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
   // If this is not one of my windows, do the usual!
   else
   {
-    return DefWindowProc(hwnd, msg, wParam, lParam);
+    return DefWindowProcW(hwnd, msg, wParam, lParam);
   }
 }
 
-void MainWindow::HandleFatalError(LPCTSTR file, UINT line)
+void MainWindow::HandleFatalError(LPCWSTR file, UINT line)
 {
   // Get the error message from the system
-  TCHAR errorMessage[128];
-  ::FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,
+  WCHAR errorMessage[128];
+  ::FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM,
     NULL,
     ::GetLastError(),
     MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -167,16 +167,64 @@ void MainWindow::HandleFatalError(LPCTSTR file, UINT line)
     NULL);
 
   // Post it to user.
-  TCHAR fullMessage[256];
-  _stprintf_s(
+  WCHAR fullMessage[256];
+  swprintf_s(
     fullMessage, 
-    sizeof(fullMessage)/sizeof(TCHAR),
-    _T("FATAL ERROR in file %s on line %u: %s "), 
+    sizeof(fullMessage)/sizeof(WCHAR),
+    L"FATAL ERROR in file %s on line %u: %s ", 
     file, 
     line, 
     errorMessage);
 
-  MessageBoxEx(NULL, fullMessage, _T("FATAL ERROR"), MB_OK | MB_ICONERROR, NULL);
+  MessageBoxExW(NULL, fullMessage, L"FATAL ERROR", MB_OK | MB_ICONERROR, NULL);
   ::ExitProcess(-1);
 }
 
+MainWindow::RestoreCWD::RestoreCWD()
+{
+  GetCurrentDirectoryW(
+    sizeof(currentWorkingDirectory_) / sizeof(WCHAR), 
+    currentWorkingDirectory_
+  );
+}
+
+MainWindow::RestoreCWD::~RestoreCWD()
+{
+  SetCurrentDirectoryW(currentWorkingDirectory_);
+}
+
+std::string narrow(const wchar_t * s)
+{
+  int numChars = WideCharToMultiByte(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, nullptr, 0, NULL, NULL);
+  if (numChars > 0)
+  {
+    unique_ptr<CHAR> buffer(new CHAR[numChars]);
+    WideCharToMultiByte(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, buffer.get(), numChars, NULL, NULL);
+    return std::string(buffer.get());
+  }
+  // TODO - better error handling
+  return std::string();
+}
+
+std::wstring widen(const char * s)
+{
+  int numChars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, nullptr, 0);
+  if (numChars > 0)
+  {
+    unique_ptr<WCHAR> buffer(new WCHAR[numChars]);
+    MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, buffer.get(), numChars);
+    return std::wstring(buffer.get());
+  }
+  // TODO - better error handling
+  return std::wstring();
+}
+
+std::string narrow(const std::wstring & s)
+{
+  return narrow(s.c_str());
+}
+
+std::wstring widen(const std::string & s)
+{
+  return widen(s.c_str());
+}
