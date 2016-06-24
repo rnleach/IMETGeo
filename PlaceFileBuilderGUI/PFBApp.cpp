@@ -140,6 +140,7 @@ void PFBApp::addAction()
 
 void PFBApp::addFileAction(FileTypes tp)
 {
+  // TODO - upgrade to IFileDialog, it can be configured open directories, then one function will open all types.
   // Remember the current working directory
   MainWindow::RestoreCWD cwd{};
 

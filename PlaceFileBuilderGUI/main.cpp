@@ -5,11 +5,16 @@ using namespace std;
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
+int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
+  DEBUG_CONSOLE;
+
+  std::cerr << "Hello Error." << std::endl;
+  std::cout << "Hello Out." << std::endl;
+
   // Create a main window
-  PFBApp mainWindow = PFBApp(hInstance);
-  mainWindow.create(nCmdShow, _T("PlaceFile Builder"));
+  PFBApp mainWindow (hInstance);
+  mainWindow.create(nCmdShow, L"PlaceFile Builder");
 
   // Run the application!
   return mainWindow.run();

@@ -127,3 +127,31 @@ std::string  narrow(const wchar_t *s);
 std::wstring widen(const char *s);
 std::string  narrow(const std::wstring &s);
 std::wstring widen(const std::string &s);
+
+/*
+Utility console to see stdout and stderr when debugging.
+*/
+#if defined(_DEBUG) && defined(WIN32) && !defined(NDEBUG)
+#pragma message("_DEBUG mode utilities being added.");
+class DebugConsole
+{
+public:
+  DebugConsole()
+  {
+    AllocConsole();
+    freopen("CONOUT$", "w", stdout);
+    freopen("CONOUT$", "w", stderr);
+  }
+
+  ~DebugConsole()
+  {
+    fclose(stderr);
+    fclose(stdout);
+    FreeConsole();
+  }
+};
+
+#define DEBUG_CONSOLE DebugConsole debugConsole;
+#else
+#define DEBUG_CONSOLE
+#endif
