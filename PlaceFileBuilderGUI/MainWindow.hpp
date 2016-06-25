@@ -68,6 +68,10 @@ public:
   */
   virtual ~MainWindow();
 
+  // Give up and die.
+  static void HandleFatalError(LPCWSTR file, UINT line);
+  static void HandleFatalComError(LPWSTR file, UINT line, HRESULT hr);
+
   /*
   Use this at the beginning of any scope that might change the current
   directory, and when that scope exits, the current directory will be restored
@@ -111,9 +115,6 @@ protected:
   // Override this function to define your own message handler!
   virtual LRESULT WindowProc(UINT, WPARAM, LPARAM);
 
-  // Give up and die.
-  static void HandleFatalError(LPCWSTR file, UINT line);
-
 private:
   bool created_;
   static std::map<HWND, MainWindow*> map_;
@@ -132,7 +133,7 @@ std::wstring widen(const std::string &s);
 Utility console to see stdout and stderr when debugging.
 */
 #if defined(_DEBUG) && defined(WIN32) && !defined(NDEBUG)
-#pragma message("_DEBUG mode utilities being added.");
+#pragma message("_DEBUG mode utilities being added.")
 class DebugConsole
 {
 public:

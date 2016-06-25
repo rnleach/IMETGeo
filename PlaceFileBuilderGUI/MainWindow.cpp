@@ -180,6 +180,21 @@ void MainWindow::HandleFatalError(LPCWSTR file, UINT line)
   ::ExitProcess(-1);
 }
 
+void MainWindow::HandleFatalComError(LPWSTR file, UINT line, HRESULT hr)
+{
+  WCHAR fullMessage[256];
+  swprintf_s(
+    fullMessage,
+    sizeof(fullMessage) / sizeof(WCHAR),
+    L"FATAL ERROR in file %s on line %u: %s ",
+    file,
+    line,
+    hr);
+
+  MessageBoxExW(NULL, fullMessage, L"FATAL ERROR", MB_OK | MB_ICONERROR, NULL);
+  ::ExitProcess(-1);
+}
+
 MainWindow::RestoreCWD::RestoreCWD()
 {
   GetCurrentDirectoryW(
