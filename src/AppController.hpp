@@ -38,7 +38,7 @@ public:
     const string& layer);
 
   // Open a file and add the resource to the project. Return the name of the 
-  // source as it would be returned in the list returned by getSource().
+  // source as it would be returned in the list returned by getSources().
   string addSource(const string& path);
 
   // Save a place file
