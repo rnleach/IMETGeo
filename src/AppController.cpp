@@ -264,7 +264,7 @@ void AppController::saveKMLFile(const string & fileName)
   }
 }
 
-void AppController::hideLayer(const string& source, const string& layer)
+bool AppController::hideLayer(const string& source, const string& layer)
 {
   auto& layers = get<IDX_layerInfo>(srcs_.at(source));
   auto& lyr = layers.at(layer);
@@ -279,7 +279,10 @@ void AppController::hideLayer(const string& source, const string& layer)
   if(!anyVisible)
   {
     deleteSource(source);
+    return true;
   }
+
+  return false;
 }
 
 void AppController::deleteSource(const string& source)

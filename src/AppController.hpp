@@ -59,8 +59,8 @@ public:
   void saveKMLFile(const string& fileName);
 
   // Cause a layer to be hidden, if all layers in a source are hidden it is
-  // deleted via deleteSource
-  void hideLayer(const string& source, const string& layer);
+  // deleted via deleteSource. Returns true if it deleted the source too.
+  bool hideLayer(const string& source, const string& layer);
 
   // Delete a source, called by hideLayer if all the layers of a source are
   // hidden.
