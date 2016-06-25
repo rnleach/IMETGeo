@@ -27,6 +27,7 @@ private:
   // Buttons
   HWND addButton_;
   HWND deleteButton_;
+  HWND deleteAllButton_;
 
   // Tree View
   HWND treeView_;
@@ -44,6 +45,7 @@ private:
   void addAction();
   void addFileAction(FileTypes tp);
   void deleteAction();
+  void deleteAllAction();
 
 };
 

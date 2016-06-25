@@ -12,11 +12,13 @@ using namespace std;
 #define IDB_ADD_FILEGDB   1003 // Add a file geo database
 #define IDB_ADD_KML       1004 // Add a KML/KMZ file
 #define IDB_DELETE        1005 // Delete button
-#define IDC_TREEVIEW      1006 // Treeview for layers
+#define IDB_DELETE_ALL    1006 // Delete all button
+#define IDC_TREEVIEW      1007 // Treeview for layers
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance, NULL }, appCon_{}, addButton_{ NULL }, 
-  deleteButton_{ NULL }, treeView_{ NULL }
+  deleteButton_{ NULL }, deleteAllButton_{ NULL }, 
+  treeView_ { NULL}
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -74,6 +76,9 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case IDB_DELETE:
       deleteAction();
       break;
+    case IDB_DELETE_ALL:
+      deleteAllAction();
+      break;
     }
     break;
   case WM_NOTIFY:
@@ -112,7 +117,7 @@ void PFBApp::buildGUI()
     WC_BUTTON,
     L"Add Source",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-    5, 5, 100, 30, 
+    5, 5, 90, 30, 
     hwnd_, 
     (HMENU)IDB_ADD, 
     NULL, NULL);
@@ -124,11 +129,23 @@ void PFBApp::buildGUI()
     WC_BUTTON,
     L"Delete Layer",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-    110, 5, 100, 30,
+    100, 5, 95, 30,
     hwnd_,
     (HMENU)IDB_DELETE,
     NULL, NULL);
   if (!deleteButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
+
+  // Create the deleteButton_
+  deleteAllButton_ = CreateWindowExW(
+    NULL,
+    WC_BUTTON,
+    L"Delete All",
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+    200, 5, 90, 30,
+    hwnd_,
+    (HMENU)IDB_DELETE_ALL,
+    NULL, NULL);
+  if (!deleteAllButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
 
   // Add the treeview
   treeView_ = CreateWindowExW(
@@ -136,7 +153,7 @@ void PFBApp::buildGUI()
     WC_TREEVIEW,
     L"Layers",
     WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | TVS_DISABLEDRAGDROP | TVS_FULLROWSELECT ,
-    5, 40, 290, 450,
+    5, 40, 280, 450,
     hwnd_,
     (HMENU)IDC_TREEVIEW,
     hInstance_, NULL);
@@ -347,6 +364,61 @@ void PFBApp::addFileAction(FileTypes tp)
 
 void PFBApp::deleteAction()
 {
-  // TODO
-  MessageBoxW(hwnd_, L"Delete Button - TODO", L"Good news.", MB_ICONINFORMATION | MB_OK);
+  // Get the currently selected item from the tree, and its parent
+  HTREEITEM hSelect = TreeView_GetSelection(treeView_);
+  HTREEITEM hParent = TreeView_GetParent(treeView_, hSelect);
+  if (hSelect == NULL || hParent == NULL) return; // Invalid selection
+
+  WCHAR selectLyr[MAX_PATH], selectSrc[MAX_PATH];
+
+  HREFTYPE hResult;
+  TVITEMW tvi{ 0 };
+  tvi.mask = TVIF_HANDLE | TVIF_TEXT;
+  tvi.hItem = hSelect;
+  tvi.pszText = selectLyr;
+  tvi.cchTextMax = MAX_PATH;
+  hResult = SendMessageW(treeView_, TVM_GETITEMW, 0, reinterpret_cast<LPARAM>(&tvi));
+  if (FAILED(hResult))
+  {
+    MessageBoxW(hwnd_, L"Failed to get selected item.", L"Error", MB_OK | MB_ICONERROR);
+    return;
+  }
+
+  tvi.hItem = hParent;
+  tvi.pszText = selectSrc;
+  hResult = SendMessageW(treeView_, TVM_GETITEMW, 0, reinterpret_cast<LPARAM>(&tvi));
+  if (FAILED(hResult))
+  {
+    MessageBoxW(hwnd_, L"Failed to get selected item parent.", L"Error", MB_OK | MB_ICONERROR);
+    return;
+  }
+
+  string layer = narrow(selectLyr);
+  string source = narrow(selectSrc);
+
+  // Delete from the app controller
+  bool deletedSource = appCon_.hideLayer(source, layer);
+
+  HTREEITEM hDelete = hSelect;
+  if (deletedSource)
+  {
+    hDelete = hParent;
+  }
+  hResult = TreeView_DeleteItem(treeView_, hDelete);
+  if (FAILED(hResult))
+  {
+    MessageBoxW(hwnd_, L"Failed to delete item from view...", L"Error", MB_OK | MB_ICONERROR);
+  }
+}
+
+void PFBApp::deleteAllAction()
+{
+  auto srcs = appCon_.getSources();
+
+  for (string src : srcs)
+  {
+    appCon_.deleteSource(src);
+  }
+
+  TreeView_DeleteAllItems(treeView_);
 }
