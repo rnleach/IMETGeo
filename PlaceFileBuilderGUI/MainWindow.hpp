@@ -151,7 +151,7 @@ public:
   }
 };
 
-#define DEBUG_CONSOLE DebugConsole debugConsole;
+#define DEBUG_CONSOLE DebugConsole debugConsole_;
 #else
 #define DEBUG_CONSOLE
 #endif

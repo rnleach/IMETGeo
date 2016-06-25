@@ -9,8 +9,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
 {
   DEBUG_CONSOLE;
 
-  std::cerr << "Hello Error." << std::endl;
-  std::cout << "Hello Out." << std::endl;
+  std::cerr << "Begin Debug: " << __FILE__ << " " << __LINE__ << std::endl;
 
   // Create a main window
   PFBApp mainWindow (hInstance);
