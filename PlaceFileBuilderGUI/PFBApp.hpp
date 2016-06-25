@@ -27,14 +27,17 @@ private:
   // Buttons
   HWND addButton_;
   HWND deleteButton_;
+
+  // Tree View
   HWND treeView_;
+  void addSrcToTree(const string& src);
+  BOOL preventSelectionChange(LPARAM lparam);
 
   // Window Procedure, handle messages here.
   LRESULT WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
 
   // Build the GUI upon receipt of the WM_CREATE message
   void buildGUI();
-  void addSrcToTree(const string& src);
 
   // Button handlers
   enum class FileTypes {SHP, KML, GDB}; // Selector for what type of file to add

@@ -41,14 +41,6 @@ PFBApp::PFBApp(HINSTANCE hInstance) :
   _wsplitpath_s(buff1, NULL, 0, buff2, sizeof(buff2) / sizeof(WCHAR), NULL, 0, NULL, 0);
   pathToAppConSavedState_ = narrow(buff2) + "..\\config\\appState.txt";
   appCon_.loadState(pathToAppConSavedState_);
-
-  // Update the GUI
-  for (const string& src : appCon_.getSources())
-  {
-    addSrcToTree(src);
-  }
-  // TODO Select first item
-  // Update rest of GUI after selecting first item.
 }
 
 PFBApp::~PFBApp()
@@ -83,6 +75,25 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       deleteAction();
       break;
     }
+    break;
+  case WM_NOTIFY:
+    // Unpack the notification
+    LPNMHDR lpnmhdr = reinterpret_cast<LPNMHDR>(lParam);
+    UINT srcID = static_cast<UINT>(wParam);
+    
+    // Check notifications from the treeView_
+    if (lpnmhdr->hwndFrom == treeView_)
+    {
+      switch (lpnmhdr->code)
+      {
+        // Check to see if we should accept the selection change
+      case TVN_SELCHANGINGW:
+        // TODO - may need to check if this is false, and just break out instead of returning, so I can get default behavior too.
+        return preventSelectionChange(lParam);
+      }
+    }
+
+    // End processing for WM_NOTIFY
     break;
   }
 
@@ -124,17 +135,109 @@ void PFBApp::buildGUI()
     TVS_EX_AUTOHSCROLL,
     WC_TREEVIEW,
     L"Layers",
-    WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_DISABLEDRAGDROP | TVS_FULLROWSELECT ,
+    WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | TVS_DISABLEDRAGDROP | TVS_FULLROWSELECT ,
     5, 40, 290, 450,
     hwnd_,
     (HMENU)IDC_TREEVIEW,
     hInstance_, NULL);
 
+  /****************************************************************************
+  * Now that everything is built, initialize the GUI with pre-loaded data.
+  ****************************************************************************/
+  for (const string& src : appCon_.getSources())
+  {
+    addSrcToTree(src);
+  }
+  // TODO Select first item
+  // Update rest of GUI after selecting first item.
+
 }
 
 void PFBApp::addSrcToTree(const string & src)
 {
-  MessageBoxW(hwnd_, widen(src).c_str(), L"Add source to tree.", MB_OK);
+  TVITEMW tvi = { 0 };
+  TVINSERTSTRUCTW tvins = { 0 };
+  HTREEITEM hSrc = (HTREEITEM)TVI_LAST;
+  HTREEITEM hti;
+
+  // Describe the item
+  tvi.mask = TVIF_TEXT | TVIF_CHILDREN | TVIF_STATE;
+  auto dst = make_unique<wchar_t[]>(src.length() + 1);
+  wcscpy(dst.get(), widen(src).c_str());
+  tvi.pszText = dst.get();
+  tvi.cchTextMax = sizeof(tvi.pszText) / sizeof(tvi.pszText[0]);
+  tvi.cChildren = 1;
+  tvi.state = TVIS_BOLD | TVIS_EXPANDED;
+  tvi.stateMask = TVIS_BOLD | TVIS_EXPANDED;
+
+  // Describe where to insert it
+  tvins.item = tvi;
+  tvins.hInsertAfter = hSrc;
+  tvins.hParent = TVI_ROOT;
+
+  // Add the item to the tree-view control. 
+  hSrc = (HTREEITEM)SendMessage(treeView_, TVM_INSERTITEM,
+    0, (LPARAM)(LPTVINSERTSTRUCT)&tvins);
+
+  // Check for an error
+  if (hSrc == NULL)
+  {
+    MessageBoxW(hwnd_, L"Error inserting item.", L"Error.", MB_OK | MB_ICONERROR);
+    return;
+  }
+
+  // Now add children nodes.
+  tvi = { 0 };
+  tvins = { 0 }; 
+  for (const string& lyr : appCon_.getLayers(src))
+  {
+    tvi.mask = TVIF_TEXT | TVIF_CHILDREN;
+    auto dst = make_unique<wchar_t[]>(lyr.length() + 1);
+    wcscpy(dst.get(), widen(lyr).c_str());
+    tvi.pszText = dst.get();
+    tvi.cchTextMax = sizeof(tvi.pszText) / sizeof(tvi.pszText[0]);
+    tvi.cChildren = 0;
+
+    // Describe where to insert it
+    tvins.item = tvi;
+    tvins.hInsertAfter = TVI_LAST;
+    tvins.hParent = hSrc;
+
+    // Add the item to the tree-view control. 
+    hti = (HTREEITEM)SendMessage(treeView_, TVM_INSERTITEM,
+      0, (LPARAM)(LPTVINSERTSTRUCT)&tvins);
+
+    if (hti == NULL)
+    {
+      MessageBoxW(hwnd_, L"Error inserting item.", L"Error.", MB_OK | MB_ICONERROR);
+      return;
+    }
+  }
+}
+
+BOOL PFBApp::preventSelectionChange(LPARAM lparam)
+{
+  LPNMTREEVIEWW lpnmTv = reinterpret_cast<LPNMTREEVIEWW>(lparam);
+
+  /* 
+  //  Code used to debug, turns out the itemNew struct only has valid values in
+  //  the lParam, hItem, and state fields.
+
+  if (lpnmTv->itemNew.cChildren == 1) return TRUE;
+
+  std::cerr << "FALSE : mask   : TVIF_CHILDREN   : " << (lpnmTv->itemNew.mask & TVIF_CHILDREN) << std::endl;
+  std::cerr << "FALSE : mask   : TVIF_DI_SETITEM : " << (lpnmTv->itemNew.mask & TVIF_DI_SETITEM) << std::endl;
+  std::cerr << "FALSE : mask   : TVIF_HANDLE     : " << (lpnmTv->itemNew.mask & TVIF_HANDLE) << std::endl;
+  std::cerr << "FALSE : mask   : TVIF_PARAM      : " << (lpnmTv->itemNew.mask & TVIF_PARAM) << std::endl;
+  std::cerr << "FALSE : lParam : " << (lpnmTv->itemNew.lParam) << std::endl;
+  std::cerr << "FALSE : mask   : TVIF_STATE      : " << (lpnmTv->itemNew.mask & TVIF_STATE) << std::endl;
+  std::cerr << "FALSE : mask   : TVIF_TEXT       : " << (lpnmTv->itemNew.mask & TVIF_TEXT) << std::endl << std::endl;
+  */
+
+  // If the new item has children, it cannot be selected.
+  if (TreeView_GetParent(treeView_, lpnmTv->itemNew.hItem) == NULL) return TRUE;
+
+  return FALSE;
 }
 
 void PFBApp::addAction()
