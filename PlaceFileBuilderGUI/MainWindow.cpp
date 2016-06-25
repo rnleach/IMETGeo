@@ -210,24 +210,23 @@ MainWindow::RestoreCWD::~RestoreCWD()
 
 std::string narrow(const wchar_t * s)
 {
-  int numChars = WideCharToMultiByte(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, nullptr, 0, NULL, NULL);
+  int numChars = WideCharToMultiByte(CP_UTF8, NULL, s, -1, nullptr, 0, NULL, NULL);
   if (numChars > 0)
   {
     unique_ptr<CHAR> buffer(new CHAR[numChars]);
-    WideCharToMultiByte(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, buffer.get(), numChars, NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, NULL, s, -1, buffer.get(), numChars, NULL, NULL);
     return std::string(buffer.get());
   }
-  // TODO - better error handling
   return std::string();
 }
 
 std::wstring widen(const char * s)
 {
-  int numChars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, nullptr, 0);
+  int numChars = MultiByteToWideChar(CP_UTF8, 0, s, -1, nullptr, 0);
   if (numChars > 0)
   {
     unique_ptr<WCHAR> buffer(new WCHAR[numChars]);
-    MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, buffer.get(), numChars);
+    MultiByteToWideChar(CP_UTF8, 0, s, -1, buffer.get(), numChars);
     return std::wstring(buffer.get());
   }
   // TODO - better error handling
