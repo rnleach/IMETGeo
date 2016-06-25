@@ -1,10 +1,10 @@
 #pragma once
 
 #include <string>
+#include <iostream>
 
 #include <Windows.h>
 #include <CommCtrl.h>
-#include <tchar.h>
 #include "resource.h"
 
 #include <map>
@@ -156,3 +156,15 @@ public:
 #else
 #define DEBUG_CONSOLE
 #endif
+
+/*
+Utility methods for dealing with COM objects.
+*/
+template <class T> void SafeRelease(T **ppT)
+{
+  if (*ppT)
+  {
+    (*ppT)->Release();
+    *ppT = NULL;
+  }
+}

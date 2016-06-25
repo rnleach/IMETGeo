@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include <Shobjidl.h>
+
 using namespace std;
 
 // Control Values
@@ -16,6 +18,11 @@ PFBApp::PFBApp(HINSTANCE hInstance) :
   MainWindow{ hInstance, NULL }, appCon_{}, addButton_{ NULL }, 
   deleteButton_{ NULL }, treeView_{ NULL }
 {
+  // Initialize COM controls
+  HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+  if (FAILED(hr)) HandleFatalComError(__FILEW__, __LINE__, hr);
+
+  // Set the width
   width_ = 600;
   height_ = 700;
 
@@ -34,17 +41,24 @@ PFBApp::PFBApp(HINSTANCE hInstance) :
   _wsplitpath_s(buff1, NULL, 0, buff2, sizeof(buff2) / sizeof(WCHAR), NULL, 0, NULL, 0);
   pathToAppConSavedState_ = narrow(buff2) + "..\\config\\appState.txt";
   appCon_.loadState(pathToAppConSavedState_);
+
+  // Update the GUI
+  for (const string& src : appCon_.getSources())
+  {
+    addSrcToTree(src);
+  }
+  // TODO Select first item
+  // Update rest of GUI after selecting first item.
 }
 
 PFBApp::~PFBApp()
 {
   appCon_.saveState(pathToAppConSavedState_);
+  CoUninitialize();
 }
 
 LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
 {
-  // Strategy, catch messages here that I want, and use them to forward to
-  // class methods.
   switch (msg)
   {
   case WM_CREATE:
@@ -60,8 +74,7 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       addFileAction(FileTypes::SHP);
       break;
     case IDB_ADD_FILEGDB:
-      // TODO
-      MessageBoxW(hwnd_, L"Add FileGeoDatabase - TODO", L"Good news.", MB_ICONINFORMATION | MB_OK);
+      addFileAction(FileTypes::GDB);
       break;
     case IDB_ADD_KML:
       addFileAction(FileTypes::KML);
@@ -119,6 +132,11 @@ void PFBApp::buildGUI()
 
 }
 
+void PFBApp::addSrcToTree(const string & src)
+{
+  MessageBoxW(hwnd_, widen(src).c_str(), L"Add source to tree.", MB_OK);
+}
+
 void PFBApp::addAction()
 {
   // Popup a menu to decide what type to add
@@ -140,41 +158,77 @@ void PFBApp::addAction()
 
 void PFBApp::addFileAction(FileTypes tp)
 {
-  // TODO - upgrade to IFileDialog, it can be configured open directories, then one function will open all types.
-  // Remember the current working directory
-  MainWindow::RestoreCWD cwd{};
+  IFileOpenDialog *pFileOpen = NULL;
+  IShellItem *pItem = NULL;
+  LPWSTR lpszFilePath = nullptr;
+  bool foundFile = false;
+  string finalPath;
 
-  WCHAR finalPath[MAX_PATH] = { 0 }; // Pass via OPENFILENAME struct to get result
-  LPWSTR filters;            // File filter pattern
+  HRESULT hr = CoCreateInstance(__uuidof(FileOpenDialog), NULL,
+    CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileOpen));
 
-  // Set up the file filters
-  switch (tp)
+  if(SUCCEEDED(hr))
   {
-  case FileTypes::SHP:
-    filters = L"Shapefiles\0*.shp;*.SHP\0\0";
-    break;
-  case FileTypes::KML:
-    filters = L"KML/KMZ\0*.kml;*.KML;*.kmz;*.KMZ\0\0";
-    break;
+    // Set up the filter types
+    COMDLG_FILTERSPEC fltr = { 0 };
+    switch (tp)
+    {
+    case FileTypes::SHP:
+      fltr.pszName = L"Shapefile";
+      fltr.pszSpec = L"*.shp;*.SHP";
+      hr = pFileOpen->SetFileTypes(1, &fltr);
+      break;
+    case FileTypes::KML:
+      fltr.pszName = L"KML/KMZ";
+      fltr.pszSpec = L"*.KML;*.KMZ;*.kmz;*.kml";
+      hr = pFileOpen->SetFileTypes(1, &fltr);
+      break;
+    case FileTypes::GDB:
+      {
+        DWORD dwOptions = NULL;
+        hr = pFileOpen->GetOptions(&dwOptions);
+        if (SUCCEEDED(hr))
+        {
+          hr = pFileOpen->SetOptions(dwOptions | FOS_PICKFOLDERS);
+        }
+      }
+      break;
+    }
   }
-  
-  OPENFILENAMEW ofn{ 0 };
-  ofn.lStructSize = sizeof(OPENFILENAMEW);
-  ofn.hwndOwner = hwnd_;
-  ofn.lpstrFilter = filters;
-  ofn.nFilterIndex = 1;
-  ofn.lpstrFile = finalPath;
-  ofn.nMaxFile = MAX_PATH;
-  ofn.lpstrInitialDir = L"C:\\";
-  ofn.Flags = OFN_FILEMUSTEXIST | OFN_LONGNAMES;
-
-  // Run the dialog
-  BOOL successful = GetOpenFileNameW(&ofn);
-
-  if (successful)
+  if(SUCCEEDED(hr))
   {
-    // TODO
-    MessageBoxW(hwnd_, L"TODO - load file!", L"Good News", MB_OK | MB_ICONINFORMATION);
+    hr = pFileOpen->Show(NULL);
+  }
+  if(SUCCEEDED(hr))
+  {
+    hr = pFileOpen->GetResult(&pItem);
+  }
+  if(SUCCEEDED(hr))
+  {
+    hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &lpszFilePath);
+  }
+  if(SUCCEEDED(hr))
+  {
+    finalPath = narrow(lpszFilePath);
+    foundFile = true;
+  }
+
+  // Clean up.
+  SafeRelease(&pItem);
+  SafeRelease(&pFileOpen);
+  CoTaskMemFree(lpszFilePath);
+
+  if(foundFile)
+  {
+    try
+    {
+      string addedSrc = appCon_.addSource(finalPath);
+      addSrcToTree(addedSrc);
+    }
+    catch (const runtime_error& e)
+    {
+      MessageBoxW(hwnd_, widen(e.what()).c_str(), L"ERROR!", MB_OK | MB_ICONEXCLAMATION);
+    }
   }
   else // Check if this was an error or canceled.
   {

@@ -34,9 +34,10 @@ private:
 
   // Build the GUI upon receipt of the WM_CREATE message
   void buildGUI();
+  void addSrcToTree(const string& src);
 
   // Button handlers
-  enum class FileTypes {SHP, KML}; // Selector for what type of file to add
+  enum class FileTypes {SHP, KML, GDB}; // Selector for what type of file to add
   void addAction();
   void addFileAction(FileTypes tp);
   void deleteAction();
