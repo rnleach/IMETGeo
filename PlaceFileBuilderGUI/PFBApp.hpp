@@ -40,6 +40,7 @@ private:
   HWND labelFieldComboBox_;
   HWND colorButton_;
   HBRUSH colorButtonColor_;
+  HWND fillPolygonsCheck_;
 
   // Window Procedure, handle messages here.
   LRESULT WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
@@ -57,5 +58,6 @@ private:
   void deleteAllAction_();
   void labelFieldCommandAction_(WPARAM wParam, LPARAM lParam);
   void colorButtonAction();
+  void fillPolygonsCheckAction();
 
 };

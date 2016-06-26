@@ -17,13 +17,13 @@ using namespace std;
 #define IDC_TREEVIEW      1007 // Treeview for layers
 #define IDC_COMBO_LABEL   1008 // Combo box for layer label field
 #define IDB_COLOR_BUTTON  1009 // Choose the color of the features
+#define IDB_POLYGON_CHECK 1010 // Fill polygons check button
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance, NULL }, appCon_{}, addButton_{ NULL }, 
   deleteButton_{ NULL }, deleteAllButton_{ NULL }, treeView_{ NULL }, 
-  labelFieldComboBox_{ NULL }, colorButton_{ NULL }, colorButtonColor_ {
-  NULL
-}
+  labelFieldComboBox_{ NULL }, colorButton_{ NULL }, colorButtonColor_{ NULL },
+  fillPolygonsCheck_{ NULL }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -90,6 +90,9 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       break;
     case IDB_COLOR_BUTTON:
       colorButtonAction();
+      break;
+    case IDB_POLYGON_CHECK:
+      fillPolygonsCheckAction();
       break;
     }
     break;
@@ -252,6 +255,30 @@ void PFBApp::buildGUI_()
 
   // TODO add the line width control
 
+  // Add label for the Fill Polygons checkbox controller.
+  temp = CreateWindowExW(
+    NULL,
+    WC_STATICW,
+    L"Fill Polygons:",
+    WS_VISIBLE | WS_CHILD | SS_RIGHT,
+    middleBorder + 5, 145 + 6, labelFieldsWidth, 30,
+    hwnd_,
+    NULL,
+    NULL, NULL);
+  if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add the checkbox
+  // Create the addButton_
+  fillPolygonsCheck_ = CreateWindowExW(
+    NULL,
+    WC_BUTTON,
+    L"",
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
+    middleBorder + 110, 145, 30, 30,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDB_POLYGON_CHECK),
+    NULL, NULL);
+  if (!fillPolygonsCheck_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
   /****************************************************************************
   * Now that everything is built, initialize the GUI with pre-loaded data.
   ****************************************************************************/
@@ -296,6 +323,12 @@ void PFBApp::updatePropertyControls_()
   // Update the lineWidthSelector_
   //
   // TODO
+
+  //
+  // Update the Filled Polygon checkbox
+  //
+  bool checked = !appCon_.getPolygonDisplayedAsLine(source, layer);
+  Button_SetCheck(fillPolygonsCheck_, checked);
   
   // TODO more
 }
@@ -675,4 +708,21 @@ void PFBApp::colorButtonAction()
   }
   appCon_.setColor(source, layer, PlaceFileColor(GetRValue(cc.rgbResult), GetGValue(cc.rgbResult), GetBValue(cc.rgbResult)));
   InvalidateRect(colorButton_, NULL, TRUE);
+}
+
+void PFBApp::fillPolygonsCheckAction()
+{
+  // Get the status of the box
+  bool checked = Button_GetCheck(fillPolygonsCheck_) == BST_CHECKED;
+
+  // Get the layer info to change
+  string source, layer;
+  bool success = getSourceLayerFromTree_(source, layer);
+  if (!success)
+  {
+    MessageBoxW(hwnd_, L"Error getting info from tree.", L"Error", MB_OK | MB_ICONERROR);
+    return;
+  }
+
+  appCon_.setPolygonDisplayedAsLine(source, layer, !checked);
 }
