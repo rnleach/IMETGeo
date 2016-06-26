@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include <Windows.h>
+#include <Windowsx.h>
 #include <CommCtrl.h>
 #include "resource.h"
 
