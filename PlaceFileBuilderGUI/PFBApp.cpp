@@ -196,7 +196,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Label Field:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 40, labelFieldsWidth, 30,
+    middleBorder + 5, 40 + 7, labelFieldsWidth, 30,
     hwnd_,
     NULL,
     NULL, NULL);
@@ -220,7 +220,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Color:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 75, labelFieldsWidth, 30,
+    middleBorder + 5, 75 + 6, labelFieldsWidth, 30,
     hwnd_,
     NULL,
     NULL, NULL);
@@ -237,6 +237,20 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDB_COLOR_BUTTON),
     NULL, NULL);
   if (!colorButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
+
+  // Add label for the 'Line Width' controller.
+  temp = CreateWindowExW(
+    NULL,
+    WC_STATICW,
+    L"Line Width:",
+    WS_VISIBLE | WS_CHILD | SS_RIGHT,
+    middleBorder + 5, 110 + 6, labelFieldsWidth, 30,
+    hwnd_,
+    NULL,
+    NULL, NULL);
+  if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // TODO add the line width control
 
   /****************************************************************************
   * Now that everything is built, initialize the GUI with pre-loaded data.
@@ -277,6 +291,11 @@ void PFBApp::updatePropertyControls_()
   // Update the colorButton_
   //
   InvalidateRect(colorButton_, NULL, TRUE);
+
+  //
+  // Update the lineWidthSelector_
+  //
+  // TODO
   
   // TODO more
 }
