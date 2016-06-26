@@ -31,21 +31,28 @@ private:
 
   // Tree View
   HWND treeView_;
-  void addSrcToTree(const string& src);
-  BOOL preventSelectionChange(LPARAM lparam);
+  HTREEITEM addSrcToTree_(const string& src); // Returns handle to last layer added or NULL on error.
+  BOOL preventSelectionChange_(LPARAM lparam);
+  bool getTreeItemText_(HTREEITEM hti, string& text);
+  bool getSourceLayerFromTree_(string& source, string& layer);
+
+  // Controls for properties on the right
+  HWND labelFieldComboBox_;
 
   // Window Procedure, handle messages here.
   LRESULT WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
 
   // Build the GUI upon receipt of the WM_CREATE message
-  void buildGUI();
+  void buildGUI_();
+  void updatePropertyControls_();
 
   // Button handlers
-  enum class FileTypes {SHP, KML, GDB}; // Selector for what type of file to add
-  void addAction();
-  void addFileAction(FileTypes tp);
-  void deleteAction();
-  void deleteAllAction();
+  enum class FileTypes_ {SHP, KML, GDB}; // Selector for what type of file to add
+  void addAction_();
+  void addFileAction_(FileTypes_ tp);
+  void deleteAction_();
+  void deleteAllAction_();
+  void labelFieldCommandAction_(WPARAM wParam, LPARAM lParam);
 
 };
 

@@ -14,11 +14,12 @@ using namespace std;
 #define IDB_DELETE        1005 // Delete button
 #define IDB_DELETE_ALL    1006 // Delete all button
 #define IDC_TREEVIEW      1007 // Treeview for layers
+#define IDC_COMBO_LABEL   1008 // Combo box for layer label field
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance, NULL }, appCon_{}, addButton_{ NULL }, 
   deleteButton_{ NULL }, deleteAllButton_{ NULL }, 
-  treeView_ { NULL}
+  treeView_{ NULL }, labelFieldComboBox_{ NULL }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -56,28 +57,31 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
   switch (msg)
   {
   case WM_CREATE:
-    buildGUI();
+    buildGUI_();
     break;
   case WM_COMMAND:
     switch (LOWORD(wParam))
     {
     case IDB_ADD:
-      addAction();
+      addAction_();
       break;
     case IDB_ADD_SHAPEFILE:
-      addFileAction(FileTypes::SHP);
+      addFileAction_(FileTypes_::SHP);
       break;
     case IDB_ADD_FILEGDB:
-      addFileAction(FileTypes::GDB);
+      addFileAction_(FileTypes_::GDB);
       break;
     case IDB_ADD_KML:
-      addFileAction(FileTypes::KML);
+      addFileAction_(FileTypes_::KML);
       break;
     case IDB_DELETE:
-      deleteAction();
+      deleteAction_();
       break;
     case IDB_DELETE_ALL:
-      deleteAllAction();
+      deleteAllAction_();
+      break;
+    case IDC_COMBO_LABEL:
+      labelFieldCommandAction_(wParam, lParam);
       break;
     }
     break;
@@ -93,8 +97,10 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       {
         // Check to see if we should accept the selection change
       case TVN_SELCHANGINGW:
-        // TODO - may need to check if this is false, and just break out instead of returning, so I can get default behavior too.
-        return preventSelectionChange(lParam);
+        return preventSelectionChange_(lParam);
+      case TVN_SELCHANGEDW:
+        updatePropertyControls_();
+        break;
       }
     }
 
@@ -106,10 +112,14 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
   return DefWindowProcW(hwnd_, msg, wParam, lParam);
 }
 
-void PFBApp::buildGUI()
+void PFBApp::buildGUI_()
 {
-  // Initialize common controls
-  InitCommonControls();
+  // Handle for checking error status of some window creations.
+  HWND temp = NULL;
+
+  // All objects right of the tree can use this position as a reference
+  const int middleBorder = 295;
+  const int labelFieldsWidth = 100;
 
   // Create the addButton_
   addButton_ = CreateWindowExW(
@@ -117,9 +127,9 @@ void PFBApp::buildGUI()
     WC_BUTTON,
     L"Add Source",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-    5, 5, 90, 30, 
-    hwnd_, 
-    (HMENU)IDB_ADD, 
+    5, 5, 90, 30,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDB_ADD),
     NULL, NULL);
   if (!addButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
 
@@ -131,9 +141,9 @@ void PFBApp::buildGUI()
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
     100, 5, 95, 30,
     hwnd_,
-    (HMENU)IDB_DELETE,
+    reinterpret_cast<HMENU>(IDB_DELETE),
     NULL, NULL);
-  if (!deleteButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
+  if (!deleteButton_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Create the deleteButton_
   deleteAllButton_ = CreateWindowExW(
@@ -143,34 +153,84 @@ void PFBApp::buildGUI()
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
     200, 5, 90, 30,
     hwnd_,
-    (HMENU)IDB_DELETE_ALL,
+    reinterpret_cast<HMENU>(IDB_DELETE_ALL),
     NULL, NULL);
-  if (!deleteAllButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
+  if (!deleteAllButton_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add the treeview
   treeView_ = CreateWindowExW(
     TVS_EX_AUTOHSCROLL,
     WC_TREEVIEW,
     L"Layers",
-    WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | TVS_DISABLEDRAGDROP | TVS_FULLROWSELECT ,
-    5, 40, 280, 450,
+    WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | TVS_DISABLEDRAGDROP | TVS_FULLROWSELECT | TVS_SHOWSELALWAYS,
+    5, 40, 285, 450,
     hwnd_,
-    (HMENU)IDC_TREEVIEW,
-    hInstance_, NULL);
+    reinterpret_cast<HMENU>(IDC_TREEVIEW),
+    NULL, NULL);
+  if (!treeView_) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add label for the 'Label Field' controller.
+  temp = CreateWindowExW(
+    NULL,
+    WC_STATICW,
+    L"Label Field:",
+    WS_VISIBLE | WS_CHILD | SS_RIGHT,
+    middleBorder + 5, 40, labelFieldsWidth, 30,
+    hwnd_,
+    NULL,
+    NULL, NULL);
+  if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add labelFieldComboBox_
+  labelFieldComboBox_ = CreateWindowExW(
+    NULL,
+    WC_COMBOBOXW,
+    L"",
+    WS_VISIBLE | WS_CHILD | CBS_AUTOHSCROLL| CBS_DROPDOWNLIST | WS_HSCROLL | WS_VSCROLL,
+    middleBorder + 110, 40, 175, 500, // Height also includes dropdown box
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_COMBO_LABEL),
+    NULL, NULL);
+  if (!labelFieldComboBox_) { HandleFatalError(__FILEW__, __LINE__); }
 
   /****************************************************************************
   * Now that everything is built, initialize the GUI with pre-loaded data.
   ****************************************************************************/
-  for (const string& src : appCon_.getSources())
+  vector<string> sources = appCon_.getSources();
+  for (int i = 0; i < sources.size(); i++)
   {
-    addSrcToTree(src);
-  }
-  // TODO Select first item
-  // Update rest of GUI after selecting first item.
+    HTREEITEM tmp = addSrcToTree_(sources[i]);
 
+    if (i == 0) TreeView_Select(treeView_, tmp, TVGN_CARET);
+  }
 }
 
-void PFBApp::addSrcToTree(const string & src)
+void PFBApp::updatePropertyControls_()
+{
+  // Get the currently selected source/layer
+  string layer, source;
+  bool success = getSourceLayerFromTree_(source, layer);
+
+  if (!success)
+  {
+    MessageBoxW(hwnd_, L"Failed to delete layer.", L"Error", MB_OK | MB_ICONERROR);
+    return;
+  }
+
+  //
+  // Update the labelFieldComboBox_
+  //
+  auto fields = appCon_.getFields(source, layer);
+  ComboBox_ResetContent(labelFieldComboBox_);
+  for (string field: fields)
+  {
+    ComboBox_AddString(labelFieldComboBox_, widen(field).c_str());
+  }
+  ComboBox_SelectString(labelFieldComboBox_, -1, widen(appCon_.getLabel(source, layer)).c_str());
+  // TODO more
+}
+
+HTREEITEM PFBApp::addSrcToTree_(const string & src)
 {
   TVITEMW tvi = { 0 };
   TVINSERTSTRUCTW tvins = { 0 };
@@ -200,7 +260,7 @@ void PFBApp::addSrcToTree(const string & src)
   if (hSrc == NULL)
   {
     MessageBoxW(hwnd_, L"Error inserting item.", L"Error.", MB_OK | MB_ICONERROR);
-    return;
+    return NULL;
   }
 
   // Now add children nodes.
@@ -227,12 +287,14 @@ void PFBApp::addSrcToTree(const string & src)
     if (hti == NULL)
     {
       MessageBoxW(hwnd_, L"Error inserting item.", L"Error.", MB_OK | MB_ICONERROR);
-      return;
+      return NULL;
     }
   }
+
+  return hti;
 }
 
-BOOL PFBApp::preventSelectionChange(LPARAM lparam)
+BOOL PFBApp::preventSelectionChange_(LPARAM lparam)
 {
   LPNMTREEVIEWW lpnmTv = reinterpret_cast<LPNMTREEVIEWW>(lparam);
 
@@ -257,7 +319,51 @@ BOOL PFBApp::preventSelectionChange(LPARAM lparam)
   return FALSE;
 }
 
-void PFBApp::addAction()
+bool PFBApp::getTreeItemText_(HTREEITEM hti, string& src)
+{
+  WCHAR itemChars[MAX_PATH];
+
+  HREFTYPE hResult;
+  TVITEMW tvi{ 0 };
+  tvi.mask = TVIF_HANDLE | TVIF_TEXT;
+  tvi.hItem = hti;
+  tvi.pszText = itemChars;
+  tvi.cchTextMax = MAX_PATH;
+  hResult = SendMessageW(treeView_, TVM_GETITEMW, 0, reinterpret_cast<LPARAM>(&tvi));
+  if (FAILED(hResult))
+  {
+    MessageBoxW(hwnd_, L"Failed to get item text.", L"Error", MB_OK | MB_ICONERROR);
+    return false;
+  }
+
+  src = narrow(itemChars);
+
+  return true;
+}
+
+bool PFBApp::getSourceLayerFromTree_(string & source, string & layer)
+{
+  // Get the currently selected item from the tree, and its parent
+  HTREEITEM hSelect = TreeView_GetSelection(treeView_);
+  HTREEITEM hParent = TreeView_GetParent(treeView_, hSelect);
+  if (hSelect == NULL || hParent == NULL) // Invalid selection
+  {
+    MessageBoxW(hwnd_, L"Invalid Selection in tree.", L"Error", MB_OK | MB_ICONERROR);
+    return false;
+  }
+
+  bool success = getTreeItemText_(hSelect, layer);
+  success &= getTreeItemText_(hParent, source);
+
+  if (!success)
+  {
+    MessageBoxW(hwnd_, L"Failed to delete layer.", L"Error", MB_OK | MB_ICONERROR);
+  }
+
+  return success;
+}
+
+void PFBApp::addAction_()
 {
   // Popup a menu to decide what type to add
 
@@ -276,7 +382,7 @@ void PFBApp::addAction()
   TrackPopupMenu(popUpMenu, TPM_TOPALIGN | TPM_LEFTALIGN, r.left, r.bottom, 0, hwnd_, NULL);
 }
 
-void PFBApp::addFileAction(FileTypes tp)
+void PFBApp::addFileAction_(FileTypes_ tp)
 {
   IFileOpenDialog *pFileOpen = NULL;
   IShellItem *pItem = NULL;
@@ -293,17 +399,17 @@ void PFBApp::addFileAction(FileTypes tp)
     COMDLG_FILTERSPEC fltr = { 0 };
     switch (tp)
     {
-    case FileTypes::SHP:
+    case FileTypes_::SHP:
       fltr.pszName = L"Shapefile";
       fltr.pszSpec = L"*.shp;*.SHP";
       hr = pFileOpen->SetFileTypes(1, &fltr);
       break;
-    case FileTypes::KML:
+    case FileTypes_::KML:
       fltr.pszName = L"KML/KMZ";
       fltr.pszSpec = L"*.KML;*.KMZ;*.kmz;*.kml";
       hr = pFileOpen->SetFileTypes(1, &fltr);
       break;
-    case FileTypes::GDB:
+    case FileTypes_::GDB:
       {
         DWORD dwOptions = NULL;
         hr = pFileOpen->GetOptions(&dwOptions);
@@ -343,7 +449,7 @@ void PFBApp::addFileAction(FileTypes tp)
     try
     {
       string addedSrc = appCon_.addSource(finalPath);
-      addSrcToTree(addedSrc);
+      addSrcToTree_(addedSrc);
     }
     catch (const runtime_error& e)
     {
@@ -362,39 +468,23 @@ void PFBApp::addFileAction(FileTypes tp)
   }
 }
 
-void PFBApp::deleteAction()
+void PFBApp::deleteAction_()
 {
   // Get the currently selected item from the tree, and its parent
   HTREEITEM hSelect = TreeView_GetSelection(treeView_);
   HTREEITEM hParent = TreeView_GetParent(treeView_, hSelect);
   if (hSelect == NULL || hParent == NULL) return; // Invalid selection
 
-  WCHAR selectLyr[MAX_PATH], selectSrc[MAX_PATH];
+  string layer;
+  string source;
+  bool success = getTreeItemText_(hSelect, layer);
+  success &= getTreeItemText_(hParent, source);
 
-  HREFTYPE hResult;
-  TVITEMW tvi{ 0 };
-  tvi.mask = TVIF_HANDLE | TVIF_TEXT;
-  tvi.hItem = hSelect;
-  tvi.pszText = selectLyr;
-  tvi.cchTextMax = MAX_PATH;
-  hResult = SendMessageW(treeView_, TVM_GETITEMW, 0, reinterpret_cast<LPARAM>(&tvi));
-  if (FAILED(hResult))
+  if (!success)
   {
-    MessageBoxW(hwnd_, L"Failed to get selected item.", L"Error", MB_OK | MB_ICONERROR);
+    MessageBoxW(hwnd_, L"Failed to delete layer.", L"Error", MB_OK | MB_ICONERROR);
     return;
   }
-
-  tvi.hItem = hParent;
-  tvi.pszText = selectSrc;
-  hResult = SendMessageW(treeView_, TVM_GETITEMW, 0, reinterpret_cast<LPARAM>(&tvi));
-  if (FAILED(hResult))
-  {
-    MessageBoxW(hwnd_, L"Failed to get selected item parent.", L"Error", MB_OK | MB_ICONERROR);
-    return;
-  }
-
-  string layer = narrow(selectLyr);
-  string source = narrow(selectSrc);
 
   // Delete from the app controller
   bool deletedSource = appCon_.hideLayer(source, layer);
@@ -404,14 +494,13 @@ void PFBApp::deleteAction()
   {
     hDelete = hParent;
   }
-  hResult = TreeView_DeleteItem(treeView_, hDelete);
-  if (FAILED(hResult))
+  if (FAILED(TreeView_DeleteItem(treeView_, hDelete)))
   {
     MessageBoxW(hwnd_, L"Failed to delete item from view...", L"Error", MB_OK | MB_ICONERROR);
   }
 }
 
-void PFBApp::deleteAllAction()
+void PFBApp::deleteAllAction_()
 {
   auto srcs = appCon_.getSources();
 
@@ -421,4 +510,39 @@ void PFBApp::deleteAllAction()
   }
 
   TreeView_DeleteAllItems(treeView_);
+}
+
+void PFBApp::labelFieldCommandAction_(WPARAM wParam, LPARAM lParam)
+{
+  // Process selection change
+  if (HIWORD(wParam) == CBN_SELCHANGE)
+  {
+    // Get the new selected text.
+    int selectedIndex = ComboBox_GetCurSel(labelFieldComboBox_);
+    if (selectedIndex == CB_ERR)
+    {
+      MessageBoxW(hwnd_, L"Error getting selected label index.", L"Error.", MB_OK | MB_ICONERROR);
+      return;
+    }
+    size_t sz = ComboBox_GetLBTextLen(labelFieldComboBox_, selectedIndex);
+    unique_ptr<WCHAR> selectedText (new WCHAR[sz + 1]); // RAII to recover memory
+    sz = ComboBox_GetLBText(labelFieldComboBox_, selectedIndex, selectedText.get());
+    if (selectedIndex == CB_ERR)
+    {
+      MessageBoxW(hwnd_, L"Error getting selected label index.", L"Error.", MB_OK | MB_ICONERROR);
+      return;
+    }
+    string label = narrow(selectedText.get());
+
+    // Get the currently selected source/layer
+    string layer, source;
+    bool success = getSourceLayerFromTree_(source, layer);
+    if (!success)
+    {
+      MessageBoxW(hwnd_, L"Failed to get info from tree.", L"Error", MB_OK | MB_ICONERROR);
+      return;
+    }
+
+    appCon_.setLabel(source, layer, label);
+  }
 }
