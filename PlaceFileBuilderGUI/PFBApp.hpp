@@ -38,6 +38,8 @@ private:
 
   // Controls for properties on the right
   HWND labelFieldComboBox_;
+  HWND colorButton_;
+  HBRUSH colorButtonColor_;
 
   // Window Procedure, handle messages here.
   LRESULT WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
@@ -45,6 +47,7 @@ private:
   // Build the GUI upon receipt of the WM_CREATE message
   void buildGUI_();
   void updatePropertyControls_();
+  void updateColorButton_(LPARAM lparam);
 
   // Button handlers
   enum class FileTypes_ {SHP, KML, GDB}; // Selector for what type of file to add
@@ -53,5 +56,6 @@ private:
   void deleteAction_();
   void deleteAllAction_();
   void labelFieldCommandAction_(WPARAM wParam, LPARAM lParam);
+  void colorButtonAction();
 
 };

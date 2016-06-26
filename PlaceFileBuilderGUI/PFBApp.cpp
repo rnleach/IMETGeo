@@ -1,4 +1,5 @@
 #include "PFBApp.hpp"
+#include "../src/PlaceFileColor.hpp"
 
 #include <string>
 
@@ -15,11 +16,14 @@ using namespace std;
 #define IDB_DELETE_ALL    1006 // Delete all button
 #define IDC_TREEVIEW      1007 // Treeview for layers
 #define IDC_COMBO_LABEL   1008 // Combo box for layer label field
+#define IDB_COLOR_BUTTON  1009 // Choose the color of the features
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance, NULL }, appCon_{}, addButton_{ NULL }, 
-  deleteButton_{ NULL }, deleteAllButton_{ NULL }, 
-  treeView_{ NULL }, labelFieldComboBox_{ NULL }
+  deleteButton_{ NULL }, deleteAllButton_{ NULL }, treeView_{ NULL }, 
+  labelFieldComboBox_{ NULL }, colorButton_{ NULL }, colorButtonColor_ {
+  NULL
+}
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -49,6 +53,7 @@ PFBApp::PFBApp(HINSTANCE hInstance) :
 PFBApp::~PFBApp()
 {
   appCon_.saveState(pathToAppConSavedState_);
+  DeleteObject(colorButtonColor_);
   CoUninitialize();
 }
 
@@ -83,29 +88,45 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case IDC_COMBO_LABEL:
       labelFieldCommandAction_(wParam, lParam);
       break;
+    case IDB_COLOR_BUTTON:
+      colorButtonAction();
+      break;
     }
     break;
   case WM_NOTIFY:
-    // Unpack the notification
-    LPNMHDR lpnmhdr = reinterpret_cast<LPNMHDR>(lParam);
-    UINT srcID = static_cast<UINT>(wParam);
-    
-    // Check notifications from the treeView_
-    if (lpnmhdr->hwndFrom == treeView_)
     {
-      switch (lpnmhdr->code)
+      // Unpack the notification
+      LPNMHDR lpnmhdr = reinterpret_cast<LPNMHDR>(lParam);
+      UINT srcID = static_cast<UINT>(wParam);
+
+      // Check notifications from the treeView_
+      if (lpnmhdr->hwndFrom == treeView_)
       {
-        // Check to see if we should accept the selection change
-      case TVN_SELCHANGINGW:
-        return preventSelectionChange_(lParam);
-      case TVN_SELCHANGEDW:
-        updatePropertyControls_();
+        switch (lpnmhdr->code)
+        {
+          // Check to see if we should accept the selection change
+        case TVN_SELCHANGINGW:
+          return preventSelectionChange_(lParam);
+        case TVN_SELCHANGEDW:
+          updatePropertyControls_();
+          break;
+        }
+      }
+    }
+    // End processing for WM_NOTIFY
+    break;
+  case WM_DRAWITEM:
+    {
+      switch (wParam)
+      {
+      case IDB_COLOR_BUTTON:
+        updateColorButton_(lParam);
         break;
       }
     }
-
-    // End processing for WM_NOTIFY
     break;
+  case WM_CTLCOLORBTN:
+    return reinterpret_cast<LRESULT>(GetSysColorBrush(COLOR_3DFACE));
   }
 
   // Always check the default handling too.
@@ -138,7 +159,7 @@ void PFBApp::buildGUI_()
     NULL,
     WC_BUTTON,
     L"Delete Layer",
-    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD,
     100, 5, 95, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_DELETE),
@@ -150,7 +171,7 @@ void PFBApp::buildGUI_()
     NULL,
     WC_BUTTON,
     L"Delete All",
-    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD,
     200, 5, 90, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_DELETE_ALL),
@@ -193,6 +214,30 @@ void PFBApp::buildGUI_()
     NULL, NULL);
   if (!labelFieldComboBox_) { HandleFatalError(__FILEW__, __LINE__); }
 
+  // Add label for the 'Feature Color' controller.
+  temp = CreateWindowExW(
+    NULL,
+    WC_STATICW,
+    L"Color:",
+    WS_VISIBLE | WS_CHILD | SS_RIGHT,
+    middleBorder + 5, 75, labelFieldsWidth, 30,
+    hwnd_,
+    NULL,
+    NULL, NULL);
+  if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Create the addButton_
+  colorButton_ = CreateWindowExW(
+    NULL,
+    WC_BUTTON,
+    L"",
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD |BS_OWNERDRAW,
+    middleBorder + 110, 75, 30, 30,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDB_COLOR_BUTTON),
+    NULL, NULL);
+  if (!colorButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
+
   /****************************************************************************
   * Now that everything is built, initialize the GUI with pre-loaded data.
   ****************************************************************************/
@@ -227,7 +272,36 @@ void PFBApp::updatePropertyControls_()
     ComboBox_AddString(labelFieldComboBox_, widen(field).c_str());
   }
   ComboBox_SelectString(labelFieldComboBox_, -1, widen(appCon_.getLabel(source, layer)).c_str());
+  
+  //
+  // Update the colorButton_
+  //
+  InvalidateRect(colorButton_, NULL, TRUE);
+  
   // TODO more
+}
+
+void PFBApp::updateColorButton_(LPARAM lParam)
+{
+  string source, layer;
+  bool success = getSourceLayerFromTree_(source, layer);
+  if (!success) 
+  {
+    MessageBoxW(hwnd_, L"Error updating color button.", L"Error", MB_OK | MB_ICONERROR);
+    return;
+  }
+
+  PlaceFileColor color = appCon_.getColor(source, layer);
+  LPDRAWITEMSTRUCT dis = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+  HDC hdc = dis->hDC;
+  LPRECT rect = &dis->rcItem;
+
+  // Get the brush color
+  DeleteObject(colorButtonColor_);
+  colorButtonColor_ = CreateSolidBrush(RGB(color.red,color.green,color.blue));
+  HBRUSH old = (HBRUSH)SelectObject(hdc, colorButtonColor_);
+  RoundRect(hdc, 0, 0, rect->right, rect->bottom, 0.3*rect->right, 0.3*rect->bottom);
+  colorButtonColor_ = (HBRUSH)SelectObject(hdc, old);
 }
 
 HTREEITEM PFBApp::addSrcToTree_(const string & src)
@@ -545,4 +619,41 @@ void PFBApp::labelFieldCommandAction_(WPARAM wParam, LPARAM lParam)
 
     appCon_.setLabel(source, layer, label);
   }
+}
+
+void PFBApp::colorButtonAction()
+{
+  CHOOSECOLOR cc{ 0 };            // common dialog box structure 
+  static COLORREF acrCustClr[16]; // array of custom colors 
+
+  // Get the current color
+  LOGBRUSH lb{ 0 };
+  GetObject(colorButtonColor_, sizeof(LOGBRUSH), &lb);
+  COLORREF rgbCurrent = lb.lbColor;
+
+  // Initialize cc struct
+  cc.lStructSize = sizeof(cc);
+  cc.hwndOwner = hwnd_;
+  cc.lpCustColors = (LPDWORD)acrCustClr;
+  cc.rgbResult = rgbCurrent;
+  cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+
+  // Open the dialog
+  BOOL success = ChooseColor(&cc);
+  if (success != TRUE)
+  {
+    MessageBoxW(hwnd_, L"Error choosing color.", L"Error", MB_OK | MB_ICONERROR);
+    return;
+  }
+  
+  // Set the new colors
+  string source, layer;
+  bool success2 = getSourceLayerFromTree_(source, layer);
+  if (!success2)
+  {
+    MessageBoxW(hwnd_, L"Error getting source/layer information from the tree.", L"Error", MB_OK | MB_ICONERROR);
+    return;
+  }
+  appCon_.setColor(source, layer, PlaceFileColor(GetRValue(cc.rgbResult), GetGValue(cc.rgbResult), GetBValue(cc.rgbResult)));
+  InvalidateRect(colorButton_, NULL, TRUE);
 }
