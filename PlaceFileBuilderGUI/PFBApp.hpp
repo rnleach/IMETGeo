@@ -55,4 +55,3 @@ private:
   void labelFieldCommandAction_(WPARAM wParam, LPARAM lParam);
 
 };
-

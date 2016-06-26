@@ -48,7 +48,7 @@ const vector<string> AppController::getLayers(const string& source)
   LayerInfo& lyrs = get<IDX_layerInfo>(srcs_.at(source));
   for(auto it = lyrs.begin(); it != lyrs.end(); ++ it)
   {
-    layerStrings.push_back(it->first);
+    if(it->second.visible) layerStrings.push_back(it->first);
   }
 
   return move(layerStrings);
