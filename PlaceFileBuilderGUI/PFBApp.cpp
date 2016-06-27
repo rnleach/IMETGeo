@@ -8,22 +8,24 @@
 using namespace std;
 
 // Control Values
-#define IDB_ADD           1001 // Add Button
-#define IDB_ADD_SHAPEFILE 1002 // Add a shapefile
-#define IDB_ADD_FILEGDB   1003 // Add a file geo database
-#define IDB_ADD_KML       1004 // Add a KML/KMZ file
-#define IDB_DELETE        1005 // Delete button
-#define IDB_DELETE_ALL    1006 // Delete all button
-#define IDC_TREEVIEW      1007 // Treeview for layers
-#define IDC_COMBO_LABEL   1008 // Combo box for layer label field
-#define IDB_COLOR_BUTTON  1009 // Choose the color of the features
-#define IDB_POLYGON_CHECK 1010 // Fill polygons check button
+#define IDB_ADD            1001 // Add Button
+#define IDB_ADD_SHAPEFILE  1002 // Add a shapefile
+#define IDB_ADD_FILEGDB    1003 // Add a file geo database
+#define IDB_ADD_KML        1004 // Add a KML/KMZ file
+#define IDB_DELETE         1005 // Delete button
+#define IDB_DELETE_ALL     1006 // Delete all button
+#define IDC_TREEVIEW       1007 // Treeview for layers
+#define IDC_COMBO_LABEL    1008 // Combo box for layer label field
+#define IDB_COLOR_BUTTON   1009 // Choose the color of the features
+#define IDB_POLYGON_CHECK  1010 // Fill polygons check button
+#define IDC_DISP_TRACK_BAR 1011 // Trackbar for setting display threshold
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance, NULL }, appCon_{}, addButton_{ NULL }, 
   deleteButton_{ NULL }, deleteAllButton_{ NULL }, treeView_{ NULL }, 
   labelFieldComboBox_{ NULL }, colorButton_{ NULL }, colorButtonColor_{ NULL },
-  fillPolygonsCheck_{ NULL }
+  fillPolygonsCheck_{ NULL }, displayThreshStatic_{ NULL }, 
+  displayThreshTrackBar_{ NULL }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -130,6 +132,12 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
     break;
   case WM_CTLCOLORBTN:
     return reinterpret_cast<LRESULT>(GetSysColorBrush(COLOR_3DFACE));
+  case WM_HSCROLL:
+    if ((HWND)lParam == displayThreshTrackBar_)
+    {
+      displayThreshAction_();
+    }
+    break;
   }
 
   // Always check the default handling too.
@@ -239,7 +247,7 @@ void PFBApp::buildGUI_()
     hwnd_,
     reinterpret_cast<HMENU>(IDB_COLOR_BUTTON),
     NULL, NULL);
-  if (!colorButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
+  if (!colorButton_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add label for the 'Line Width' controller.
   temp = CreateWindowExW(
@@ -267,8 +275,7 @@ void PFBApp::buildGUI_()
     NULL, NULL);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
-  // Add the checkbox
-  // Create the addButton_
+  // Add the fillPolygonsCheck_
   fillPolygonsCheck_ = CreateWindowExW(
     NULL,
     WC_BUTTON,
@@ -278,7 +285,47 @@ void PFBApp::buildGUI_()
     hwnd_,
     reinterpret_cast<HMENU>(IDB_POLYGON_CHECK),
     NULL, NULL);
-  if (!fillPolygonsCheck_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
+  if (!fillPolygonsCheck_) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add label for the displayThreshEdit_ control.
+  temp = CreateWindowExW(
+    NULL,
+    WC_STATICW,
+    L"Disp Thresh:",
+    WS_VISIBLE | WS_CHILD | SS_RIGHT,
+    middleBorder + 5, 180 + 6, labelFieldsWidth, 30,
+    hwnd_,
+    NULL,
+    NULL, NULL);
+  if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add the displayThreshStatic_
+  displayThreshStatic_ = CreateWindowExW(
+    NULL,
+    WC_STATICW,
+    L"999",
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
+    middleBorder + 110, 180 + 6, labelFieldsWidth, 30,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDB_POLYGON_CHECK),
+    NULL, NULL);
+  if (!displayThreshStatic_) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add the displayThreshTrackBar_
+  displayThreshTrackBar_ = CreateWindowExW(
+    NULL,
+    TRACKBAR_CLASS,
+    L"",
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD | TBS_AUTOTICKS,
+    middleBorder + 5, 215, labelFieldsWidth + 175, 30,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_DISP_TRACK_BAR),
+    NULL, NULL);
+  if (!fillPolygonsCheck_) { HandleFatalError(__FILEW__, __LINE__); }
+  SendMessage(displayThreshTrackBar_, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 100));
+  SendMessage(displayThreshTrackBar_, TBM_SETPAGESIZE, 0, 10);
+  SendMessage(displayThreshTrackBar_, TBM_SETTICFREQ, 10, 0);
+
   /****************************************************************************
   * Now that everything is built, initialize the GUI with pre-loaded data.
   ****************************************************************************/
@@ -329,6 +376,16 @@ void PFBApp::updatePropertyControls_()
   //
   bool checked = !appCon_.getPolygonDisplayedAsLine(source, layer);
   Button_SetCheck(fillPolygonsCheck_, checked);
+
+  //
+  // Update display threshold
+  //
+  int dispThresh = appCon_.getDisplayThreshold(source, layer);
+  WCHAR tempText[8];
+  swprintf_s(tempText,  L"%3d", dispThresh);
+  Static_SetText(displayThreshStatic_, tempText);
+  SendMessage(displayThreshTrackBar_, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(dispThresh / 10));
+  
   
   // TODO more
 }
@@ -474,7 +531,7 @@ bool PFBApp::getSourceLayerFromTree_(string & source, string & layer)
   HTREEITEM hParent = TreeView_GetParent(treeView_, hSelect);
   if (hSelect == NULL || hParent == NULL) // Invalid selection
   {
-    MessageBoxW(hwnd_, L"Invalid Selection in tree.", L"Error", MB_OK | MB_ICONERROR);
+    //MessageBoxW(hwnd_, L"Invalid Selection in tree.", L"Error", MB_OK | MB_ICONERROR);
     return false;
   }
 
@@ -483,7 +540,7 @@ bool PFBApp::getSourceLayerFromTree_(string & source, string & layer)
 
   if (!success)
   {
-    MessageBoxW(hwnd_, L"Failed to delete layer.", L"Error", MB_OK | MB_ICONERROR);
+    MessageBoxW(hwnd_, L"Failed to get tree text.", L"Error", MB_OK | MB_ICONERROR);
   }
 
   return success;
@@ -726,3 +783,28 @@ void PFBApp::fillPolygonsCheckAction()
 
   appCon_.setPolygonDisplayedAsLine(source, layer, !checked);
 }
+
+void PFBApp::displayThreshAction_()
+{
+  // Get the value
+  int pos = SendMessage(displayThreshTrackBar_, TBM_GETPOS, 0, 0);
+  pos *= 10;
+  if (pos > 999) pos = 999;
+
+  // Set the value in the static control
+  WCHAR tempText[8];
+  swprintf_s(tempText, L"%3d", pos);
+  Static_SetText(displayThreshStatic_, tempText);
+
+  // Set the value in the controller
+  string source, layer;
+  bool success = getSourceLayerFromTree_(source, layer);
+  if (!success)
+  {
+    MessageBoxW(hwnd_, L"Error updating display threshold.", L"Error.", MB_ICONERROR | MB_OK);
+    return;
+  }
+  
+  appCon_.setDisplayThreshold(source, layer, pos);
+}
+

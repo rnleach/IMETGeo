@@ -41,6 +41,8 @@ private:
   HWND colorButton_;
   HBRUSH colorButtonColor_;
   HWND fillPolygonsCheck_;
+  HWND displayThreshStatic_;
+  HWND displayThreshTrackBar_;
 
   // Window Procedure, handle messages here.
   LRESULT WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
@@ -59,5 +61,5 @@ private:
   void labelFieldCommandAction_(WPARAM wParam, LPARAM lParam);
   void colorButtonAction();
   void fillPolygonsCheckAction();
-
+  void displayThreshAction_();
 };
