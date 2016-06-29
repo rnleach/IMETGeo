@@ -19,13 +19,14 @@ using namespace std;
 #define IDB_COLOR_BUTTON   1009 // Choose the color of the features
 #define IDB_POLYGON_CHECK  1010 // Fill polygons check button
 #define IDC_DISP_TRACK_BAR 1011 // Trackbar for setting display threshold
+#define IDC_TITLE_EDIT     1012 // Edit control for setting placefile title
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance, NULL }, appCon_{}, addButton_{ NULL }, 
   deleteButton_{ NULL }, deleteAllButton_{ NULL }, treeView_{ NULL }, 
   labelFieldComboBox_{ NULL }, colorButton_{ NULL }, colorButtonColor_{ NULL },
   fillPolygonsCheck_{ NULL }, displayThreshStatic_{ NULL }, 
-  displayThreshTrackBar_{ NULL }
+  displayThreshTrackBar_{ NULL }, titleEditControl_{ NULL }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -95,6 +96,9 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       break;
     case IDB_POLYGON_CHECK:
       fillPolygonsCheckAction_();
+      break;
+    case IDC_TITLE_EDIT:
+      editTitleAction_();
       break;
     }
     break;
@@ -191,7 +195,7 @@ void PFBApp::buildGUI_()
 
   // Add the treeview
   treeView_ = CreateWindowExW(
-    TVS_EX_AUTOHSCROLL,
+    WS_EX_CLIENTEDGE | TVS_EX_AUTOHSCROLL,
     WC_TREEVIEW,
     L"Layers",
     WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | TVS_DISABLEDRAGDROP | TVS_FULLROWSELECT | TVS_SHOWSELALWAYS,
@@ -237,7 +241,7 @@ void PFBApp::buildGUI_()
     NULL, NULL);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
-  // Create the addButton_
+  // Create the colorButton_
   colorButton_ = CreateWindowExW(
     NULL,
     WC_BUTTON,
@@ -326,9 +330,34 @@ void PFBApp::buildGUI_()
   SendMessage(displayThreshTrackBar_, TBM_SETPAGESIZE, 0, 10);
   SendMessage(displayThreshTrackBar_, TBM_SETTICFREQ, 10, 0);
 
+  // Add a label for the titleEditControl_
+  temp = CreateWindowExW(
+    NULL,
+    WC_STATICW,
+    L"Title:",
+    WS_VISIBLE | WS_CHILD | SS_RIGHT,
+    5, 495 + 8, labelFieldsWidth, 20,
+    hwnd_,
+    NULL,
+    NULL, NULL);
+  if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add the titleEditControl_
+  titleEditControl_ = CreateWindowExW(
+    WS_EX_CLIENTEDGE,
+    WC_EDITW,
+    NULL,
+    WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL ,
+    10 + labelFieldsWidth, 500, 180, 20,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_TITLE_EDIT),
+    NULL, NULL);
+  if (!titleEditControl_) { HandleFatalError(__FILEW__, __LINE__); }
+
   /****************************************************************************
   * Now that everything is built, initialize the GUI with pre-loaded data.
   ****************************************************************************/
+  // Fill the tree
   vector<string> sources = appCon_.getSources();
   for (int i = 0; i < sources.size(); i++)
   {
@@ -336,6 +365,12 @@ void PFBApp::buildGUI_()
 
     if (i == 0) TreeView_Select(treeView_, tmp, TVGN_CARET);
   }
+
+  // Set the title
+  wstring aPFTitle( widen(appCon_.getPFTitle()) );
+  unique_ptr<WCHAR> wPFTitle = unique_ptr<WCHAR>(new WCHAR[aPFTitle.length() + 1]);
+  wcscpy(wPFTitle.get(), aPFTitle.c_str());
+  Edit_SetText(titleEditControl_, wPFTitle.get());
 }
 
 void PFBApp::updatePropertyControls_()
@@ -806,5 +841,14 @@ void PFBApp::displayThreshAction_()
   }
   
   appCon_.setDisplayThreshold(source, layer, pos);
+}
+
+void PFBApp::editTitleAction_()
+{
+  int sizeOfText = Edit_GetTextLength(titleEditControl_) + 1;
+  unique_ptr<WCHAR> newTitle(new WCHAR[sizeOfText]);
+  Edit_GetText(titleEditControl_, newTitle.get(), sizeOfText);
+
+  appCon_.setPFTitle(narrow(newTitle.get()));
 }
 

@@ -43,6 +43,7 @@ private:
   HWND fillPolygonsCheck_;
   HWND displayThreshStatic_;
   HWND displayThreshTrackBar_;
+  HWND titleEditControl_;
 
   // Window Procedure, handle messages here.
   LRESULT WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
@@ -62,4 +63,5 @@ private:
   void colorButtonAction_();
   void fillPolygonsCheckAction_();
   void displayThreshAction_();
+  void editTitleAction_();
 };
