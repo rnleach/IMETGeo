@@ -51,9 +51,14 @@ public:
   inline string getPFTitle() { return pfTitle_; }
   inline void setPFTitle(const string& newTitle) { pfTitle_ = newTitle; }
 
-  // Get/Set the refresh minutes of the place file
-  inline int getRefreshMinutes() { return refreshMinutes_; }
-  inline void setRefreshMinutes(int newVal) { refreshMinutes_ = newVal; }
+  // Get/Set the refresh minutes or seconds of the place file if you call 
+  // setRefreshMinutes, it will zero out the seconds, and if you call 
+  // setRefreshSeconds, it will zero out the minutes. Only 1 of them at a time
+  // can be non-zero. If one of the getters returns 0, then use the other 1!
+  int getRefreshMinutes();
+  void setRefreshMinutes(int newVal);
+  int getRefreshSeconds();
+  void setRefreshSeconds(int newVal);
 
   // Save a KML file
   void saveKMLFile(const string& fileName);
@@ -153,7 +158,8 @@ private:
 
    // Variables for saving parameters that affect entire PlaceFile.
   string lastPlaceFileSaved_ {};
-  int refreshMinutes_  {1};
+  int refreshMinutes_{ 1 };
+  int refreshSeconds_{ 0 };
   string pfTitle_ = "Created by PlaceFile Builder";
 
 };

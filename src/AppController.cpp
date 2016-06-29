@@ -159,7 +159,8 @@ void AppController::savePlaceFile(const string& fileName)
   PlaceFile pf;
 
   pf.setTitle(pfTitle_);
-  pf.setRefreshMinutes(refreshMinutes_);
+  if (refreshSeconds_ > 0) pf.setRefreshSeconds(refreshSeconds_);
+  else pf.setRefreshMinutes(refreshMinutes_);
 
   // Add the requested layers
   for(auto sIt = srcs_.begin(); sIt != srcs_.end(); ++sIt)
@@ -228,6 +229,28 @@ void AppController::savePlaceFile(const string& fileName)
 
   // Remember saving it!
   lastPlaceFileSaved_ = fileName;
+}
+
+int AppController::getRefreshMinutes()
+{
+  return refreshMinutes_;
+}
+
+void AppController::setRefreshMinutes(int newVal)
+{
+  refreshMinutes_ = newVal;
+  refreshSeconds_ = 0;
+}
+
+int AppController::getRefreshSeconds()
+{
+  return refreshSeconds_;
+}
+
+void AppController::setRefreshSeconds(int newVal)
+{
+  refreshMinutes_ = 0;
+  refreshSeconds_ = newVal;
 }
 
 void AppController::saveKMLFile(const string & fileName)
@@ -535,26 +558,27 @@ void AppController::saveState(const string& pathToStateFile)
          0:  PlaceFile Builder
          1:  lastSaved: path to last placefile saved.
          2:  refreshMinutes: integer
-         3:  title: title text
-         4:  Source Start: srcName
-         5:  Path: path to file
-         6:  Layer Start: layerName
-         7:  labelField: labelField
-         8:  color: rrr ggg bbb
-         9:  polyAsLine: True (or False)
-        10:  visible: True (or False)
-        11:  displayThresh: integer value
-        12:  Layer End: layerName
-        13:  .......
+         3:  refreshSeconds: integer
+         4:  title: title text
+         5:  Source Start: srcName
+         6:  Path: path to file
+         7:  Layer Start: layerName
+         8:  labelField: labelField
+         9:  color: rrr ggg bbb
+        10:  polyAsLine: True (or False)
+        11:  visible: True (or False)
+        12:  displayThresh: integer value
+        13:  Layer End: layerName
+        14:  .......
         . :
         . :
-        . :  repeat 6-12 for each layer
+        . :  repeat 7-13 for each layer
         . :
         . :
         m :  Source End: srcName
         . :
         . :
-        n :  Repeat 4-m for each source
+        n :  Repeat 5-m for each source
         . :
         . :
         z :  End
@@ -570,6 +594,7 @@ void AppController::saveState(const string& pathToStateFile)
 
       statefile << "lastSaved: " << lastPlaceFileSaved_ << "\n";
       statefile << "refreshMinutes: " << refreshMinutes_ << "\n";
+      statefile << "refreshSeconds: " << refreshSeconds_ << "\n";
       statefile << "title: " << pfTitle_ << "\n";
 
       for(auto srcIt = srcs_.begin(); srcIt != srcs_.end(); ++srcIt)
@@ -740,6 +765,12 @@ void AppController::loadState(const string& pathToStateFile)
         if(line.find("refreshMinutes:") != string::npos)
         {
           refreshMinutes_ = stoi(line.substr(16));
+        }
+
+        // Check for refresh seconds
+        if (line.find("refreshSeconds:") != string::npos)
+        {
+          refreshSeconds_ = stoi(line.substr(16));
         }
 
         // Check for title

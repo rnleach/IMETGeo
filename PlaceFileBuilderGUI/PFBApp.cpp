@@ -20,13 +20,15 @@ using namespace std;
 #define IDB_POLYGON_CHECK  1010 // Fill polygons check button
 #define IDC_DISP_TRACK_BAR 1011 // Trackbar for setting display threshold
 #define IDC_TITLE_EDIT     1012 // Edit control for setting placefile title
+#define IDC_REFRESH_TBAR   1013 // Trackbar for setting the refresh time.
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance, NULL }, appCon_{}, addButton_{ NULL }, 
   deleteButton_{ NULL }, deleteAllButton_{ NULL }, treeView_{ NULL }, 
   labelFieldComboBox_{ NULL }, colorButton_{ NULL }, colorButtonColor_{ NULL },
   fillPolygonsCheck_{ NULL }, displayThreshStatic_{ NULL }, 
-  displayThreshTrackBar_{ NULL }, titleEditControl_{ NULL }
+  displayThreshTrackBar_{ NULL }, titleEditControl_{ NULL }, 
+  refreshStatic_{ NULL }, refreshTrackBar_{ NULL }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -137,9 +139,16 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
   case WM_CTLCOLORBTN:
     return reinterpret_cast<LRESULT>(GetSysColorBrush(COLOR_3DFACE));
   case WM_HSCROLL:
-    if ((HWND)lParam == displayThreshTrackBar_)
     {
-      displayThreshAction_();
+      HWND control = (HWND)lParam;
+      if (control == displayThreshTrackBar_)
+      {
+        displayThreshAction_();
+      }
+      else if (control == refreshTrackBar_)
+      {
+        refreshTimeAction_();
+      }
     }
     break;
   }
@@ -309,9 +318,9 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"999",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
-    middleBorder + 110, 180 + 6, labelFieldsWidth, 30,
+    middleBorder + 110, 180 + 6, labelFieldsWidth, 20,
     hwnd_,
-    reinterpret_cast<HMENU>(IDB_POLYGON_CHECK),
+    NULL,
     NULL, NULL);
   if (!displayThreshStatic_) { HandleFatalError(__FILEW__, __LINE__); }
 
@@ -321,11 +330,11 @@ void PFBApp::buildGUI_()
     TRACKBAR_CLASS,
     L"",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | TBS_AUTOTICKS,
-    middleBorder + 5, 215, labelFieldsWidth + 175, 30,
+    middleBorder + 5, 210, labelFieldsWidth + 175, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_DISP_TRACK_BAR),
     NULL, NULL);
-  if (!fillPolygonsCheck_) { HandleFatalError(__FILEW__, __LINE__); }
+  if (!displayThreshTrackBar_) { HandleFatalError(__FILEW__, __LINE__); }
   SendMessage(displayThreshTrackBar_, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 100));
   SendMessage(displayThreshTrackBar_, TBM_SETPAGESIZE, 0, 10);
   SendMessage(displayThreshTrackBar_, TBM_SETTICFREQ, 10, 0);
@@ -354,6 +363,45 @@ void PFBApp::buildGUI_()
     NULL, NULL);
   if (!titleEditControl_) { HandleFatalError(__FILEW__, __LINE__); }
 
+  // Add label for the refreshStatic_ and refreshTrackBar_ control.
+  temp = CreateWindowExW(
+    NULL,
+    WC_STATICW,
+    L"Refresh Time:",
+    WS_VISIBLE | WS_CHILD | SS_RIGHT,
+    5, 525, labelFieldsWidth, 30,
+    hwnd_,
+    NULL,
+    NULL, NULL);
+  if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add the refreshStatic_
+  refreshStatic_ = CreateWindowExW(
+    NULL,
+    WC_STATICW,
+    NULL,
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
+    10 + labelFieldsWidth, 525, 180, 20,
+    hwnd_,
+    NULL,
+    NULL, NULL);
+  if (!refreshStatic_) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add the displayThreshTrackBar_
+  refreshTrackBar_ = CreateWindowExW(
+    NULL,
+    TRACKBAR_CLASS,
+    L"",
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD | TBS_AUTOTICKS,
+    5, 545, 285, 30,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_REFRESH_TBAR),
+    NULL, NULL);
+  if (!refreshTrackBar_) { HandleFatalError(__FILEW__, __LINE__); }
+  SendMessage(refreshTrackBar_, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(1, 119));
+  SendMessage(refreshTrackBar_, TBM_SETPAGESIZE, 0, 10);
+  SendMessage(refreshTrackBar_, TBM_SETTICFREQ, 10, 0);
+
   /****************************************************************************
   * Now that everything is built, initialize the GUI with pre-loaded data.
   ****************************************************************************/
@@ -371,6 +419,31 @@ void PFBApp::buildGUI_()
   unique_ptr<WCHAR> wPFTitle = unique_ptr<WCHAR>(new WCHAR[aPFTitle.length() + 1]);
   wcscpy(wPFTitle.get(), aPFTitle.c_str());
   Edit_SetText(titleEditControl_, wPFTitle.get());
+
+  // Set the refresh time trackbar
+  int refreshSeconds = appCon_.getRefreshSeconds() % 60;
+  int refreshMinutes = appCon_.getRefreshMinutes() + refreshSeconds / 60;
+
+  WCHAR tempText[16];
+  if(refreshMinutes > 0)
+  {
+    if (refreshMinutes == 1) swprintf_s(tempText, L"%2d minute", refreshMinutes);
+    else swprintf_s(tempText, L"%2d minutes", refreshMinutes);
+  }
+  else
+  {
+    if (refreshSeconds == 1) swprintf_s(tempText, L"%2d second", refreshSeconds);
+    else swprintf_s(tempText, L"%2d seconds", refreshSeconds);
+  }
+  Static_SetText(refreshStatic_, tempText);
+  if (refreshMinutes > 0)
+  {
+    SendMessage(refreshTrackBar_, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(refreshMinutes + 59));
+  }
+  else
+  {
+    SendMessage(refreshTrackBar_, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(refreshSeconds));
+  }
 }
 
 void PFBApp::updatePropertyControls_()
@@ -827,8 +900,8 @@ void PFBApp::displayThreshAction_()
   if (pos > 999) pos = 999;
 
   // Set the value in the static control
-  WCHAR tempText[8];
-  swprintf_s(tempText, L"%3d", pos);
+  WCHAR tempText[20];
+  swprintf_s(tempText, L"%3d NM", pos);
   Static_SetText(displayThreshStatic_, tempText);
 
   // Set the value in the controller
@@ -850,5 +923,40 @@ void PFBApp::editTitleAction_()
   Edit_GetText(titleEditControl_, newTitle.get(), sizeOfText);
 
   appCon_.setPFTitle(narrow(newTitle.get()));
+}
+
+void PFBApp::refreshTimeAction_()
+{
+  // Get the value
+  int pos = SendMessage(refreshTrackBar_, TBM_GETPOS, 0, 0);
+  bool isSeconds;
+  int seconds = 0;
+  int minutes = 0;
+  if (pos > 59)
+  {
+    minutes = pos - 59;
+    isSeconds = false;
+  }
+  else
+  {
+    seconds = pos;
+    isSeconds = true;
+  }
+
+  // Set the value in the static control
+  WCHAR tempText[16];
+  if (isSeconds)
+  {
+    if(seconds == 1) swprintf_s(tempText, L"%2d second", seconds);
+    else swprintf_s(tempText, L"%2d seconds", seconds);
+    appCon_.setRefreshSeconds(seconds);
+  }
+  else
+  {
+    if (minutes == 1) swprintf_s(tempText, L"%2d minute", minutes);
+    else swprintf_s(tempText, L"%2d minutes", minutes);
+    appCon_.setRefreshMinutes(minutes);
+  }
+  Static_SetText(refreshStatic_, tempText);
 }
 

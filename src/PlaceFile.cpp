@@ -152,6 +152,13 @@ void PFB::PlaceFile::setThreshold(const unsigned int t)
 void PFB::PlaceFile::setRefreshMinutes(const unsigned int m)
 {
   _refreshMinutes = m;
+  _refreshSeconds = 0;
+}
+
+void PFB::PlaceFile::setRefreshSeconds(const unsigned int s)
+{
+  _refreshMinutes = 0;
+  _refreshSeconds = s;
 }
 
 unsigned int PFB::PlaceFile::getThreshold() const
@@ -162,6 +169,11 @@ unsigned int PFB::PlaceFile::getThreshold() const
 unsigned int PFB::PlaceFile::getRefreshMinutes() const
 {
   return _refreshMinutes;
+}
+
+unsigned int PFB::PlaceFile::getRefreshSeconds() const
+{
+  return _refreshSeconds;
 }
 
 void PFB::PlaceFile::setTitle(const string& title)
@@ -183,7 +195,8 @@ ostream& PFB::operator<<(ostream& ost, const PlaceFile& pf)
 
   // Header, data that goes at the top.
   ost << "Title: " << pf._title << "\n";
-  ost << "Refresh: " << pf.getRefreshMinutes() << "\n";
+  if(pf.getRefreshMinutes() > 0) ost << "Refresh: " << pf.getRefreshMinutes() << "\n";
+  if (pf.getRefreshSeconds() > 0) ost << "RefreshSeconds: " << pf.getRefreshSeconds() << "\n";
   ost << "Threshold: " << pf.getThreshold() << "\n";
 
   // Font required for PointFeatures without a label.

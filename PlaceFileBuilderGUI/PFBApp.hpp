@@ -44,6 +44,8 @@ private:
   HWND displayThreshStatic_;
   HWND displayThreshTrackBar_;
   HWND titleEditControl_;
+  HWND refreshStatic_;
+  HWND refreshTrackBar_;
 
   // Window Procedure, handle messages here.
   LRESULT WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
@@ -64,4 +66,5 @@ private:
   void fillPolygonsCheckAction_();
   void displayThreshAction_();
   void editTitleAction_();
+  void refreshTimeAction_();
 };
