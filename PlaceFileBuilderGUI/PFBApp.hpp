@@ -59,7 +59,7 @@ private:
   void deleteAction_();
   void deleteAllAction_();
   void labelFieldCommandAction_(WPARAM wParam, LPARAM lParam);
-  void colorButtonAction();
-  void fillPolygonsCheckAction();
+  void colorButtonAction_();
+  void fillPolygonsCheckAction_();
   void displayThreshAction_();
 };

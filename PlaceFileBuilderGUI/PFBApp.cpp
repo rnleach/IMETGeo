@@ -91,10 +91,10 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       labelFieldCommandAction_(wParam, lParam);
       break;
     case IDB_COLOR_BUTTON:
-      colorButtonAction();
+      colorButtonAction_();
       break;
     case IDB_POLYGON_CHECK:
-      fillPolygonsCheckAction();
+      fillPolygonsCheckAction_();
       break;
     }
     break;
@@ -730,7 +730,7 @@ void PFBApp::labelFieldCommandAction_(WPARAM wParam, LPARAM lParam)
   }
 }
 
-void PFBApp::colorButtonAction()
+void PFBApp::colorButtonAction_()
 {
   CHOOSECOLOR cc{ 0 };            // common dialog box structure 
   static COLORREF acrCustClr[16]; // array of custom colors 
@@ -767,7 +767,7 @@ void PFBApp::colorButtonAction()
   InvalidateRect(colorButton_, NULL, TRUE);
 }
 
-void PFBApp::fillPolygonsCheckAction()
+void PFBApp::fillPolygonsCheckAction_()
 {
   // Get the status of the box
   bool checked = Button_GetCheck(fillPolygonsCheck_) == BST_CHECKED;
