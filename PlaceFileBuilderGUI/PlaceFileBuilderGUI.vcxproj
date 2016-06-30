@@ -101,17 +101,17 @@
       <SubSystem>NotSet</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /E /Y "C:\devLibs\gdal111\bin" $(OutDir)
-xcopy /Y $(ProjectDir)..\pfb.iss $(OutDir)..\..\
-xcopy /Y $(ProjectDir)..\res $(OutDir)..\res\
-xcopy /Y $(ProjectDir)..\src $(OutDir)..\src\
-xcopy /Y $(ProjectDir)*.cpp $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.hpp $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.h $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.rc $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.sln $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.vcxproj $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.vcxproj.filters $(OutDir)..\$(ProjectName)\
+      <Command>xcopy /D /E /Y "C:\devLibs\gdal111\bin" $(OutDir)
+xcopy /D /Y $(ProjectDir)..\pfb.iss $(OutDir)..\..\
+xcopy /D /Y $(ProjectDir)..\res $(OutDir)..\res\
+xcopy /D /Y $(ProjectDir)..\src $(OutDir)..\src\
+xcopy /D /Y $(ProjectDir)*.cpp $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.hpp $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.h $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.rc $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.sln $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.vcxproj $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.vcxproj.filters $(OutDir)..\$(ProjectName)\
 if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -131,17 +131,17 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
       <SubSystem>NotSet</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /E /Y "C:\devLibs\gdal111\bin" $(OutDir)
-xcopy /Y $(ProjectDir)..\pfb.iss $(OutDir)..\..\
-xcopy /Y $(ProjectDir)..\res $(OutDir)..\res\
-xcopy /Y $(ProjectDir)..\src $(OutDir)..\src\
-xcopy /Y $(ProjectDir)*.cpp $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.hpp $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.h $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.rc $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.sln $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.vcxproj $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.vcxproj.filters $(OutDir)..\$(ProjectName)\
+      <Command>xcopy /D /E /Y "C:\devLibs\gdal111\bin" $(OutDir)
+xcopy /D /Y $(ProjectDir)..\pfb.iss $(OutDir)..\..\
+xcopy /D /Y $(ProjectDir)..\res $(OutDir)..\res\
+xcopy /D /Y $(ProjectDir)..\src $(OutDir)..\src\
+xcopy /D /Y $(ProjectDir)*.cpp $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.hpp $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.h $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.rc $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.sln $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.vcxproj $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.vcxproj.filters $(OutDir)..\$(ProjectName)\
 if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -164,17 +164,17 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
       <SubSystem>NotSet</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /E /Y "C:\devLibs\gdal111\bin" $(OutDir)
-xcopy /Y $(ProjectDir)..\pfb.iss $(OutDir)..\..\
-xcopy /Y $(ProjectDir)..\res $(OutDir)..\res\
-xcopy /Y $(ProjectDir)..\src $(OutDir)..\src\
-xcopy /Y $(ProjectDir)*.cpp $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.hpp $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.h $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.rc $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.sln $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.vcxproj $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.vcxproj.filters $(OutDir)..\$(ProjectName)\
+      <Command>xcopy /D /E /Y "C:\devLibs\gdal111\bin" $(OutDir)
+xcopy /D /Y $(ProjectDir)..\pfb.iss $(OutDir)..\..\
+xcopy /D /Y $(ProjectDir)..\res $(OutDir)..\res\
+xcopy /D /Y $(ProjectDir)..\src $(OutDir)..\src\
+xcopy /D /Y $(ProjectDir)*.cpp $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.hpp $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.h $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.rc $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.sln $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.vcxproj $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.vcxproj.filters $(OutDir)..\$(ProjectName)\
 if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -197,17 +197,17 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
       <SubSystem>NotSet</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /E /Y "C:\devLibs\gdal111\bin" $(OutDir)
-xcopy /Y $(ProjectDir)..\pfb.iss $(OutDir)..\..\
-xcopy /Y $(ProjectDir)..\res $(OutDir)..\res\
-xcopy /Y $(ProjectDir)..\src $(OutDir)..\src\
-xcopy /Y $(ProjectDir)*.cpp $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.hpp $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.h $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.rc $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.sln $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.vcxproj $(OutDir)..\$(ProjectName)\
-xcopy /Y $(ProjectDir)*.vcxproj.filters $(OutDir)..\$(ProjectName)\
+      <Command>xcopy /D /E /Y "C:\devLibs\gdal111\bin" $(OutDir)
+xcopy /D /Y $(ProjectDir)..\pfb.iss $(OutDir)..\..\
+xcopy /D /Y $(ProjectDir)..\res $(OutDir)..\res\
+xcopy /D /Y $(ProjectDir)..\src $(OutDir)..\src\
+xcopy /D /Y $(ProjectDir)*.cpp $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.hpp $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.h $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.rc $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.sln $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.vcxproj $(OutDir)..\$(ProjectName)\
+xcopy /D /Y $(ProjectDir)*.vcxproj.filters $(OutDir)..\$(ProjectName)\
 if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
