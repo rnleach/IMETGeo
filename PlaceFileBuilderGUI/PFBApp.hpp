@@ -24,7 +24,7 @@ private:
   AppController appCon_;
   string pathToAppConSavedState_;
 
-  // Buttons
+  // Top Row Buttons
   HWND addButton_;
   HWND deleteButton_;
   HWND deleteAllButton_;
@@ -43,9 +43,12 @@ private:
   HWND fillPolygonsCheck_;
   HWND displayThreshStatic_;
   HWND displayThreshTrackBar_;
+
+  // Settings that apply to the whole place file
   HWND titleEditControl_;
   HWND refreshStatic_;
   HWND refreshTrackBar_;
+  HWND exportPlaceFileButton_;
 
   // Window Procedure, handle messages here.
   LRESULT WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
@@ -67,4 +70,5 @@ private:
   void displayThreshAction_();
   void editTitleAction_();
   void refreshTimeAction_();
+  void exportPlaceFileAction_();
 };

@@ -2,8 +2,11 @@
 #include "../src/PlaceFileColor.hpp"
 
 #include <string>
+#include <future>
+#include <thread>
 
 #include <Shobjidl.h>
+#include <Shlobj.h>
 
 using namespace std;
 
@@ -21,6 +24,7 @@ using namespace std;
 #define IDC_DISP_TRACK_BAR 1011 // Trackbar for setting display threshold
 #define IDC_TITLE_EDIT     1012 // Edit control for setting placefile title
 #define IDC_REFRESH_TBAR   1013 // Trackbar for setting the refresh time.
+#define IDC_EXPORT_PF      1014 // Export place file.
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance, NULL }, appCon_{}, addButton_{ NULL }, 
@@ -28,7 +32,8 @@ PFBApp::PFBApp(HINSTANCE hInstance) :
   labelFieldComboBox_{ NULL }, colorButton_{ NULL }, colorButtonColor_{ NULL },
   fillPolygonsCheck_{ NULL }, displayThreshStatic_{ NULL }, 
   displayThreshTrackBar_{ NULL }, titleEditControl_{ NULL }, 
-  refreshStatic_{ NULL }, refreshTrackBar_{ NULL }
+  refreshStatic_{ NULL }, refreshTrackBar_{ NULL }, 
+  exportPlaceFileButton_ { NULL }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -101,6 +106,9 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       break;
     case IDC_TITLE_EDIT:
       editTitleAction_();
+      break;
+    case IDC_EXPORT_PF:
+      exportPlaceFileAction_();
       break;
     }
     break;
@@ -401,6 +409,18 @@ void PFBApp::buildGUI_()
   SendMessage(refreshTrackBar_, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(1, 119));
   SendMessage(refreshTrackBar_, TBM_SETPAGESIZE, 0, 10);
   SendMessage(refreshTrackBar_, TBM_SETTICFREQ, 10, 0);
+
+  // Create the exportPlaceFileButton_
+  exportPlaceFileButton_ = CreateWindowExW(
+    NULL,
+    WC_BUTTON,
+    L"Export Placefile",
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+    175, 585, 120, 30,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_EXPORT_PF),
+    NULL, NULL);
+  if (!exportPlaceFileButton_) { HandleFatalError(__FILEW__, __LINE__); }
 
   /****************************************************************************
   * Now that everything is built, initialize the GUI with pre-loaded data.
@@ -958,5 +978,80 @@ void PFBApp::refreshTimeAction_()
     appCon_.setRefreshMinutes(minutes);
   }
   Static_SetText(refreshStatic_, tempText);
+}
+
+void PFBApp::exportPlaceFileAction_()
+{
+  IFileSaveDialog *pFileSave = NULL;
+  IShellItem *pItem = NULL;
+  LPWSTR lpszFilePath = nullptr;
+  bool foundFile = false;
+  string finalPath;
+  
+  string startPath = appCon_.getLastSavedPlaceFile();
+
+  HRESULT hr = CoCreateInstance(__uuidof(FileSaveDialog), NULL,
+    CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileSave));
+
+  if (SUCCEEDED(hr))
+  {
+    // Set up the filter types
+    COMDLG_FILTERSPEC fltr = { 0 };
+    fltr.pszName = L"Placefile";
+    fltr.pszSpec = L"*.txt;*.TXT";
+    hr = pFileSave->SetFileTypes(1, &fltr);
+  }
+  if (SUCCEEDED(hr))
+  {
+    hr = pFileSave->Show(NULL);
+  }
+  if (SUCCEEDED(hr))
+  {
+    hr = pFileSave->GetResult(&pItem);
+  }
+  if (SUCCEEDED(hr))
+  {
+    hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &lpszFilePath);
+  }
+  if (SUCCEEDED(hr))
+  {
+    finalPath = narrow(lpszFilePath);
+    foundFile = true;
+  }
+
+  // Clean up.
+  SafeRelease(&pItem);
+  SafeRelease(&pFileSave);
+  CoTaskMemFree(lpszFilePath);
+
+  if (foundFile)
+  {
+    try
+    {
+      auto future = async(launch::async, &AppController::savePlaceFile, &appCon_, finalPath);
+      auto status = future.wait_for(chrono::milliseconds(0));
+
+      // TODO CODE TO SHOW PROGRESS BAR
+      
+      while (status != future_status::ready)
+      {
+        status = future.wait_for(chrono::milliseconds(50));
+      }
+    }
+    catch (const runtime_error& e)
+    {
+      MessageBoxW(hwnd_, widen(e.what()).c_str(), L"ERROR!", MB_OK | MB_ICONEXCLAMATION);
+    }
+  }
+  else // Check if this was an error or canceled.
+  {
+    DWORD errCode = CommDlgExtendedError();
+    if (errCode != 0)
+    {
+      WCHAR errMsg[64];
+      _snwprintf_s(errMsg, sizeof(errMsg) / sizeof(WCHAR), L"Error getting file name from system: code %#06X.", errCode);
+      MessageBoxW(hwnd_, errMsg, L"ERROR", MB_OK | MB_ICONERROR);
+    }
+  }
 }
 
