@@ -470,78 +470,152 @@ void PFBApp::buildGUI_()
   {
     SendMessage(refreshTrackBar_, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(refreshSeconds));
   }
+
+  updatePropertyControls_();
 }
 
 void PFBApp::updatePropertyControls_()
 {
+  // Disable all controls, will re-enable on an as need basis
+  {
+    vector<HWND> cntrls = {deleteButton_, deleteAllButton_, labelFieldComboBox_,
+      colorButton_, fillPolygonsCheck_, displayThreshStatic_, 
+      displayThreshTrackBar_};
+
+    // Clear contents of combobox
+    ComboBox_ResetContent(labelFieldComboBox_);
+
+    for(auto it = cntrls.begin(); it != cntrls.end(); ++it)
+    {
+      EnableWindow(*it, FALSE);
+    }
+  }
+
   // Get the currently selected source/layer
   string layer, source;
   bool success = getSourceLayerFromTree_(source, layer);
 
   if (!success)
   {
-    MessageBoxW(hwnd_, L"Failed to delete layer.", L"Error", MB_OK | MB_ICONERROR);
+    // Leave all controls disabled and return.
     return;
   }
-
-  //
-  // Update the labelFieldComboBox_
-  //
-  auto fields = appCon_.getFields(source, layer);
-  ComboBox_ResetContent(labelFieldComboBox_);
-  for (string field: fields)
+  else
   {
-    ComboBox_AddString(labelFieldComboBox_, widen(field).c_str());
+    // We have a valid layer, so enable deleting.
+    EnableWindow(deleteButton_, TRUE);
+    EnableWindow(deleteAllButton_, TRUE);
+
+    // Detect type: Point, line, polygon, range ring, etc and enable
+    // controls as necessary.
+    vector<HWND> cntrls {10};
+    if(appCon_.isPolygonLayer(source, layer))
+    {
+      cntrls.push_back(labelFieldComboBox_);
+      cntrls.push_back(colorButton_);
+      cntrls.push_back(fillPolygonsCheck_);
+      cntrls.push_back(displayThreshStatic_);
+      cntrls.push_back(displayThreshTrackBar_);
+    }
+    else if(appCon_.isLineLayer(source, layer))
+    {
+      cntrls.push_back(labelFieldComboBox_);
+      cntrls.push_back(colorButton_);
+      cntrls.push_back(displayThreshStatic_);
+      cntrls.push_back(displayThreshTrackBar_);
+    }
+    else if(appCon_.isPointLayer(source, layer))
+    {
+      cntrls.push_back(labelFieldComboBox_);
+      cntrls.push_back(colorButton_);
+      cntrls.push_back(displayThreshStatic_);
+      cntrls.push_back(displayThreshTrackBar_);
+    }
+
+    for(auto it = cntrls.begin(); it != cntrls.end(); ++it)
+    {
+      EnableWindow(*it, TRUE);
+    }
+  
+    //
+    // Update the labelFieldComboBox_
+    //
+    if(IsWindowEnabled(labelFieldComboBox_))
+    {
+      auto fields = appCon_.getFields(source, layer);
+      for (string field: fields)
+      {
+        ComboBox_AddString(labelFieldComboBox_, widen(field).c_str());
+      }
+      ComboBox_SelectString(labelFieldComboBox_, -1, widen(appCon_.getLabel(source, layer)).c_str());
+    }
+    
+    //
+    // Update the colorButton_
+    //
+    InvalidateRect(colorButton_, nullptr, TRUE);
+
+    //
+    // Update the lineWidthSelector_
+    //
+    // TODO
+
+    //
+    // Update the Filled Polygon checkbox
+    //
+    bool checked = false;
+    if(IsWindowEnabled(fillPolygonsCheck_))
+    { 
+      checked = !appCon_.getPolygonDisplayedAsLine(source, layer);
+    }
+    Button_SetCheck(fillPolygonsCheck_, checked);
+
+    //
+    // Update display threshold
+    //
+    int dispThresh = 999;
+    if(IsWindowEnabled(displayThreshTrackBar_))
+    {
+      dispThresh = appCon_.getDisplayThreshold(source, layer);
+      
+    }
+    WCHAR tempText[8];
+    swprintf_s(tempText,  L"%3d", dispThresh);
+    Static_SetText(displayThreshStatic_, tempText);
+    SendMessage(displayThreshTrackBar_, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(dispThresh / 10));
+    
+    // TODO more
   }
-  ComboBox_SelectString(labelFieldComboBox_, -1, widen(appCon_.getLabel(source, layer)).c_str());
-  
-  //
-  // Update the colorButton_
-  //
-  InvalidateRect(colorButton_, nullptr, TRUE);
-
-  //
-  // Update the lineWidthSelector_
-  //
-  // TODO
-
-  //
-  // Update the Filled Polygon checkbox
-  //
-  bool checked = !appCon_.getPolygonDisplayedAsLine(source, layer);
-  Button_SetCheck(fillPolygonsCheck_, checked);
-
-  //
-  // Update display threshold
-  //
-  int dispThresh = appCon_.getDisplayThreshold(source, layer);
-  WCHAR tempText[8];
-  swprintf_s(tempText,  L"%3d", dispThresh);
-  Static_SetText(displayThreshStatic_, tempText);
-  SendMessage(displayThreshTrackBar_, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(dispThresh / 10));
-  
-  
-  // TODO more
 }
 
 void PFBApp::updateColorButton_(LPARAM lParam)
 {
-  string source, layer;
-  bool success = getSourceLayerFromTree_(source, layer);
-  if (!success) 
-  {
-    MessageBoxW(hwnd_, L"Error updating color button.", L"Error", MB_OK | MB_ICONERROR);
-    return;
-  }
-
-  PlaceFileColor color = appCon_.getColor(source, layer);
   LPDRAWITEMSTRUCT dis = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
   HDC hdc = dis->hDC;
   LPRECT rect = &dis->rcItem;
-
-  // Get the brush color
   DeleteObject(colorButtonColor_);
-  colorButtonColor_ = CreateSolidBrush(RGB(color.red,color.green,color.blue));
+
+  if(!IsWindowEnabled(colorButton_))
+  {
+    // Get the brush color
+    colorButtonColor_ = GetSysColorBrush(COLOR_3DFACE);
+  }
+  else
+  {
+    
+    string source, layer;
+    bool success = getSourceLayerFromTree_(source, layer);
+    if (!success) 
+    {
+      MessageBoxW(hwnd_, L"Error updating color button.", L"Error", MB_OK | MB_ICONERROR);
+      return;
+    }
+
+    PlaceFileColor color = appCon_.getColor(source, layer);
+    
+    // Get the brush color
+    colorButtonColor_ = CreateSolidBrush(RGB(color.red,color.green,color.blue));
+  }
   HBRUSH old = (HBRUSH)SelectObject(hdc, colorButtonColor_);
   RoundRect(hdc, 0, 0, rect->right, rect->bottom, 0.3*rect->right, 0.3*rect->bottom);
   colorButtonColor_ = (HBRUSH)SelectObject(hdc, old);
@@ -815,6 +889,7 @@ void PFBApp::deleteAction_()
   {
     MessageBoxW(hwnd_, L"Failed to delete item from view...", L"Error", MB_OK | MB_ICONERROR);
   }
+  updatePropertyControls_();
 }
 
 void PFBApp::deleteAllAction_()
@@ -827,6 +902,7 @@ void PFBApp::deleteAllAction_()
   }
 
   TreeView_DeleteAllItems(treeView_);
+  updatePropertyControls_();
 }
 
 void PFBApp::labelFieldCommandAction_(WPARAM wParam, LPARAM lParam)

@@ -425,6 +425,50 @@ bool AppController::isPolygonLayer(const string & source, const string & lyr)
   }
 }
 
+bool AppController::isLineLayer(const string& source, const string& lyr)
+{
+  try
+  {
+    OGRLayer* layer = get<IDX_ogrData>(
+      srcs_.at(source))->GetLayerByName(lyr.c_str());
+
+    // Geometry type
+    OGRwkbGeometryType geoType = wkbFlatten(layer->GetGeomType());
+
+    if(geoType == wkbMultiLineString || geoType == wkbLineString)
+      return true;
+
+    return false;
+  }
+  catch(const exception& e)
+  {
+    cerr << "Error checking layer for type.\n\n" << e.what() << endl << endl;
+    return false;
+  }
+}
+
+bool AppController::isPointLayer(const string& source, const string& lyr)
+{
+  try
+  {
+    OGRLayer* layer = get<IDX_ogrData>(
+      srcs_.at(source))->GetLayerByName(lyr.c_str());
+
+    // Geometry type
+    OGRwkbGeometryType geoType = wkbFlatten(layer->GetGeomType());
+
+    if(geoType == wkbMultiPoint || geoType == wkbPoint)
+      return true;
+
+    return false;
+  }
+  catch(const exception& e)
+  {
+    cerr << "Error checking layer for type.\n\n" << e.what() << endl << endl;
+    return false;
+  }
+}
+
 bool AppController::isVisible(const string & source, const string & lyr)
 {
   return get<IDX_layerInfo>(srcs_.at(source)).at(lyr).visible; 

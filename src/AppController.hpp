@@ -95,8 +95,10 @@ public:
   PlaceFileColor getColor(const string& source, const string& layer);
   void setColor(const string& source, const string& layer, PlaceFileColor clr);
 
-  // Determine if this layer is a polygon or not.
+  // Determine if this layer is a polygon, line, point, etc.
   bool isPolygonLayer(const string& source, const string& layer);
+  bool isLineLayer(const string& source, const string& layer);
+  bool isPointLayer(const string& source, const string& layer);
 
   // Determine if this layer should be visible
   bool isVisible(const string& source, const string& layer);
