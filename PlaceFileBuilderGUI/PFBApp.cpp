@@ -6,10 +6,6 @@
   #define __FILEW__ ((LPWSTR)widen(__FILE__).c_str())
 #endif
 
-#ifdef __OBJC__
-  #pragma message("****************************************************************************************************OBJC")
-#endif
-
 #include <string>
 #include <future>
 #include <thread>
