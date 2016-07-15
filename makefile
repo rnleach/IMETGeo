@@ -4,7 +4,7 @@
 DISTDIR   = ./dist
 PROGDIR   = $(DISTDIR)/bin
 TESTDIR   = ./test/bin
-PROGNAME = PFB.exe
+PROGNAME  = PFB.exe
 TEST_NAME = PFB_Unittests.exe
 
 #
@@ -38,9 +38,9 @@ COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c
 #
 # Compile resources
 #
- RES_SOURCE = ./PlaceFileBuilderGUI/PlaceFileBuilderGUI.rc
- RESFILE    = $(OBJDIR)/pfbrc.res
- WINDRES    = windres $(RES_SOURCE) -O coff -o $(RESFILE)
+RES_SOURCE = ./PlaceFileBuilderGUI/PlaceFileBuilderGUI.rc
+RESFILE    = $(OBJDIR)/pfbrc.res
+WINDRES    = windres $(RES_SOURCE) -O coff -o $(RESFILE)
 
 #
 # Linker directories, flags, and program
@@ -74,11 +74,13 @@ $(info TEST_NAME          = $(TEST_NAME)         )
 $(info                                           )
 
 $(info SRCS               = $(SRCS)              )
+$(info GUI_SRCS           = $(GUI_SRCS)          )
 $(info SRCS_TEST          = $(SRCS_TEST)         )
 $(info                                           )
 
 $(info OBJDIR             = $(OBJDIR)            )
 $(info OBJFILES           = $(OBJFILES)          )
+$(info GUI_OBJFILES       = $(GUI_OBJFILES)      )
 $(info OBJFILES_TEST      = $(OBJFILES_TEST)     )
 $(info                                           )
 
