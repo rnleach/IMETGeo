@@ -5,9 +5,9 @@
 using namespace std;
 
 MainWindow::MainWindow(HINSTANCE hInstance, int menuID) :
-  wc_(), dwExStyle_{ NULL }, dwStyle_{ NULL }, xPos_{ 0 },
-  yPos_{ 0 }, width_{ 800 }, height_{ 600 }, hwnd_{ NULL }, 
-  hInstance_{ hInstance }, created_{ false }
+  wc_(), dwExStyle_{ 0 }, dwStyle_{ 0 }, xPos_{ 0 }, yPos_{ 0 }, 
+  width_{ 800 }, height_{ 600 }, hwnd_{ nullptr }, hInstance_{ hInstance }, 
+  created_{ false }
 {
   // Set up the window class
   wc_ = {}; // Forced zero initialization for VS2013, can't use {} in constructor.
@@ -17,13 +17,14 @@ MainWindow::MainWindow(HINSTANCE hInstance, int menuID) :
   wc_.hInstance = hInstance;
   wc_.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
   wc_.lpfnWndProc = internal_WndProc;
-  wc_.hCursor = LoadCursorW(NULL, IDC_ARROW);
+  wc_.hCursor = LoadCursorW(nullptr, IDC_ARROW);
 
   // Check if there is a custom application icon defined, and use it if possible.
 #ifdef IDI_PRIMARY_ICON
-  wc_.hIcon = (HICON)LoadImageW(GetModuleHandleW(NULL), MAKEINTRESOURCEW(IDI_PRIMARY_ICON), IMAGE_ICON, 16, 16, 0);
+  wc_.hIcon = (HICON)LoadImageW(GetModuleHandleW(nullptr), 
+    MAKEINTRESOURCEW(IDI_PRIMARY_ICON), IMAGE_ICON, 16, 16, 0);
 #else
-  wc_.hIcon = LoadIconW(NULL, IDI_APPLICATION);
+  wc_.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
 #endif
   if (menuID != 0)
   {
@@ -75,8 +76,8 @@ void MainWindow::create(int nCmdShow, LPCWSTR title)
       yPos_,              // initial y-position
       width_,             // initial width of the window
       height_,            // initial height
-      NULL,               // Main window, so no parent
-      NULL,               // Handle to menu for this window
+      nullptr,            // Main window, so no parent
+      nullptr,            // Handle to menu for this window
       hInstance_,         // Program instance
       this);              // Additional parameters for CREATESTRUCT
 
@@ -101,7 +102,7 @@ int MainWindow::run()
   MSG msg;
   BOOL statusCode;
 
-  while ((statusCode = GetMessageW(&msg, NULL, 0, 0)) != 0)
+  while ((statusCode = GetMessageW(&msg, nullptr, 0, 0)) != 0)
   {
     if (statusCode < 0) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
 
@@ -159,12 +160,12 @@ void MainWindow::HandleFatalError(LPCWSTR file, UINT line)
   // Get the error message from the system
   WCHAR errorMessage[128];
   ::FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM,
-    NULL,
+    nullptr,
     ::GetLastError(),
     MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
     errorMessage,
     128,
-    NULL);
+    nullptr);
 
   // Post it to user.
   WCHAR fullMessage[256];
@@ -176,7 +177,7 @@ void MainWindow::HandleFatalError(LPCWSTR file, UINT line)
     line, 
     errorMessage);
 
-  MessageBoxExW(NULL, fullMessage, L"FATAL ERROR", MB_OK | MB_ICONERROR, 0);
+  MessageBoxExW(nullptr, fullMessage, L"FATAL ERROR", MB_OK | MB_ICONERROR, 0);
   ::ExitProcess(-1);
 }
 
@@ -191,7 +192,7 @@ void MainWindow::HandleFatalComError(LPWSTR file, UINT line, HRESULT hr)
     line,
     hr);
 
-  MessageBoxExW(NULL, fullMessage, L"FATAL ERROR", MB_OK | MB_ICONERROR, 0);
+  MessageBoxExW(nullptr, fullMessage, L"FATAL ERROR", MB_OK | MB_ICONERROR, 0);
   ::ExitProcess(-1);
 }
 

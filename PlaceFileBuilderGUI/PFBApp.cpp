@@ -33,16 +33,16 @@ using namespace std;
 #define IDC_EXPORT_PF      1014 // Export place file.
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
-  MainWindow{ hInstance}, appCon_{}, addButton_{ NULL }, 
-  deleteButton_{ NULL }, deleteAllButton_{ NULL }, treeView_{ NULL }, 
-  labelFieldComboBox_{ NULL }, colorButton_{ NULL }, colorButtonColor_{ NULL },
-  fillPolygonsCheck_{ NULL }, displayThreshStatic_{ NULL }, 
-  displayThreshTrackBar_{ NULL }, titleEditControl_{ NULL }, 
-  refreshStatic_{ NULL }, refreshTrackBar_{ NULL }, 
-  exportPlaceFileButton_ { NULL }
+  MainWindow{ hInstance}, appCon_{}, addButton_{ nullptr }, 
+  deleteButton_{ nullptr }, deleteAllButton_{ nullptr }, treeView_{ nullptr }, 
+  labelFieldComboBox_{ nullptr }, colorButton_{ nullptr }, colorButtonColor_{ nullptr },
+  fillPolygonsCheck_{ nullptr }, displayThreshStatic_{ nullptr }, 
+  displayThreshTrackBar_{ nullptr }, titleEditControl_{ nullptr }, 
+  refreshStatic_{ nullptr }, refreshTrackBar_{ nullptr }, 
+  exportPlaceFileButton_ { nullptr }
 {
   // Initialize COM controls
-  HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+  HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
   if (FAILED(hr)) HandleFatalComError(__FILEW__, __LINE__, hr);
 
   // Set the width
@@ -60,8 +60,8 @@ PFBApp::PFBApp(HINSTANCE hInstance) :
   // Load state from the last run of the application
   WCHAR buff1[MAX_PATH];
   WCHAR buff2[MAX_PATH];
-  GetModuleFileNameW(NULL, buff1, sizeof(buff1) / sizeof(WCHAR));
-  _wsplitpath_s(buff1, NULL, 0, buff2, sizeof(buff2) / sizeof(WCHAR), NULL, 0, NULL, 0);
+  GetModuleFileNameW(nullptr, buff1, sizeof(buff1) / sizeof(WCHAR));
+  _wsplitpath_s(buff1, nullptr, 0, buff2, sizeof(buff2) / sizeof(WCHAR), nullptr, 0, nullptr, 0);
   pathToAppConSavedState_ = narrow(buff2) + "..\\config\\appState.txt";
   appCon_.loadState(pathToAppConSavedState_);
 }
@@ -174,7 +174,7 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
 void PFBApp::buildGUI_()
 {
   // Handle for checking error status of some window creations.
-  HWND temp = NULL;
+  HWND temp = nullptr;
 
   // All objects right of the tree can use this position as a reference
   const int middleBorder = 295;
@@ -189,7 +189,7 @@ void PFBApp::buildGUI_()
     5, 5, 90, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_ADD),
-    NULL, NULL);
+    nullptr, nullptr);
   if (!addButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
 
   // Create the deleteButton_
@@ -201,7 +201,7 @@ void PFBApp::buildGUI_()
     100, 5, 95, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_DELETE),
-    NULL, NULL);
+    nullptr, nullptr);
   if (!deleteButton_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Create the deleteButton_
@@ -213,7 +213,7 @@ void PFBApp::buildGUI_()
     200, 5, 90, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_DELETE_ALL),
-    NULL, NULL);
+    nullptr, nullptr);
   if (!deleteAllButton_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add the treeview
@@ -225,7 +225,7 @@ void PFBApp::buildGUI_()
     5, 40, 285, 450,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_TREEVIEW),
-    NULL, NULL);
+    nullptr, nullptr);
   if (!treeView_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add label for the 'Label Field' controller.
@@ -236,8 +236,8 @@ void PFBApp::buildGUI_()
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
     middleBorder + 5, 40 + 7, labelFieldsWidth, 30,
     hwnd_,
-    NULL,
-    NULL, NULL);
+    nullptr,
+    nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add labelFieldComboBox_
@@ -249,7 +249,7 @@ void PFBApp::buildGUI_()
     middleBorder + 110, 40, 175, 500, // Height also includes dropdown box
     hwnd_,
     reinterpret_cast<HMENU>(IDC_COMBO_LABEL),
-    NULL, NULL);
+    nullptr, nullptr);
   if (!labelFieldComboBox_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add label for the 'Feature Color' controller.
@@ -260,8 +260,8 @@ void PFBApp::buildGUI_()
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
     middleBorder + 5, 75 + 6, labelFieldsWidth, 30,
     hwnd_,
-    NULL,
-    NULL, NULL);
+    nullptr,
+    nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Create the colorButton_
@@ -273,7 +273,7 @@ void PFBApp::buildGUI_()
     middleBorder + 110, 75, 30, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_COLOR_BUTTON),
-    NULL, NULL);
+    nullptr, nullptr);
   if (!colorButton_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add label for the 'Line Width' controller.
@@ -284,8 +284,8 @@ void PFBApp::buildGUI_()
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
     middleBorder + 5, 110 + 6, labelFieldsWidth, 30,
     hwnd_,
-    NULL,
-    NULL, NULL);
+    nullptr,
+    nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
   // TODO add the line width control
@@ -298,8 +298,8 @@ void PFBApp::buildGUI_()
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
     middleBorder + 5, 145 + 6, labelFieldsWidth, 30,
     hwnd_,
-    NULL,
-    NULL, NULL);
+    nullptr,
+    nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add the fillPolygonsCheck_
@@ -311,7 +311,7 @@ void PFBApp::buildGUI_()
     middleBorder + 110, 145, 30, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_POLYGON_CHECK),
-    NULL, NULL);
+    nullptr, nullptr);
   if (!fillPolygonsCheck_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add label for the displayThreshEdit_ control.
@@ -322,8 +322,8 @@ void PFBApp::buildGUI_()
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
     middleBorder + 5, 180 + 6, labelFieldsWidth, 30,
     hwnd_,
-    NULL,
-    NULL, NULL);
+    nullptr,
+    nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add the displayThreshStatic_
@@ -334,8 +334,8 @@ void PFBApp::buildGUI_()
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
     middleBorder + 110, 180 + 6, labelFieldsWidth, 20,
     hwnd_,
-    NULL,
-    NULL, NULL);
+    nullptr,
+    nullptr, nullptr);
   if (!displayThreshStatic_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add the displayThreshTrackBar_
@@ -347,7 +347,7 @@ void PFBApp::buildGUI_()
     middleBorder + 5, 210, labelFieldsWidth + 175, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_DISP_TRACK_BAR),
-    NULL, NULL);
+    nullptr, nullptr);
   if (!displayThreshTrackBar_) { HandleFatalError(__FILEW__, __LINE__); }
   SendMessage(displayThreshTrackBar_, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 100));
   SendMessage(displayThreshTrackBar_, TBM_SETPAGESIZE, 0, 10);
@@ -361,20 +361,20 @@ void PFBApp::buildGUI_()
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
     5, 495 + 8, labelFieldsWidth, 20,
     hwnd_,
-    NULL,
-    NULL, NULL);
+    nullptr,
+    nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add the titleEditControl_
   titleEditControl_ = CreateWindowExW(
     WS_EX_CLIENTEDGE,
     WC_EDITW,
-    NULL,
+    nullptr,
     WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL ,
     10 + labelFieldsWidth, 500, 180, 20,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_TITLE_EDIT),
-    NULL, NULL);
+    nullptr, nullptr);
   if (!titleEditControl_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add label for the refreshStatic_ and refreshTrackBar_ control.
@@ -385,20 +385,20 @@ void PFBApp::buildGUI_()
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
     5, 525, labelFieldsWidth, 30,
     hwnd_,
-    NULL,
-    NULL, NULL);
+    nullptr,
+    nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add the refreshStatic_
   refreshStatic_ = CreateWindowExW(
     0,
     WC_STATICW,
-    NULL,
+    nullptr,
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
     10 + labelFieldsWidth, 525, 180, 20,
     hwnd_,
-    NULL,
-    NULL, NULL);
+    nullptr,
+    nullptr, nullptr);
   if (!refreshStatic_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add the displayThreshTrackBar_
@@ -410,7 +410,7 @@ void PFBApp::buildGUI_()
     5, 545, 285, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_REFRESH_TBAR),
-    NULL, NULL);
+    nullptr, nullptr);
   if (!refreshTrackBar_) { HandleFatalError(__FILEW__, __LINE__); }
   SendMessage(refreshTrackBar_, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(1, 119));
   SendMessage(refreshTrackBar_, TBM_SETPAGESIZE, 0, 10);
@@ -425,7 +425,7 @@ void PFBApp::buildGUI_()
     175, 585, 120, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_EXPORT_PF),
-    NULL, NULL);
+    nullptr, nullptr);
   if (!exportPlaceFileButton_) { HandleFatalError(__FILEW__, __LINE__); }
 
   /****************************************************************************
@@ -498,7 +498,7 @@ void PFBApp::updatePropertyControls_()
   //
   // Update the colorButton_
   //
-  InvalidateRect(colorButton_, NULL, TRUE);
+  InvalidateRect(colorButton_, nullptr, TRUE);
 
   //
   // Update the lineWidthSelector_
@@ -574,10 +574,10 @@ HTREEITEM PFBApp::addSrcToTree_(const string & src)
     0, (LPARAM)(LPTVINSERTSTRUCT)&tvins);
 
   // Check for an error
-  if (hSrc == NULL)
+  if (hSrc == nullptr)
   {
     MessageBoxW(hwnd_, L"Error inserting item.", L"Error.", MB_OK | MB_ICONERROR);
-    return NULL;
+    return nullptr;
   }
 
   // Now add children nodes.
@@ -601,10 +601,10 @@ HTREEITEM PFBApp::addSrcToTree_(const string & src)
     hti = (HTREEITEM)SendMessage(treeView_, TVM_INSERTITEM,
       0, (LPARAM)(LPTVINSERTSTRUCT)&tvins);
 
-    if (hti == NULL)
+    if (hti == nullptr)
     {
       MessageBoxW(hwnd_, L"Error inserting item.", L"Error.", MB_OK | MB_ICONERROR);
-      return NULL;
+      return nullptr;
     }
   }
 
@@ -631,7 +631,7 @@ BOOL PFBApp::preventSelectionChange_(LPARAM lparam)
   */
 
   // If the new item has children, it cannot be selected.
-  if (TreeView_GetParent(treeView_, lpnmTv->itemNew.hItem) == NULL) return TRUE;
+  if (TreeView_GetParent(treeView_, lpnmTv->itemNew.hItem) == nullptr) return TRUE;
 
   return FALSE;
 }
@@ -663,7 +663,7 @@ bool PFBApp::getSourceLayerFromTree_(string & source, string & layer)
   // Get the currently selected item from the tree, and its parent
   HTREEITEM hSelect = TreeView_GetSelection(treeView_);
   HTREEITEM hParent = TreeView_GetParent(treeView_, hSelect);
-  if (hSelect == NULL || hParent == NULL) // Invalid selection
+  if (hSelect == nullptr || hParent == nullptr) // Invalid selection
   {
     //MessageBoxW(hwnd_, L"Invalid Selection in tree.", L"Error", MB_OK | MB_ICONERROR);
     return false;
@@ -696,18 +696,18 @@ void PFBApp::addAction_()
   GetWindowRect(h, &r);
 
   SetForegroundWindow(hwnd_);
-  TrackPopupMenu(popUpMenu, TPM_TOPALIGN | TPM_LEFTALIGN, r.left, r.bottom, 0, hwnd_, NULL);
+  TrackPopupMenu(popUpMenu, TPM_TOPALIGN | TPM_LEFTALIGN, r.left, r.bottom, 0, hwnd_, nullptr);
 }
 
 void PFBApp::addFileAction_(FileTypes_ tp)
 {
-  IFileOpenDialog *pFileOpen = NULL;
-  IShellItem *pItem = NULL;
+  IFileOpenDialog *pFileOpen = nullptr;
+  IShellItem *pItem = nullptr;
   LPWSTR lpszFilePath = nullptr;
   bool foundFile = false;
   string finalPath;
 
-  HRESULT hr = CoCreateInstance(__uuidof(FileOpenDialog), NULL,
+  HRESULT hr = CoCreateInstance(__uuidof(FileOpenDialog), nullptr,
     CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileOpen));
 
   if(SUCCEEDED(hr))
@@ -740,7 +740,7 @@ void PFBApp::addFileAction_(FileTypes_ tp)
   }
   if(SUCCEEDED(hr))
   {
-    hr = pFileOpen->Show(NULL);
+    hr = pFileOpen->Show(nullptr);
   }
   if(SUCCEEDED(hr))
   {
@@ -790,7 +790,7 @@ void PFBApp::deleteAction_()
   // Get the currently selected item from the tree, and its parent
   HTREEITEM hSelect = TreeView_GetSelection(treeView_);
   HTREEITEM hParent = TreeView_GetParent(treeView_, hSelect);
-  if (hSelect == NULL || hParent == NULL) return; // Invalid selection
+  if (hSelect == nullptr || hParent == nullptr) return; // Invalid selection
 
   string layer;
   string source;
@@ -898,7 +898,7 @@ void PFBApp::colorButtonAction_()
     return;
   }
   appCon_.setColor(source, layer, PlaceFileColor(GetRValue(cc.rgbResult), GetGValue(cc.rgbResult), GetBValue(cc.rgbResult)));
-  InvalidateRect(colorButton_, NULL, TRUE);
+  InvalidateRect(colorButton_, nullptr, TRUE);
 }
 
 void PFBApp::fillPolygonsCheckAction_()
@@ -988,15 +988,15 @@ void PFBApp::refreshTimeAction_()
 
 void PFBApp::exportPlaceFileAction_()
 {
-  IFileSaveDialog *pFileSave = NULL;
-  IShellItem *pItem = NULL;
+  IFileSaveDialog *pFileSave = nullptr;
+  IShellItem *pItem = nullptr;
   LPWSTR lpszFilePath = nullptr;
   bool foundFile = false;
   string finalPath;
   
   string startPath = appCon_.getLastSavedPlaceFile();
 
-  HRESULT hr = CoCreateInstance(__uuidof(FileSaveDialog), NULL,
+  HRESULT hr = CoCreateInstance(__uuidof(FileSaveDialog), nullptr,
     CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileSave));
 
   if (SUCCEEDED(hr))
@@ -1009,7 +1009,7 @@ void PFBApp::exportPlaceFileAction_()
   }
   if (SUCCEEDED(hr))
   {
-    hr = pFileSave->Show(NULL);
+    hr = pFileSave->Show(nullptr);
   }
   if (SUCCEEDED(hr))
   {
