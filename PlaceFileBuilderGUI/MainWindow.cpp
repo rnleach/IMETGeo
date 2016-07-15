@@ -25,7 +25,7 @@ MainWindow::MainWindow(HINSTANCE hInstance, int menuID) :
 #else
   wc_.hIcon = LoadIconW(NULL, IDI_APPLICATION);
 #endif
-  if (menuID != NULL)
+  if (menuID != 0)
   {
     wc_.lpszMenuName = MAKEINTRESOURCEW(menuID);
   }
@@ -56,7 +56,7 @@ MainWindow::MainWindow(const MainWindow & other) :
   if (hwnd_) map_[hwnd_] = this;
 }
 
-void MainWindow::create(int nCmdShow, LPWSTR title)
+void MainWindow::create(int nCmdShow, LPCWSTR title)
 {
   // Only try to create it once.
   if (!created_)
@@ -176,7 +176,7 @@ void MainWindow::HandleFatalError(LPCWSTR file, UINT line)
     line, 
     errorMessage);
 
-  MessageBoxExW(NULL, fullMessage, L"FATAL ERROR", MB_OK | MB_ICONERROR, NULL);
+  MessageBoxExW(NULL, fullMessage, L"FATAL ERROR", MB_OK | MB_ICONERROR, 0);
   ::ExitProcess(-1);
 }
 
@@ -191,7 +191,7 @@ void MainWindow::HandleFatalComError(LPWSTR file, UINT line, HRESULT hr)
     line,
     hr);
 
-  MessageBoxExW(NULL, fullMessage, L"FATAL ERROR", MB_OK | MB_ICONERROR, NULL);
+  MessageBoxExW(NULL, fullMessage, L"FATAL ERROR", MB_OK | MB_ICONERROR, 0);
   ::ExitProcess(-1);
 }
 
@@ -210,11 +210,11 @@ MainWindow::RestoreCWD::~RestoreCWD()
 
 std::string narrow(const wchar_t * s)
 {
-  int numChars = WideCharToMultiByte(CP_UTF8, NULL, s, -1, nullptr, 0, NULL, NULL);
+  int numChars = WideCharToMultiByte(CP_UTF8, 0, s, -1, nullptr, 0, nullptr, nullptr);
   if (numChars > 0)
   {
     unique_ptr<CHAR> buffer(new CHAR[numChars]);
-    WideCharToMultiByte(CP_UTF8, NULL, s, -1, buffer.get(), numChars, NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, 0, s, -1, buffer.get(), numChars, nullptr, nullptr);
     return std::string(buffer.get());
   }
   return std::string();

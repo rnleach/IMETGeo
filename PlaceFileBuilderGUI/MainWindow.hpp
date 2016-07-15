@@ -44,7 +44,7 @@ public:
   hMenu     - the value from a resource file corresponding to the default menu
               for this window class.
   */
-  MainWindow(HINSTANCE hInstance, int hMenu = NULL);
+  MainWindow(HINSTANCE hInstance, int hMenu = 0);
   MainWindow(const MainWindow& other);
   MainWindow(MainWindow && other);
 
@@ -56,7 +56,7 @@ public:
   sub-class, but it is probably better to explicitly call it to be consistent 
   and clear.
   */
-  void create(int nCmdShow, LPWSTR title);
+  void create(int nCmdShow, LPCWSTR title);
 
   /*
   Just implements the message loop. Call when you are ready to execute.

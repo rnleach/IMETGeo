@@ -33,7 +33,7 @@ using namespace std;
 #define IDC_EXPORT_PF      1014 // Export place file.
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
-  MainWindow{ hInstance, NULL }, appCon_{}, addButton_{ NULL }, 
+  MainWindow{ hInstance}, appCon_{}, addButton_{ NULL }, 
   deleteButton_{ NULL }, deleteAllButton_{ NULL }, treeView_{ NULL }, 
   labelFieldComboBox_{ NULL }, colorButton_{ NULL }, colorButtonColor_{ NULL },
   fillPolygonsCheck_{ NULL }, displayThreshStatic_{ NULL }, 
@@ -182,7 +182,7 @@ void PFBApp::buildGUI_()
 
   // Create the addButton_
   addButton_ = CreateWindowExW(
-    NULL,
+    0,
     WC_BUTTON,
     L"Add Source",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
@@ -194,7 +194,7 @@ void PFBApp::buildGUI_()
 
   // Create the deleteButton_
   deleteButton_ = CreateWindowExW(
-    NULL,
+    0,
     WC_BUTTON,
     L"Delete Layer",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD,
@@ -206,7 +206,7 @@ void PFBApp::buildGUI_()
 
   // Create the deleteButton_
   deleteAllButton_ = CreateWindowExW(
-    NULL,
+    0,
     WC_BUTTON,
     L"Delete All",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD,
@@ -230,7 +230,7 @@ void PFBApp::buildGUI_()
 
   // Add label for the 'Label Field' controller.
   temp = CreateWindowExW(
-    NULL,
+    0,
     WC_STATICW,
     L"Label Field:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
@@ -242,7 +242,7 @@ void PFBApp::buildGUI_()
 
   // Add labelFieldComboBox_
   labelFieldComboBox_ = CreateWindowExW(
-    NULL,
+    0,
     WC_COMBOBOXW,
     L"",
     WS_VISIBLE | WS_CHILD | CBS_AUTOHSCROLL| CBS_DROPDOWNLIST | WS_HSCROLL | WS_VSCROLL,
@@ -254,7 +254,7 @@ void PFBApp::buildGUI_()
 
   // Add label for the 'Feature Color' controller.
   temp = CreateWindowExW(
-    NULL,
+    0,
     WC_STATICW,
     L"Color:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
@@ -266,7 +266,7 @@ void PFBApp::buildGUI_()
 
   // Create the colorButton_
   colorButton_ = CreateWindowExW(
-    NULL,
+    0,
     WC_BUTTON,
     L"",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD |BS_OWNERDRAW,
@@ -278,7 +278,7 @@ void PFBApp::buildGUI_()
 
   // Add label for the 'Line Width' controller.
   temp = CreateWindowExW(
-    NULL,
+    0,
     WC_STATICW,
     L"Line Width:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
@@ -292,7 +292,7 @@ void PFBApp::buildGUI_()
 
   // Add label for the Fill Polygons checkbox controller.
   temp = CreateWindowExW(
-    NULL,
+    0,
     WC_STATICW,
     L"Fill Polygons:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
@@ -304,7 +304,7 @@ void PFBApp::buildGUI_()
 
   // Add the fillPolygonsCheck_
   fillPolygonsCheck_ = CreateWindowExW(
-    NULL,
+    0,
     WC_BUTTON,
     L"",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
@@ -316,7 +316,7 @@ void PFBApp::buildGUI_()
 
   // Add label for the displayThreshEdit_ control.
   temp = CreateWindowExW(
-    NULL,
+    0,
     WC_STATICW,
     L"Disp Thresh:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
@@ -328,7 +328,7 @@ void PFBApp::buildGUI_()
 
   // Add the displayThreshStatic_
   displayThreshStatic_ = CreateWindowExW(
-    NULL,
+    0,
     WC_STATICW,
     L"999",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
@@ -340,7 +340,7 @@ void PFBApp::buildGUI_()
 
   // Add the displayThreshTrackBar_
   displayThreshTrackBar_ = CreateWindowExW(
-    NULL,
+    0,
     TRACKBAR_CLASS,
     L"",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | TBS_AUTOTICKS,
@@ -355,7 +355,7 @@ void PFBApp::buildGUI_()
 
   // Add a label for the titleEditControl_
   temp = CreateWindowExW(
-    NULL,
+    0,
     WC_STATICW,
     L"Title:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
@@ -379,7 +379,7 @@ void PFBApp::buildGUI_()
 
   // Add label for the refreshStatic_ and refreshTrackBar_ control.
   temp = CreateWindowExW(
-    NULL,
+    0,
     WC_STATICW,
     L"Refresh Time:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
@@ -391,7 +391,7 @@ void PFBApp::buildGUI_()
 
   // Add the refreshStatic_
   refreshStatic_ = CreateWindowExW(
-    NULL,
+    0,
     WC_STATICW,
     NULL,
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
@@ -403,7 +403,7 @@ void PFBApp::buildGUI_()
 
   // Add the displayThreshTrackBar_
   refreshTrackBar_ = CreateWindowExW(
-    NULL,
+    0,
     TRACKBAR_CLASS,
     L"",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | TBS_AUTOTICKS,
@@ -418,7 +418,7 @@ void PFBApp::buildGUI_()
 
   // Create the exportPlaceFileButton_
   exportPlaceFileButton_ = CreateWindowExW(
-    NULL,
+    0,
     WC_BUTTON,
     L"Export Placefile",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD,
@@ -728,7 +728,7 @@ void PFBApp::addFileAction_(FileTypes_ tp)
       break;
     case FileTypes_::GDB:
       {
-        DWORD dwOptions = NULL;
+        DWORD dwOptions = 0;
         hr = pFileOpen->GetOptions(&dwOptions);
         if (SUCCEEDED(hr))
         {
