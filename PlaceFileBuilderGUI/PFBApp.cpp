@@ -1,12 +1,22 @@
 #include "PFBApp.hpp"
 #include "../src/PlaceFileColor.hpp"
 
+// Handle MinGW compiler
+#ifdef __MINGW32__
+  #define __FILEW__ ((LPWSTR)widen(__FILE__).c_str())
+#endif
+
+#ifdef __OBJC__
+  #pragma message("****************************************************************************************************OBJC")
+#endif
+
 #include <string>
 #include <future>
 #include <thread>
 
-#include <Shobjidl.h>
+//#include <Shobjidl.h>
 #include <Shlobj.h>
+#include <Objbase.h>
 
 using namespace std;
 
