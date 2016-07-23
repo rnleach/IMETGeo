@@ -89,9 +89,6 @@
     <ClInclude Include="PFBApp.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SRC\APPCONTROLLER.H">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\res\pfbicon.ico">

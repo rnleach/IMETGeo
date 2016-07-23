@@ -224,7 +224,6 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
     <ClCompile Include="PFBApp.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\SRC\APPCONTROLLER.H" />
     <ClInclude Include="..\src\AppController.hpp" />
     <ClInclude Include="..\src\Feature.hpp" />
     <ClInclude Include="..\src\LineFeature.hpp" />
