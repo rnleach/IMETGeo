@@ -961,7 +961,7 @@ void PFBApp::colorButtonAction_()
   BOOL success = ChooseColor(&cc);
   if (success != TRUE)
   {
-    MessageBoxW(hwnd_, L"Error choosing color.", L"Error", MB_OK | MB_ICONERROR);
+    // User clicked cancel or closed window without choosing a color.
     return;
   }
   
