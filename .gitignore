@@ -32,7 +32,7 @@ bin/
 obj/
 dist/
 
-# Sublime editor files
+# Sublime editor files or Visual Studio IDE specific files.
 *.sublime-workspace
 *.suo
 *.user

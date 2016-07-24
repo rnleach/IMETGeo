@@ -31,7 +31,7 @@ POSTCOMPILE = mv -f $(OBJDIR)/$*.Td $(OBJDIR)/$*.d
 #
 # Compiler flags, includes, and programs
 #
-CPPFLAGS = -std=c++14 -D _UNICODE -D UNICODE -D WINVER=0x0601 -D _WIN32_WINNT=0x0601 -D WIN32
+CPPFLAGS = -std=c++14 -D_UNICODE -DUNICODE -DWINVER=0x0601 -D_WIN32_WINNT=0x0601 -DWIN32
 CPP_INCLUDES = `gdal-config --cflags`
 COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c
 
