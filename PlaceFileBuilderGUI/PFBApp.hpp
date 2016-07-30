@@ -40,6 +40,8 @@ private:
   HWND labelFieldComboBox_;
   HWND colorButton_;
   HBRUSH colorButtonColor_;
+  HWND lineSizeTextBox_;
+  HWND lineSizeUDControl_;
   HWND fillPolygonsCheck_;
   HWND displayThreshStatic_;
   HWND displayThreshTrackBar_;
@@ -66,6 +68,7 @@ private:
   void deleteAllAction_();
   void labelFieldCommandAction_(WPARAM wParam, LPARAM lParam);
   void colorButtonAction_();
+  void lineWidthAction_();
   void fillPolygonsCheckAction_();
   void displayThreshAction_();
   void editTitleAction_();

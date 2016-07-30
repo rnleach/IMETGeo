@@ -31,13 +31,14 @@ using namespace std;
 #define IDC_TITLE_EDIT     1012 // Edit control for setting placefile title
 #define IDC_REFRESH_TBAR   1013 // Trackbar for setting the refresh time.
 #define IDC_EXPORT_PF      1014 // Export place file.
+#define IDC_WIDTH_TEXT     1015 // Line width text entry
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance}, appCon_{}, addButton_{ nullptr }, 
   deleteButton_{ nullptr }, deleteAllButton_{ nullptr }, treeView_{ nullptr }, 
   labelFieldComboBox_{ nullptr }, colorButton_{ nullptr }, colorButtonColor_{ nullptr },
-  fillPolygonsCheck_{ nullptr }, displayThreshStatic_{ nullptr }, 
-  displayThreshTrackBar_{ nullptr }, titleEditControl_{ nullptr }, 
+  lineSizeTextBox_{nullptr}, lineSizeUDControl_{nullptr}, fillPolygonsCheck_{ nullptr }, 
+  displayThreshStatic_{ nullptr }, displayThreshTrackBar_{ nullptr }, titleEditControl_{ nullptr }, 
   refreshStatic_{ nullptr }, refreshTrackBar_{ nullptr }, 
   exportPlaceFileButton_ { nullptr }
 {
@@ -106,6 +107,9 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       break;
     case IDB_COLOR_BUTTON:
       colorButtonAction_();
+      break;
+    case IDC_WIDTH_TEXT:
+      lineWidthAction_();
       break;
     case IDB_POLYGON_CHECK:
       fillPolygonsCheckAction_();
@@ -197,7 +201,7 @@ void PFBApp::buildGUI_()
     0,
     WC_BUTTON,
     L"Delete Layer",
-    WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
     100, 5, 95, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_DELETE),
@@ -209,7 +213,7 @@ void PFBApp::buildGUI_()
     0,
     WC_BUTTON,
     L"Delete All",
-    WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
     200, 5, 90, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_DELETE_ALL),
@@ -221,7 +225,8 @@ void PFBApp::buildGUI_()
     WS_EX_CLIENTEDGE | TVS_EX_AUTOHSCROLL,
     WC_TREEVIEW,
     L"Layers",
-    WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | TVS_DISABLEDRAGDROP | TVS_FULLROWSELECT | TVS_SHOWSELALWAYS,
+    WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | 
+        TVS_DISABLEDRAGDROP | TVS_FULLROWSELECT | TVS_SHOWSELALWAYS,
     5, 40, 285, 450,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_TREEVIEW),
@@ -282,13 +287,34 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Line Width:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 110 + 6, labelFieldsWidth, 30,
+    middleBorder + 5, 110 + 8, labelFieldsWidth, 30,
     hwnd_,
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
-  // TODO add the line width control
+  // Add the line width control
+  lineSizeTextBox_ = CreateWindowExW(
+    0,
+    WC_EDITW,
+    nullptr,
+    WS_CHILD | WS_VISIBLE | ES_CENTER | ES_NUMBER | ES_READONLY,
+    middleBorder + labelFieldsWidth + 10, 115, 50, 20,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_WIDTH_TEXT),
+    nullptr, nullptr);
+  if (!lineSizeTextBox_) { HandleFatalError(__FILEW__, __LINE__); }
+  HWND lineSizeUDControl_ = CreateWindowExW(
+    0,
+    UPDOWN_CLASS,
+    nullptr,
+    WS_CHILDWINDOW | WS_VISIBLE | UDS_AUTOBUDDY | UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_HOTTRACK,
+    0, 0, 0, 0,
+    hwnd_,
+    0,
+    nullptr, nullptr);
+  if (!lineSizeUDControl_) { HandleFatalError(__FILEW__, __LINE__); }
+  SendMessage(lineSizeUDControl_, UDM_SETRANGE, 0, MAKELPARAM(5, 1));
 
   // Add label for the Fill Polygons checkbox controller.
   temp = CreateWindowExW(
@@ -479,7 +505,7 @@ void PFBApp::updatePropertyControls_()
   // Disable all controls, will re-enable on an as need basis
   {
     vector<HWND> cntrls = {deleteButton_, deleteAllButton_, labelFieldComboBox_,
-      colorButton_, fillPolygonsCheck_, displayThreshStatic_, 
+      colorButton_, fillPolygonsCheck_, displayThreshStatic_, lineSizeUDControl_,
       displayThreshTrackBar_};
 
     // Clear contents of combobox
@@ -513,6 +539,7 @@ void PFBApp::updatePropertyControls_()
     {
       cntrls.push_back(labelFieldComboBox_);
       cntrls.push_back(colorButton_);
+      cntrls.push_back(lineSizeUDControl_);
       cntrls.push_back(fillPolygonsCheck_);
       cntrls.push_back(displayThreshStatic_);
       cntrls.push_back(displayThreshTrackBar_);
@@ -521,6 +548,7 @@ void PFBApp::updatePropertyControls_()
     {
       cntrls.push_back(labelFieldComboBox_);
       cntrls.push_back(colorButton_);
+      cntrls.push_back(lineSizeUDControl_);
       cntrls.push_back(displayThreshStatic_);
       cntrls.push_back(displayThreshTrackBar_);
     }
@@ -556,7 +584,7 @@ void PFBApp::updatePropertyControls_()
     InvalidateRect(colorButton_, nullptr, TRUE);
 
     //
-    // Update the lineWidthSelector_
+    // Update the lineSizeUDControl_
     //
     // TODO
 
@@ -975,6 +1003,12 @@ void PFBApp::colorButtonAction_()
   }
   appCon_.setColor(source, layer, PlaceFileColor(GetRValue(cc.rgbResult), GetGValue(cc.rgbResult), GetBValue(cc.rgbResult)));
   InvalidateRect(colorButton_, nullptr, TRUE);
+}
+
+void PFBApp::lineWidthAction_()
+{
+  // TODO
+  cerr << "IMPLEMENT LINE WIDTH\n";
 }
 
 void PFBApp::fillPolygonsCheckAction_()
