@@ -15,12 +15,12 @@ namespace PFB
   RangeRing::RangeRing(const string& name, double lat, double lon, vector<double>&& ranges):
     name_(name), pnt_(lat, lon), ranges_(move(ranges)) {}
 
-  vector<Feature> RangeRing::getPlaceFileFeatures(int dispThresh, int lineWidth, PlaceFileColor color)
+  vector<FP> RangeRing::getPlaceFileFeatures(int dispThresh, int lineWidth, PlaceFileColor color)
   {
-    vector<Feature> toRet = vector<Feature>(1 + ranges_.size());
+    vector<FP> toRet = vector<FP>(1 + ranges_.size());
 
     // Put the center point on the list.
-    toRet.push_back(PointFeature(name_, color, pnt_.latitude, pnt_.longitude, dispThresh));
+    toRet.push_back(FP(new PointFeature(name_, color, pnt_.latitude, pnt_.longitude, dispThresh)));
 
     // Put the rings on the list
     const double earthRadius = 3959.0; // miles
@@ -47,7 +47,7 @@ namespace PFB
         pnts.push_back(point(newLat, newLon));
       }
 
-      toRet.push_back(move(LineFeature(name_, color, pnts, dispThresh, lineWidth)));
+      toRet.push_back(FP(new LineFeature(name_, color, pnts, dispThresh, lineWidth)));
     }
 
     return move(toRet);

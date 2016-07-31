@@ -48,7 +48,7 @@ namespace PFB
     void saveFile(const string& path);
 
     /// Add a feature to this PlaceFile
-    void addFeature(FP ft);
+    void addFeature(FP&& ft);
 
     /// Add a feature from an OGR geometry PolyAsString will convert the
     /// boundaries of a polygon to a line string. Polygons show up as a solid

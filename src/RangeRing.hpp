@@ -1,3 +1,4 @@
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -8,6 +9,7 @@
 namespace PFB
 {
   using namespace std;
+  using FP = unique_ptr<Feature>;
 
   class RangeRing
   {
@@ -15,7 +17,7 @@ namespace PFB
     RangeRing(const string& name, double lat, double lon, const vector<double>& ranges);
     RangeRing(const string& name, double lat, double lon, vector<double>&& ranges);
 
-    vector<Feature> getPlaceFileFeatures(int dispThresh, int lineWidth, PlaceFileColor color);
+    vector<FP> getPlaceFileFeatures(int dispThresh, int lineWidth, PlaceFileColor color);
 
   private:
     string name_;

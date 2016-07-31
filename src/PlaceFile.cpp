@@ -28,7 +28,7 @@ void PFB::PlaceFile::saveFile(const string & path)
   out.file << s.rdbuf();
 }
 
-void PFB::PlaceFile::addFeature(FP ft)
+void PFB::PlaceFile::addFeature(FP&& ft)
 {
   _features[_nextKey++] = move(ft);
 }
