@@ -34,6 +34,9 @@ namespace PFB
     /// Move Constructor
     Feature(Feature&& src);
 
+    /// Copy constructor
+    Feature(const Feature& src);
+
     /// Basic constructor to set the name, color, and display threshold of a 
     /// feature.
     Feature(const std::string& label, const PlaceFileColor& color, 

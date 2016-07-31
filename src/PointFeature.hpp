@@ -42,6 +42,9 @@ namespace PFB
     /// Move constructor
     PointFeature(PointFeature&& src);
 
+    /// Copy constructor
+    PointFeature(const PointFeature& src);
+
     /// Move assignment
     PointFeature& operator=(PointFeature&& src);
 

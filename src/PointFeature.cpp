@@ -23,6 +23,9 @@ PFB::PointFeature::PointFeature(const string& label, const PlaceFileColor& color
 PFB::PointFeature::PointFeature(PointFeature && src)
   : Feature(move(src)),_lat(src._lat),_lon(src._lon){}
 
+PFB::PointFeature::PointFeature(const PointFeature& src)
+  : Feature(src),_lat(src._lat),_lon(src._lon){}
+
 PointFeature & PFB::PointFeature::operator=(PointFeature && src)
 {
   Feature::operator=(move(src));

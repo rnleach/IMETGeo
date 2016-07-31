@@ -18,6 +18,13 @@ PFB::Feature::Feature(Feature && src) :
   lineWidth_(src.lineWidth_)
 {}
 
+PFB::Feature::Feature(const Feature & src) :
+  _label(src._label), 
+  _color(src._color), 
+  displayThreshold_(src.displayThreshold_),
+  lineWidth_(src.lineWidth_)
+{}
+
 PFB::Feature::Feature(const std::string& label, const PlaceFileColor& color,
   int displayThreshold, int lw) : 
   _label(std::string(label)), 
