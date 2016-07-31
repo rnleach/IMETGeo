@@ -12,6 +12,7 @@
 
 //#include <Shobjidl.h>
 #include <Shlobj.h>
+#include <Shlwapi.h>
 #include <Objbase.h>
 
 using namespace std;
@@ -1114,7 +1115,7 @@ void PFBApp::exportPlaceFileAction_()
   bool foundFile = false;
   string finalPath;
   
-  string startPath = appCon_.getLastSavedPlaceFile();
+  wstring startPath = widen(appCon_.getLastSavedPlaceFile());
 
   HRESULT hr = CoCreateInstance(__uuidof(FileSaveDialog), nullptr,
     CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileSave));
@@ -1127,9 +1128,19 @@ void PFBApp::exportPlaceFileAction_()
     fltr.pszSpec = L"*.txt;*.TXT";
     hr = pFileSave->SetFileTypes(1, &fltr);
   }
+  // Set the path to the last place one was saved, if there is a place like that.
+  if( SUCCEEDED(hr) && !startPath.empty() && PathFileExistsW(startPath.c_str()))
+  {
+    HRESULT hr2 = SHCreateItemFromParsingName(startPath.c_str(), nullptr, IID_PPV_ARGS(&pItem));
+    if(SUCCEEDED(hr2))
+    {
+      hr2 = pFileSave->SetSaveAsItem(pItem);
+    }
+    SafeRelease(&pItem);
+  }
   if (SUCCEEDED(hr))
   {
-    hr = pFileSave->Show(nullptr);
+    hr = pFileSave->Show(hwnd_);
   }
   if (SUCCEEDED(hr))
   {
