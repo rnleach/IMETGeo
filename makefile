@@ -46,7 +46,7 @@ WINDRES    = windres $(RES_SOURCE) -O coff -o $(RESFILE)
 # Linker directories, flags, and program
 #
 LINKFLAGS =  -mwindows 
-LIBS      =  -lmingw32 -lole32 -lgdi32 -lkernel32 -luser32 -lshell32 -lShlwapi `gdal-config --libs` 
+LIBS      =  -lmingw32 -lole32 -lgdi32 -lkernel32 -luser32 -lShell32 -lShlwapi `gdal-config --libs` 
 LINK      =  g++  $(OBJFILES) $(GUI_OBJFILES) $(RESFILE) $(LIBS) -o $(PROGDIR)/$(PROGNAME)
 LINK      += $(LINKFLAGS)
 LINK_TEST =  g++ -o $(TESTDIR)/$(TEST_NAME) $(OBJFILES) $(OBJFILES_TEST)
