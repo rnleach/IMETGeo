@@ -33,9 +33,9 @@ void PFB::PlaceFile::addFeature(FP ft)
   _features[_nextKey++] = move(ft);
 }
 
-void PFB::PlaceFile::addOGRGeometry(const string& label, 
-  const PlaceFileColor& color, OGRGeometry& ft, 
-  OGRCoordinateTransformation *trans, bool PolyAsString, int displayThresh)
+void PFB::PlaceFile::addOGRGeometry(const string& label, const PlaceFileColor& color, 
+  OGRGeometry& ft, OGRCoordinateTransformation *trans, bool PolyAsString, int displayThresh, 
+  int lineWidth)
 {
   FP newFeature;
   vector<Feature*> multiGeo;
@@ -71,7 +71,7 @@ void PFB::PlaceFile::addOGRGeometry(const string& label,
     // that GRAnalyst errors on.
     if (poLine->getNumPoints() > 1)
     {
-      newFeature = FP(new LineFeature(label, color, *poLine, displayThresh));
+      newFeature = FP(new LineFeature(label, color, *poLine, displayThresh, lineWidth));
     }
     break;
 
@@ -85,7 +85,7 @@ void PFB::PlaceFile::addOGRGeometry(const string& label,
       * setting a value for feature and going to the end of the function.      *
       *************************************************************************/
       vector<LP> lines = 
-          LineFeature::PolygonToLines(label, color, *poPoly, displayThresh);
+          LineFeature::PolygonToLines(label, color, *poPoly, displayThresh, lineWidth);
       while(!lines.empty())
       {
         _features[_nextKey++] = move(lines.back());
@@ -95,7 +95,7 @@ void PFB::PlaceFile::addOGRGeometry(const string& label,
     }
     else
     {
-      newFeature = FP(new PolygonFeature(label, color, *poPoly, displayThresh));
+      newFeature = FP(new PolygonFeature(label, color, *poPoly, displayThresh, lineWidth));
     }
     break;
 
@@ -107,7 +107,7 @@ void PFB::PlaceFile::addOGRGeometry(const string& label,
     for (int i = 0; i != numGeos; ++i)
     {
       tmp = coll->getGeometryRef(i);
-      addOGRGeometry(label, color, *tmp, trans, PolyAsString, displayThresh);
+      addOGRGeometry(label, color, *tmp, trans, PolyAsString, displayThresh, lineWidth);
     }
     break;
 

@@ -37,7 +37,7 @@ namespace PFB
     /// Basic constructor to set the name, color, and display threshold of a 
     /// feature.
     Feature(const std::string& label, const PlaceFileColor& color, 
-      int displayThreshold);
+        int displayThreshold, int lineWidth);
 
     /// Pure virtual destructor to ensure sub-class constructors get called.
     virtual ~Feature() = 0;
@@ -71,6 +71,9 @@ namespace PFB
     { 
       includeThreshold_ = useThresh; 
     }
+    /// Accessor and Setter methods for the line width
+    inline int getLineWidth() const { return lineWidth_; }
+    inline void setLineWidth(const int newVal) { lineWidth_ = newVal; }
 
     /// Enable writing this to an output stream.
     friend std::ostream& operator<<(std::ostream& ost, const Feature& pf);
@@ -84,6 +87,7 @@ namespace PFB
     std::string _label;
     PlaceFileColor _color;
     int displayThreshold_;
+    int lineWidth_;
   };
 
   std::ostream& operator<<(std::ostream& ost, const Feature& pf);

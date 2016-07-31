@@ -7,8 +7,8 @@ using namespace std;
 
 PFB::LineFeature::LineFeature(const std::string& label, 
   const PlaceFileColor& color, const std::vector<double>& lats, 
-  const std::vector<double>& lons, int dispThresh)
-: Feature(label, color, dispThresh)
+  const std::vector<double>& lons, int dispThresh, int lineWidth)
+: Feature(label, color, dispThresh, lineWidth)
 {
   // Initialize _coords
   _coords.reserve(lats.size());
@@ -19,12 +19,12 @@ PFB::LineFeature::LineFeature(const std::string& label,
 }
 
 PFB::LineFeature::LineFeature(const string & label, const PlaceFileColor & color, 
-  const std::vector<point>& coords, int dispThresh) 
-: Feature(label, color, dispThresh), _coords( coords ){}
+  const std::vector<point>& coords, int dispThresh, int lineWidth) 
+: Feature(label, color, dispThresh, lineWidth), _coords( coords ){}
 
 PFB::LineFeature::LineFeature(const string& label, const PlaceFileColor& color,
-  const OGRLineString& lineString, int dispThresh, bool forceClosed)
-:Feature(label, color, dispThresh)
+  const OGRLineString& lineString, int dispThresh, int lineWidth, bool forceClosed)
+:Feature(label, color, dispThresh, lineWidth)
 {
   int numPoints = lineString.getNumPoints();
 
@@ -45,7 +45,7 @@ PFB::LineFeature::LineFeature(const string& label, const PlaceFileColor& color,
 }
 
 vector<LP> PFB::LineFeature::PolygonToLines(const string & label, 
-  const PlaceFileColor & color, const OGRPolygon & polygon, int dispThresh)
+  const PlaceFileColor & color, const OGRPolygon & polygon, int dispThresh, int lineWidth)
 {
   using VLF = vector<LP>;
   // Get the number of lines in this polygon
@@ -68,7 +68,7 @@ vector<LP> PFB::LineFeature::PolygonToLines(const string & label,
       ls = polygon.getInteriorRing(l - 1);
     }
     result.push_back(move(LP( 
-      new LineFeature(label, color, *ls, dispThresh, true))));
+      new LineFeature(label, color, *ls, dispThresh, lineWidth, true))));
   }
 
   return result;
@@ -96,7 +96,7 @@ std::ostream & LineFeature::put(std::ostream & ost) const
   /*Need to strip leading whitespace from the string*/
   const bool allWhiteSpace = label.find_first_not_of(" \t") == string::npos;
 
-  ost << "Line: " << "2" << ",0";
+  ost << "Line: " << getLineWidth() << ",0";
   if(!allWhiteSpace) ost << "," << label << "\n";
   else ost << "\n";
 

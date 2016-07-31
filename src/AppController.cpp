@@ -120,7 +120,7 @@ string AppController::addSource(const string& path)
       // Don't even bother to add it if it will not be visible
       if(!makeVisible) continue;
 
-      LayerOptions lp = LayerOptions(DO_NOT_USE_LAYER, PlaceFileColor(),
+      LayerOptions lp = LayerOptions(DO_NOT_USE_LAYER, PlaceFileColor(), 2,
         true, makeVisible, 999, move(summarize(layer)));
 
       lyrInfo.insert(LayerInfoPair { layerName, move(lp)} );
@@ -175,6 +175,7 @@ void AppController::savePlaceFile(const string& fileName)
       const string& layerName     = lIt->first;
       const string& labelField    = lIt->second.labelField;
       const PlaceFileColor& color = lIt->second.color;
+      const int& lineWidth        = lIt->second.lineWidth;
       const bool polyAsLine       = lIt->second.polyAsLine;
       const int displayThresh     = lIt->second.displayThresh;
 
@@ -215,7 +216,7 @@ void AppController::savePlaceFile(const string& fileName)
 
         OGRGeometry *geo = feature->GetGeometryRef();
 
-        pf.addOGRGeometry(label, color, *geo, trans, polyAsLine, displayThresh);
+        pf.addOGRGeometry(label, color, *geo, trans, polyAsLine, displayThresh, lineWidth);
       }
 
       if(trans != nullptr) 
@@ -242,10 +243,7 @@ void AppController::setRefreshMinutes(int newVal)
   refreshSeconds_ = 0;
 }
 
-int AppController::getRefreshSeconds()
-{
-  return refreshSeconds_;
-}
+int AppController::getRefreshSeconds() { return refreshSeconds_; }
 
 void AppController::setRefreshSeconds(int newVal)
 {
@@ -308,13 +306,9 @@ bool AppController::hideLayer(const string& source, const string& layer)
   return false;
 }
 
-void AppController::deleteSource(const string& source)
-{
-  srcs_.erase(source);
-}
+void AppController::deleteSource(const string& source) { srcs_.erase(source); }
 
-const vector<string> AppController::getFields(
-  const string & source, const string & lyr)
+const vector<string> AppController::getFields(const string & source, const string & lyr)
 {
   vector<string> toRet;
 
@@ -363,8 +357,7 @@ void AppController::setLabel(const string& source,
   opts.labelField = label;
 }
 
-bool AppController::getPolygonDisplayedAsLine(const string& source, 
-  const string& layer) 
+bool AppController::getPolygonDisplayedAsLine(const string& source, const string& layer) 
 { 
   return get<IDX_layerInfo>(srcs_.at(source)).at(layer).polyAsLine; 
 }
@@ -376,30 +369,37 @@ void AppController::setPolygonDisplayedAsLine(const string& source,
   opts.polyAsLine = asLine;
 }
 
-int AppController::getDisplayThreshold(const string& source, 
-  const string& layer) 
+int AppController::getDisplayThreshold(const string& source, const string& layer) 
 { 
   return get<IDX_layerInfo>(srcs_.at(source)).at(layer).displayThresh; 
 }
 
-void AppController::setDisplayThreshold(const string& source, 
-    const string& layer, int thresh)
+void AppController::setDisplayThreshold(const string& source, const string& layer, int thresh)
 {
   auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
   opts.displayThresh = thresh;
 }
 
-PlaceFileColor AppController::getColor(const string& source, 
-  const string& layer) 
+PlaceFileColor AppController::getColor(const string& source, const string& layer) 
 { 
   return get<IDX_layerInfo>(srcs_.at(source)).at(layer).color; 
 }
 
-void AppController::setColor(const string& source, 
-  const string& layer, PlaceFileColor clr)
+void AppController::setColor(const string& source, const string& layer, PlaceFileColor clr)
 {
   auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
   opts.color = clr;
+}
+
+int AppController::getLineWidth(const string& source, const string& layer) 
+{ 
+  return get<IDX_layerInfo>(srcs_.at(source)).at(layer).lineWidth; 
+}
+
+void AppController::setLineWidth(const string& source, const string& layer, int lw)
+{
+  auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
+  opts.lineWidth = lw;
 }
 
 bool AppController::isPolygonLayer(const string & source, const string & lyr)
@@ -474,10 +474,11 @@ bool AppController::isVisible(const string & source, const string & lyr)
   return get<IDX_layerInfo>(srcs_.at(source)).at(lyr).visible; 
 }
 
-AppController::LayerOptions::LayerOptions(string lField, PlaceFileColor clr,
+AppController::LayerOptions::LayerOptions(string lField, PlaceFileColor clr, int lw,
     bool pal, bool vsbl, int dispThresh, const string smry) :
   labelField ( lField ), 
   color{ clr }, 
+  lineWidth{ lw }, 
   polyAsLine{ pal },
   visible{ vsbl },
   displayThresh{ dispThresh },
@@ -609,14 +610,15 @@ void AppController::saveState(const string& pathToStateFile)
          7:  Layer Start: layerName
          8:  labelField: labelField
          9:  color: rrr ggg bbb
-        10:  polyAsLine: True (or False)
-        11:  visible: True (or False)
-        12:  displayThresh: integer value
-        13:  Layer End: layerName
-        14:  .......
+        10:  lineWidth: integer
+        11:  polyAsLine: True (or False)
+        12:  visible: True (or False)
+        13:  displayThresh: integer value
+        14:  Layer End: layerName
+        15:  .......
         . :
         . :
-        . :  repeat 7-13 for each layer
+        . :  repeat 7-14 for each layer
         . :
         . :
         m :  Source End: srcName
@@ -661,6 +663,9 @@ void AppController::saveState(const string& pathToStateFile)
             static_cast<short>(clr.red)   << " " <<
             static_cast<short>(clr.green) << " " <<
             static_cast<short>(clr.blue)  << "\n";
+
+          // Line width
+          statefile << "lineWidth: " << lyrIt->second.lineWidth << "\n";
 
           // PolyAsLine
           statefile << "polyAsLine: " << 
@@ -775,6 +780,14 @@ void AppController::loadState(const string& pathToStateFile)
 
                   setColor(srcName, lyrName, PlaceFileColor(red, green, blue));
                 }
+
+                // Parse line width
+                else if( line.find("lineWidth: ") != string::npos )
+                {
+                  int lw = atoi(line.substr(11).c_str());
+                  setLineWidth(srcName, lyrName, lw);
+                }
+
                 // Parse poly as line
                 else if( line.find("polyAsLine: ") != string::npos )
                 {

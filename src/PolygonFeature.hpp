@@ -33,7 +33,7 @@ namespace PFB
 
     /// Create a line from a feature loaded in via GDAL library
     PolygonFeature(const std::string& label, const PlaceFileColor& color,
-      const OGRPolygon& polygon, int displayThresh);
+      const OGRPolygon& polygon, int displayThresh, int lineWidth);
 
     /// Move constructor
     PolygonFeature(PolygonFeature&& src);

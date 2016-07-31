@@ -38,23 +38,22 @@ namespace PFB
     //LineFeature(const LineFeature& src);
 
     /// Create a line from vectors of latitude and longitude
-    LineFeature(const string& label, const PlaceFileColor& color,
-      const vector<double>& lats, const vector<double>& lons, int dispThresh);
+    LineFeature(const string& label, const PlaceFileColor& color, const vector<double>& lats, 
+      const vector<double>& lons, int dispThresh, int lineWidth);
 
     /// Create a line from a vector of points
     LineFeature(const string& label, const PlaceFileColor& color,
-      const vector<point>& coords, int dispThresh);
+      const vector<point>& coords, int dispThresh, int lineWidth);
 
     /// Create a line from a feature loaded in via GDAL library
     /// forceClosed makes the last point = first point
-    LineFeature(const string& label, const PlaceFileColor& color,
-      const OGRLineString& lineString, int dispThresh, 
-      bool forceClosed = false);
+    LineFeature(const string& label, const PlaceFileColor& color, const OGRLineString& lineString, 
+      int dispThresh, int lineWidth, bool forceClosed = false);
 
     /// Create a vector of lines from a polygon feature loaded in via GDAL
     using LP = std::unique_ptr<LineFeature>;
     static vector<LP> PolygonToLines(const string& label, 
-      const PlaceFileColor& color, const OGRPolygon& polygon, int dispThres);
+      const PlaceFileColor& color, const OGRPolygon& polygon, int dispThresh, int lineWidth);
 
     /// Move Constructor
     LineFeature(LineFeature && src);

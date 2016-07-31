@@ -95,6 +95,10 @@ public:
   PlaceFileColor getColor(const string& source, const string& layer);
   void setColor(const string& source, const string& layer, PlaceFileColor clr);
 
+  // Get/Set the line width
+  int getLineWidth(const string& source, const string& layer);
+  void setLineWidth(const string& source, const string& layer, int lw);
+
   // Determine if this layer is a polygon, line, point, etc.
   bool isPolygonLayer(const string& source, const string& layer);
   bool isLineLayer(const string& source, const string& layer);
@@ -118,6 +122,9 @@ public:
     // The color to make all features in this layer
     PlaceFileColor color;
 
+    // The width of the line used for drawing it
+    int lineWidth;
+
     // Convert polygons to strings
     bool polyAsLine;
 
@@ -131,7 +138,7 @@ public:
     const string summary;
 
     // Constructor 
-    explicit LayerOptions(string lField, PlaceFileColor clr, bool polyAsLine, 
+    explicit LayerOptions(string lField, PlaceFileColor clr, int lw, bool polyAsLine, 
                           bool vsbl, int dispThresh, const string smry);
 
   };

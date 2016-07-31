@@ -60,7 +60,7 @@ namespace PFB
     /// same label as the feature.
     void addOGRGeometry(const string& label, const PlaceFileColor& color, 
       OGRGeometry& ft, OGRCoordinateTransformation* trans = nullptr, 
-      bool PolyAsString = false, int displayThresh = 999);
+      bool PolyAsString = false, int displayThresh = 999, int lineWidth = 2);
 
     /// Remove a feature from this PlaceFile
     void deleteFeature(const size_t key);

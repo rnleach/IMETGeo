@@ -31,16 +31,15 @@ using namespace std;
 #define IDC_TITLE_EDIT     1012 // Edit control for setting placefile title
 #define IDC_REFRESH_TBAR   1013 // Trackbar for setting the refresh time.
 #define IDC_EXPORT_PF      1014 // Export place file.
-#define IDC_WIDTH_TEXT     1015 // Line width text entry
+#define IDC_WIDTH_CB       1015 // Line width combobox
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance}, appCon_{}, addButton_{ nullptr }, 
   deleteButton_{ nullptr }, deleteAllButton_{ nullptr }, treeView_{ nullptr }, 
   labelFieldComboBox_{ nullptr }, colorButton_{ nullptr }, colorButtonColor_{ nullptr },
-  lineSizeTextBox_{nullptr}, lineSizeUDControl_{nullptr}, fillPolygonsCheck_{ nullptr }, 
-  displayThreshStatic_{ nullptr }, displayThreshTrackBar_{ nullptr }, titleEditControl_{ nullptr }, 
-  refreshStatic_{ nullptr }, refreshTrackBar_{ nullptr }, 
-  exportPlaceFileButton_ { nullptr }
+  lineSizeComboBox_{nullptr}, fillPolygonsCheck_{ nullptr }, displayThreshStatic_{ nullptr }, 
+  displayThreshTrackBar_{ nullptr }, titleEditControl_{ nullptr }, refreshStatic_{ nullptr }, 
+  refreshTrackBar_{ nullptr }, exportPlaceFileButton_ { nullptr }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -108,7 +107,7 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case IDB_COLOR_BUTTON:
       colorButtonAction_();
       break;
-    case IDC_WIDTH_TEXT:
+    case IDC_WIDTH_CB:
       lineWidthAction_();
       break;
     case IDB_POLYGON_CHECK:
@@ -294,27 +293,16 @@ void PFBApp::buildGUI_()
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add the line width control
-  lineSizeTextBox_ = CreateWindowExW(
+  lineSizeComboBox_ = CreateWindowExW(
     0,
-    WC_EDITW,
-    nullptr,
-    WS_CHILD | WS_VISIBLE | ES_CENTER | ES_NUMBER | ES_READONLY,
-    middleBorder + labelFieldsWidth + 10, 115, 50, 20,
+    WC_COMBOBOXW,
+    L"",
+    WS_VISIBLE | WS_CHILD | CBS_AUTOHSCROLL| CBS_DROPDOWNLIST | WS_HSCROLL | WS_VSCROLL,
+    middleBorder + labelFieldsWidth + 10, 115, 50, 270,
     hwnd_,
-    reinterpret_cast<HMENU>(IDC_WIDTH_TEXT),
+    reinterpret_cast<HMENU>(IDC_WIDTH_CB),
     nullptr, nullptr);
-  if (!lineSizeTextBox_) { HandleFatalError(__FILEW__, __LINE__); }
-  HWND lineSizeUDControl_ = CreateWindowExW(
-    0,
-    UPDOWN_CLASS,
-    nullptr,
-    WS_CHILDWINDOW | WS_VISIBLE | UDS_AUTOBUDDY | UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_HOTTRACK,
-    0, 0, 0, 0,
-    hwnd_,
-    0,
-    nullptr, nullptr);
-  if (!lineSizeUDControl_) { HandleFatalError(__FILEW__, __LINE__); }
-  SendMessage(lineSizeUDControl_, UDM_SETRANGE, 0, MAKELPARAM(5, 1));
+  if (!lineSizeComboBox_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add label for the Fill Polygons checkbox controller.
   temp = CreateWindowExW(
@@ -466,6 +454,13 @@ void PFBApp::buildGUI_()
     if (i == 0) TreeView_Select(treeView_, tmp, TVGN_CARET);
   }
 
+  // Set the line width options
+  ComboBox_AddString(lineSizeComboBox_, L"1");
+  ComboBox_AddString(lineSizeComboBox_, L"2");
+  ComboBox_AddString(lineSizeComboBox_, L"3");
+  ComboBox_AddString(lineSizeComboBox_, L"4");
+  ComboBox_AddString(lineSizeComboBox_, L"5");
+
   // Set the title
   wstring aPFTitle( widen(appCon_.getPFTitle()) );
   unique_ptr<WCHAR> wPFTitle = unique_ptr<WCHAR>(new WCHAR[aPFTitle.length() + 1]);
@@ -504,12 +499,14 @@ void PFBApp::updatePropertyControls_()
 {
   // Disable all controls, will re-enable on an as need basis
   {
-    vector<HWND> cntrls = {deleteButton_, deleteAllButton_, labelFieldComboBox_,
-      colorButton_, fillPolygonsCheck_, displayThreshStatic_, lineSizeUDControl_,
-      displayThreshTrackBar_};
+    vector<HWND> cntrls = {deleteButton_, deleteAllButton_, labelFieldComboBox_, colorButton_, 
+      fillPolygonsCheck_, displayThreshStatic_, lineSizeComboBox_, displayThreshTrackBar_};
 
-    // Clear contents of combobox
+    // Clear contents of combobox for labels
     ComboBox_ResetContent(labelFieldComboBox_);
+
+    // Clear contents of line width
+    ComboBox_SetCurSel(lineSizeComboBox_, -1);
 
     for(auto it = cntrls.begin(); it != cntrls.end(); ++it)
     {
@@ -539,7 +536,7 @@ void PFBApp::updatePropertyControls_()
     {
       cntrls.push_back(labelFieldComboBox_);
       cntrls.push_back(colorButton_);
-      cntrls.push_back(lineSizeUDControl_);
+      cntrls.push_back(lineSizeComboBox_);
       cntrls.push_back(fillPolygonsCheck_);
       cntrls.push_back(displayThreshStatic_);
       cntrls.push_back(displayThreshTrackBar_);
@@ -548,7 +545,7 @@ void PFBApp::updatePropertyControls_()
     {
       cntrls.push_back(labelFieldComboBox_);
       cntrls.push_back(colorButton_);
-      cntrls.push_back(lineSizeUDControl_);
+      cntrls.push_back(lineSizeComboBox_);
       cntrls.push_back(displayThreshStatic_);
       cntrls.push_back(displayThreshTrackBar_);
     }
@@ -584,9 +581,13 @@ void PFBApp::updatePropertyControls_()
     InvalidateRect(colorButton_, nullptr, TRUE);
 
     //
-    // Update the lineSizeUDControl_
-    //
-    // TODO
+    // Update the lineSizeComboBox_ control
+    //   
+    if(IsWindowEnabled(lineSizeComboBox_))
+    {
+      int lw = appCon_.getLineWidth(source, layer) - 1;
+      ComboBox_SetCurSel(lineSizeComboBox_, lw);
+    }
 
     //
     // Update the Filled Polygon checkbox
@@ -1007,8 +1008,17 @@ void PFBApp::colorButtonAction_()
 
 void PFBApp::lineWidthAction_()
 {
-  // TODO
-  cerr << "IMPLEMENT LINE WIDTH\n";
+  // Get the layer info to change
+  string source, layer;
+  bool success = getSourceLayerFromTree_(source, layer);
+  if (!success)
+  {
+    MessageBoxW(hwnd_, L"Error getting info from tree.", L"Error", MB_OK | MB_ICONERROR);
+    return;
+  }
+
+  int lw = ComboBox_GetCurSel(lineSizeComboBox_) + 1;
+  appCon_.setLineWidth(source, layer, lw);
 }
 
 void PFBApp::fillPolygonsCheckAction_()

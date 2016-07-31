@@ -40,8 +40,7 @@ private:
   HWND labelFieldComboBox_;
   HWND colorButton_;
   HBRUSH colorButtonColor_;
-  HWND lineSizeTextBox_;
-  HWND lineSizeUDControl_;
+  HWND lineSizeComboBox_;
   HWND fillPolygonsCheck_;
   HWND displayThreshStatic_;
   HWND displayThreshTrackBar_;
