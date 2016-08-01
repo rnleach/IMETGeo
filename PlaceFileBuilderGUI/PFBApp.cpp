@@ -543,7 +543,7 @@ void PFBApp::updatePropertyControls_()
     ComboBox_SetCurSel(lineSizeComboBox_, -1);
 
     // Clear contents of Range Ring boxes.
-    SetWindowText(rrNameEdit_, L"");
+    Edit_SetText(rrNameEdit_, L"");
 
     for(auto it = cntrls.begin(); it != cntrls.end(); ++it)
     {
@@ -596,6 +596,7 @@ void PFBApp::updatePropertyControls_()
     else if(appCon_.isRangeRing(source, layer))
     {
       cntrls.push_back(colorButton_);
+      cntrls.push_back(lineSizeComboBox_);
       cntrls.push_back(displayThreshStatic_);
       cntrls.push_back(displayThreshTrackBar_);
       cntrls.push_back(rrNameEdit_);
@@ -661,7 +662,7 @@ void PFBApp::updatePropertyControls_()
     //
     if(IsWindowEnabled(rrNameEdit_))
     {
-      SetWindowText(rrNameEdit_,widen(appCon_.getRangeRingName(source, layer)).c_str());
+      Edit_SetText(rrNameEdit_,widen(appCon_.getRangeRingName(source, layer)).c_str());
     }
     
     // TODO more
@@ -1163,7 +1164,26 @@ void PFBApp::lineWidthAction_()
 
 void PFBApp::rangeRingNameEdit_(WPARAM wParam, LPARAM lParam)
 {
-  cerr << "Not Implemented Yet\n";
+  // TODO better error checking.
+  if (SendMessageW(rrNameEdit_, EM_GETMODIFY, 0, 0))
+  {
+    string source, layer;
+    getSourceLayerFromTree_(source, layer);
+    const size_t NUMCHARS = 64;
+    WCHAR buffer[NUMCHARS] = { 0 };
+    int numCopied = Edit_GetLine(rrNameEdit_, 0, buffer, NUMCHARS);
+    appCon_.setRangeRingName(source, layer, narrow(buffer));
+
+    // Update GUI
+    HTREEITEM hSelect = TreeView_GetSelection(treeView_);
+    TVITEMW tvi = { 0 };
+    tvi.mask = TVIF_HANDLE | TVIF_TEXT;
+    tvi.hItem = hSelect;
+    tvi.cchTextMax = NUMCHARS;
+    tvi.pszText = buffer;
+    TreeView_SetItem(treeView_, &tvi);
+
+  }
 }
 
 void PFBApp::fillPolygonsCheckAction_()
