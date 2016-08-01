@@ -32,6 +32,7 @@ private:
   // Tree View
   HWND treeView_;
   HTREEITEM addSrcToTree_(const string& src); // Returns handle to last layer added or NULL on error.
+  HTREEITEM addRangeRingToTree_(const string& name); // Returns handle to added item or NULL
   BOOL preventSelectionChange_(LPARAM lparam);
   bool getTreeItemText_(HTREEITEM hti, string& text);
   bool getSourceLayerFromTree_(string& source, string& layer);
@@ -44,6 +45,7 @@ private:
   HWND fillPolygonsCheck_;
   HWND displayThreshStatic_;
   HWND displayThreshTrackBar_;
+  HWND rrNameEdit_;
 
   // Settings that apply to the whole place file
   HWND titleEditControl_;
@@ -63,11 +65,13 @@ private:
   enum class FileTypes_ {SHP, KML, GDB}; // Selector for what type of file to add
   void addAction_();
   void addFileAction_(FileTypes_ tp);
+  void addRangeRing_();
   void deleteAction_();
   void deleteAllAction_();
   void labelFieldCommandAction_(WPARAM wParam, LPARAM lParam);
   void colorButtonAction_();
   void lineWidthAction_();
+  void rangeRingNameEdit_(WPARAM wParam, LPARAM lParam);
   void fillPolygonsCheckAction_();
   void displayThreshAction_();
   void editTitleAction_();

@@ -159,6 +159,8 @@ public:
                           bool vsbl, int dispThresh, const string& smry);
   };
 
+  static const string RangeRingSrc;     // = "Range Rings"
+
 private:
 
   // Map a simple file name (no path) to a tuple of the full path, the loaded
@@ -178,7 +180,6 @@ private:
   // Make a vector of range rings
   using RRPair = pair<RangeRing, LayerOptions>;
   vector<RRPair> rangeRings_;
-  static const string RangeRingSrc;     // = "Range Rings"
 
   static const string DO_NOT_USE_LAYER; // = "**Do Not Use Layer**";
   static const string NO_LABEL;         // = "**No Label**";

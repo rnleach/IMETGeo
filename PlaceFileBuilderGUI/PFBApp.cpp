@@ -31,15 +31,18 @@ using namespace std;
 #define IDC_TITLE_EDIT     1012 // Edit control for setting placefile title
 #define IDC_REFRESH_TBAR   1013 // Trackbar for setting the refresh time.
 #define IDC_EXPORT_PF      1014 // Export place file.
-#define IDC_WIDTH_CB       1015 // Line width combobox
+#define IDC_WIDTH_CB       1015 // Line width combobox.
+#define IDC_RRNAME_EDIT    1016 // Name for a range ring.
+#define IDB_ADD_RANGERING  1017 // Add a range ring
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance}, appCon_{}, addButton_{ nullptr }, 
   deleteButton_{ nullptr }, deleteAllButton_{ nullptr }, treeView_{ nullptr }, 
   labelFieldComboBox_{ nullptr }, colorButton_{ nullptr }, colorButtonColor_{ nullptr },
   lineSizeComboBox_{nullptr}, fillPolygonsCheck_{ nullptr }, displayThreshStatic_{ nullptr }, 
-  displayThreshTrackBar_{ nullptr }, titleEditControl_{ nullptr }, refreshStatic_{ nullptr }, 
-  refreshTrackBar_{ nullptr }, exportPlaceFileButton_ { nullptr }
+  displayThreshTrackBar_{ nullptr }, rrNameEdit_{ nullptr }, 
+  titleEditControl_{ nullptr }, refreshStatic_{ nullptr }, refreshTrackBar_{ nullptr }, 
+  exportPlaceFileButton_ { nullptr }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -95,6 +98,9 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case IDB_ADD_KML:
       addFileAction_(FileTypes_::KML);
       break;
+    case IDB_ADD_RANGERING:
+      addRangeRing_();
+      break;
     case IDB_DELETE:
       deleteAction_();
       break;
@@ -109,6 +115,9 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       break;
     case IDC_WIDTH_CB:
       lineWidthAction_();
+      break;
+    case IDC_RRNAME_EDIT:
+      rangeRingNameEdit_(wParam, lParam);
       break;
     case IDB_POLYGON_CHECK:
       fillPolygonsCheckAction_();
@@ -367,6 +376,30 @@ void PFBApp::buildGUI_()
   SendMessage(displayThreshTrackBar_, TBM_SETPAGESIZE, 0, 10);
   SendMessage(displayThreshTrackBar_, TBM_SETTICFREQ, 10, 0);
 
+  // Add a label for the rrNameEdit_ control
+  temp = CreateWindowExW(
+    0,
+    WC_STATICW,
+    L"Range Ring:",
+    WS_VISIBLE | WS_CHILD | SS_RIGHT,
+    middleBorder + 5, 250 + 6, labelFieldsWidth, 30,
+    hwnd_,
+    nullptr,
+    nullptr, nullptr);
+  if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+  
+  // Create the range ring name edit control
+  rrNameEdit_ = CreateWindowExW(
+    WS_EX_CLIENTEDGE,
+    WC_EDITW,
+    nullptr,
+    WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL ,
+    middleBorder + 110, 250 + 3, 175, 20,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_RRNAME_EDIT),
+    nullptr, nullptr);
+  if (!rrNameEdit_) { HandleFatalError(__FILEW__, __LINE__); }
+
   // Add a label for the titleEditControl_
   temp = CreateWindowExW(
     0,
@@ -500,13 +533,17 @@ void PFBApp::updatePropertyControls_()
   // Disable all controls, will re-enable on an as need basis
   {
     vector<HWND> cntrls = {deleteButton_, deleteAllButton_, labelFieldComboBox_, colorButton_, 
-      fillPolygonsCheck_, displayThreshStatic_, lineSizeComboBox_, displayThreshTrackBar_};
+      fillPolygonsCheck_, displayThreshStatic_, lineSizeComboBox_, displayThreshTrackBar_,
+      rrNameEdit_};
 
     // Clear contents of combobox for labels
     ComboBox_ResetContent(labelFieldComboBox_);
 
     // Clear contents of line width
     ComboBox_SetCurSel(lineSizeComboBox_, -1);
+
+    // Clear contents of Range Ring boxes.
+    SetWindowText(rrNameEdit_, L"");
 
     for(auto it = cntrls.begin(); it != cntrls.end(); ++it)
     {
@@ -555,6 +592,13 @@ void PFBApp::updatePropertyControls_()
       cntrls.push_back(colorButton_);
       cntrls.push_back(displayThreshStatic_);
       cntrls.push_back(displayThreshTrackBar_);
+    }
+    else if(appCon_.isRangeRing(source, layer))
+    {
+      cntrls.push_back(colorButton_);
+      cntrls.push_back(displayThreshStatic_);
+      cntrls.push_back(displayThreshTrackBar_);
+      cntrls.push_back(rrNameEdit_);
     }
 
     for(auto it = cntrls.begin(); it != cntrls.end(); ++it)
@@ -606,12 +650,19 @@ void PFBApp::updatePropertyControls_()
     if(IsWindowEnabled(displayThreshTrackBar_))
     {
       dispThresh = appCon_.getDisplayThreshold(source, layer);
-      
     }
     WCHAR tempText[8];
     swprintf_s(tempText,  L"%3d", dispThresh);
     Static_SetText(displayThreshStatic_, tempText);
     SendMessage(displayThreshTrackBar_, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)(dispThresh / 10));
+
+    //
+    // Update the range ring name
+    //
+    if(IsWindowEnabled(rrNameEdit_))
+    {
+      SetWindowText(rrNameEdit_,widen(appCon_.getRangeRingName(source, layer)).c_str());
+    }
     
     // TODO more
   }
@@ -714,6 +765,46 @@ HTREEITEM PFBApp::addSrcToTree_(const string & src)
   return hti;
 }
 
+HTREEITEM addRangeRingToTree_(const string& name)
+{
+
+  /*
+  std::wstring GetItemText( HWND hwndTV, HTREEITEM htItem )
+{
+    static const size_t maxLen = 128;
+    WCHAR buffer[ maxLen + 1 ];
+
+    TVITEMW tvi = { 0 };
+    tvi.hItem = htItem;         // Treeview item to query
+    tvi.mask = TVIF_TEXT;       // Request text only
+    tvi.cchTextMax = maxLen;
+    tvi.pszText = &buffer[ 0 ];
+    if ( TreeView_GetItem( hwndTV, &tvi ) )
+    {
+        return std::wstring( tvi.pszText );
+    }
+    else
+    {
+        return std::wstring();
+    }
+}
+  */
+  // Search the tree for a source name Range Ring
+  HTREEITEM rangeItem = nullptr;
+  HTREEITEM currentItem = TreeView_GetRoot( treeView_ );
+
+  while ( currentItem != nullptr && rangeItem == nullptr )
+  {
+    if ( GetItemText(treeView_, currentItem) == widen(AppController::RangeRingSrc).c_str() )
+    {
+        htItemMatch = htItemCurrent;
+    }
+    currentItem = TreeView_GetNextSibling( treeView_, currentItem );
+  }
+  // TODO
+
+}
+
 BOOL PFBApp::preventSelectionChange_(LPARAM lparam)
 {
   LPNMTREEVIEWW lpnmTv = reinterpret_cast<LPNMTREEVIEWW>(lparam);
@@ -792,6 +883,7 @@ void PFBApp::addAction_()
   InsertMenuW(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_SHAPEFILE, L"Add Shapefile"       );
   InsertMenuW(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_FILEGDB,   L"Add File GeoDatabase");
   InsertMenuW(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_KML,       L"Add KML/KMZ"         );
+  InsertMenuW(popUpMenu, -1, MF_BYPOSTIION | MF_STRING, IDB_ADD_RANGERING, L"Add Range Ring"      );
 
   // Get the screen coordinates of the button
   RECT r;
@@ -886,6 +978,13 @@ void PFBApp::addFileAction_(FileTypes_ tp)
       MessageBoxW(hwnd_, errMsg, L"ERROR", MB_OK | MB_ICONERROR);
     }
   }
+}
+
+void addRangeRing_()
+{
+  // Add it to the controller
+  appCon_.addRangeRing();
+  cerr << "TODO addRangeRing\n";
 }
 
 void PFBApp::deleteAction_()
@@ -1019,6 +1118,11 @@ void PFBApp::lineWidthAction_()
 
   int lw = ComboBox_GetCurSel(lineSizeComboBox_) + 1;
   appCon_.setLineWidth(source, layer, lw);
+}
+
+void PFBApp::rangeRingNameEdit_(WPARAM wParam, LPARAM lParam)
+{
+  cerr << "Not Implemented Yet\n";
 }
 
 void PFBApp::fillPolygonsCheckAction_()
