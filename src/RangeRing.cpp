@@ -19,7 +19,8 @@ namespace PFB
 
   vector<FP> RangeRing::getPlaceFileFeatures(int dispThresh, int lineWidth, PlaceFileColor color) const
   {
-    vector<FP> toRet = vector<FP>(1 + ranges_.size());
+    vector<FP> toRet{};
+    toRet.reserve(1 + ranges_.size());
 
     // Put the center point on the list.
     toRet.push_back(FP(new PointFeature(name_, color, pnt_.latitude, pnt_.longitude, dispThresh)));
@@ -28,9 +29,11 @@ namespace PFB
     const double earthRadius = 3959.0; // miles
     for(auto rng: ranges_)
     {
-      vector<point> pnts (360);
-      double deltaBearing = 360 / pnts.size() / 180.0 * 3.14159; // radians
-      for(size_t i = 0; i < pnts.size(); i++)
+      const size_t NUM_POINTS = 360; // Number of line segments to use to make up ring.
+      vector<point> pnts{};
+      pnts.reserve(NUM_POINTS + 1);
+      double deltaBearing = NUM_POINTS / pnts.size() / 180.0 * 3.14159; // radians
+      for(size_t i = 0; i < NUM_POINTS + 1; i++)
       {
         const double bearing = i * deltaBearing; // radians
         const double delta = rng/earthRadius;
