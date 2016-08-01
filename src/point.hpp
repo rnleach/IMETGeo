@@ -18,6 +18,13 @@ namespace PFB
 
     point() { latitude = longitude = 0.0; }
 
+    bool operator==(const point& rhs)
+    {
+      return latitude == rhs.latitude && longitude==rhs.longitude;
+    }
+
+    bool operator!=(const point& rhs) { return !(*this == rhs); }
+
     point(double lat, double lon) :latitude{ lat }, longitude{ lon } {}
   };
 }

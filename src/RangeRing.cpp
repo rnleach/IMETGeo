@@ -9,13 +9,15 @@ namespace PFB
 {
   using namespace std;
 
+  RangeRing::RangeRing(const string& name) : name_(name), pnt_(), ranges_() {}
+
   RangeRing::RangeRing(const string& name, double lat, double lon, const vector<double>& ranges) :
     name_( name), pnt_(lat, lon), ranges_(ranges) {}
 
   RangeRing::RangeRing(const string& name, double lat, double lon, vector<double>&& ranges):
     name_(name), pnt_(lat, lon), ranges_(move(ranges)) {}
 
-  vector<FP> RangeRing::getPlaceFileFeatures(int dispThresh, int lineWidth, PlaceFileColor color)
+  vector<FP> RangeRing::getPlaceFileFeatures(int dispThresh, int lineWidth, PlaceFileColor color) const
   {
     vector<FP> toRet = vector<FP>(1 + ranges_.size());
 
@@ -52,4 +54,10 @@ namespace PFB
 
     return move(toRet);
   }
+
+  const string& RangeRing::name() const
+  {
+    return name_;
+  }
 }
+

@@ -14,10 +14,21 @@ namespace PFB
   class RangeRing
   {
   public:
+    RangeRing(const string& name);
     RangeRing(const string& name, double lat, double lon, const vector<double>& ranges);
     RangeRing(const string& name, double lat, double lon, vector<double>&& ranges);
 
-    vector<FP> getPlaceFileFeatures(int dispThresh, int lineWidth, PlaceFileColor color);
+    vector<FP> getPlaceFileFeatures(int dispThresh, int lineWidth, PlaceFileColor color) const;
+
+    /// Equality is based only on the central point.
+    bool operator==(const RangeRing& rhs) { return this->pnt_ == rhs.pnt_; }
+    bool operator!=(const RangeRing& rhs) { return !(*this  == rhs); }
+
+    const string& name() const;
+
+    void setCenterPoint(const point& newCenter) { pnt_ =newCenter; }
+    void clearRanges() { ranges_.clear(); }
+    void addRange(double newRange) {ranges_.push_back(newRange); }
 
   private:
     string name_;

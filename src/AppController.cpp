@@ -1,5 +1,6 @@
 #include "AppController.hpp"
 
+#include <algorithm>
 #include <exception>
 #include <fstream>
 #include <iostream>
@@ -38,6 +39,12 @@ const vector<string> AppController::getSources()
     srcStrings.push_back(it->first);
   }
 
+  // Check for range rings too
+  if(rangeRings_.size() > 0)
+  {
+    srcStrings.push_back(RangeRingSrc);
+  }
+
   return move(srcStrings);
 }
 
@@ -45,18 +52,29 @@ const vector<string> AppController::getLayers(const string& source)
 {
   vector<string> layerStrings;
 
-  LayerInfo& lyrs = get<IDX_layerInfo>(srcs_.at(source));
-  for(auto it = lyrs.begin(); it != lyrs.end(); ++ it)
+  if(source == RangeRingSrc)
   {
-    if(it->second.visible) layerStrings.push_back(it->first);
+    for(auto val: rangeRings_)
+    {
+      layerStrings.push_back(val.first.name());
+    }
   }
-
-  return move(layerStrings);
+  else
+  {
+    LayerInfo& lyrs = get<IDX_layerInfo>(srcs_.at(source));
+    for(auto it = lyrs.begin(); it != lyrs.end(); ++ it)
+    {
+      if(it->second.visible) layerStrings.push_back(it->first);
+    }
+  }
+    return move(layerStrings);
 }
 
 const string& AppController::summarizeLayerProperties(const string & source, 
   const string& layer)
 {
+  if(source == RangeRingSrc) return RangeRingSrc;
+
   return get<IDX_layerInfo>(srcs_.at(source)).at(layer).summary;
 }
 
@@ -153,6 +171,29 @@ string AppController::addSource(const string& path)
   }
 }
 
+string AppController::addRangeRing(const string name)
+{
+  // Check if there is already a range ring with that name, don't allow same names, confuses things
+  for( auto it = rangeRings_.cbegin(); it != rangeRings_.cend(); ++it)
+  {
+    if(it->first.name() == name)
+    {
+      throw runtime_error(string("Cannot add ") + name + 
+        ", a range ring with this name has already been added.");
+    }
+  }
+
+  // Add it to the list
+  rangeRings_.push_back(
+    RRPair(
+      RangeRing(name), 
+      LayerOptions(name, PlaceFileColor(), 2, false, true, 999, "")
+    )
+  );
+
+  return name;
+}
+
 void AppController::savePlaceFile(const string& fileName)
 {
   // Create a placefile to fill with data
@@ -225,6 +266,19 @@ void AppController::savePlaceFile(const string& fileName)
       }
     }
   }
+
+  // Now save the requested range rings.
+  for(auto rrIt = rangeRings_.cbegin(); rrIt != rangeRings_.cend(); ++rrIt)
+  {
+    const auto& options = rrIt->second;
+    const auto& dispThresh = options.displayThresh;
+    const auto& lw = options.lineWidth;
+    const auto& clr = options.color;
+    auto features = rrIt->first.getPlaceFileFeatures(dispThresh, lw, clr);
+
+    for(size_t i = 0; i < features.size(); ++i) pf.addFeature(move(features[i]));
+  }
+
   // Save the file
   pf.saveFile(fileName);
 
@@ -232,10 +286,7 @@ void AppController::savePlaceFile(const string& fileName)
   lastPlaceFileSaved_ = fileName;
 }
 
-int AppController::getRefreshMinutes()
-{
-  return refreshMinutes_;
-}
+int AppController::getRefreshMinutes() { return refreshMinutes_; }
 
 void AppController::setRefreshMinutes(int newVal)
 {
@@ -253,6 +304,9 @@ void AppController::setRefreshSeconds(int newVal)
 
 void AppController::saveKMLFile(const string & fileName)
 {
+
+  // DOES NOT HANDLE RANGE RINGS
+
   OGRSFDriver* kmlDriver = 
       (OGRSFDriverRegistrar::GetRegistrar())->GetDriverByName("KML");
   OGRDataSourceWrapper kmlSrc{ kmlDriver->CreateDataSource(fileName.c_str()) };
@@ -287,23 +341,36 @@ void AppController::saveKMLFile(const string & fileName)
 
 bool AppController::hideLayer(const string& source, const string& layer)
 {
-  auto& layers = get<IDX_layerInfo>(srcs_.at(source));
-  auto& lyr = layers.at(layer);
-  lyr.visible = false;
-  lyr.labelField = DO_NOT_USE_LAYER;
+  // Flag to see if there are any visible layers left for this source. If not we will remove the
+  // source too. Return true if we deleted the source.
   bool anyVisible = false;
-  for(auto it = layers.begin(); it != layers.end(); ++it)
+
+  // Check if it is a range ring first.
+  if(source == RangeRingSrc)
   {
-    anyVisible = anyVisible || it->second.visible;
+    // Find the layer
+    auto lyr = find_if(
+      rangeRings_.cbegin(), 
+      rangeRings_.cend(), 
+      [&layer](RRPair pp)->bool{ return pp.first.name() == layer; }
+    );
+    rangeRings_.erase(lyr);
+
+    anyVisible = rangeRings_.size() > 0;
+  }
+  else
+  {
+    auto& layers = get<IDX_layerInfo>(srcs_.at(source));
+    auto& lyr = layers.at(layer);
+    lyr.visible = false;
+    lyr.labelField = DO_NOT_USE_LAYER;
+
+    anyVisible = any_of(layers.cbegin(), layers.cend(), [](LayerInfoPair it){ return it.second.visible; });
+    
+    if(!anyVisible) deleteSource(source);
   }
 
-  if(!anyVisible)
-  {
-    deleteSource(source);
-    return true;
-  }
-
-  return false;
+  return !anyVisible;
 }
 
 void AppController::deleteSource(const string& source) { srcs_.erase(source); }
@@ -485,6 +552,17 @@ AppController::LayerOptions::LayerOptions(string lField, PlaceFileColor clr, int
   summary (smry)
 {}
 
+AppController::LayerOptions::LayerOptions(LayerOptions&& src) :
+  labelField ( src.labelField ), 
+  color{ src.clr }, 
+  lineWidth{ src.lineWidth }, 
+  polyAsLine{ src.polyAsLine },
+  visible{ src.visible },
+  displayThresh{ src.displayThresh },
+  summary (src.summary)
+{}
+
+const string AppController::RangeRingSrc = "Range Rings";
 const string AppController::DO_NOT_USE_LAYER = "**Do Not Use Layer**";
 const string AppController::NO_LABEL = "**No Label**";
 

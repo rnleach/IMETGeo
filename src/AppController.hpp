@@ -10,6 +10,7 @@
 #include "OGRFeatureWrapper.hpp"
 #include "PlaceFile.hpp"
 #include "PlaceFileColor.hpp"
+#include "RangeRing.hpp"
 using namespace PFB;
 
 using std::pair;
@@ -40,6 +41,9 @@ public:
   // Open a file and add the resource to the project. Return the name of the 
   // source as it would be returned in the list returned by getSources().
   string addSource(const string& path);
+
+  // Add a range ring
+  string addRangeRing(const string name = "Null Island");
 
   // Save a place file
   void savePlaceFile(const string& fileName);
@@ -138,9 +142,10 @@ public:
     const string summary;
 
     // Constructor 
-    explicit LayerOptions(string lField, PlaceFileColor clr, int lw, bool polyAsLine, 
+    LayerOptions(string lField, PlaceFileColor clr, int lw, bool polyAsLine, 
                           bool vsbl, int dispThresh, const string smry);
 
+    LayerOptions(LayerOption&& src);
   };
 
 private:
@@ -158,6 +163,11 @@ private:
   using SrcsPair = pair<string,ValTuple>;
   // The actual map!
   unordered_map< string, ValTuple> srcs_;
+
+  // Make a vector of range rings
+  using RRPair = pair<RangeRing, LayerOptions>;
+  vector<RRPair> rangeRings_;
+  static const string RangeRingSrc;     // = "Range Rings"
 
   static const string DO_NOT_USE_LAYER; // = "**Do Not Use Layer**";
   static const string NO_LABEL;         // = "**No Label**";
