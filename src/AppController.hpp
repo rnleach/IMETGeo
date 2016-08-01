@@ -103,10 +103,23 @@ public:
   int getLineWidth(const string& source, const string& layer);
   void setLineWidth(const string& source, const string& layer, int lw);
 
+  // Get/Set lat-lon for range ring
+  point getRangeRingCenter(const string& source, const string& layer);
+  void setRangeRingCenter(const string& source, const string& layer, const point pnt);
+
+  // Get/Set name for range ring
+  string getRangeRingName(const string& source, const string& layer);
+  void setRangeRingName(const string& source, const string& layer, const string& nm);
+
+  // Get/Set ranges for range rings. Comma seperated list of numbers in miles
+  string getRangeRingRanges(const string& source, const string& layer);
+  void setRangeRingRanges(const string& source, const string& layer, const string& rngs);
+
   // Determine if this layer is a polygon, line, point, etc.
   bool isPolygonLayer(const string& source, const string& layer);
   bool isLineLayer(const string& source, const string& layer);
   bool isPointLayer(const string& source, const string& layer);
+  bool isRangeRing(const string& source, const string& layer);
 
   // Determine if this layer should be visible
   bool isVisible(const string& source, const string& layer);
@@ -139,13 +152,11 @@ public:
     int displayThresh;
 
     // Summary string
-    const string summary;
+    string summary;
 
-    // Constructor 
-    LayerOptions(string lField, PlaceFileColor clr, int lw, bool polyAsLine, 
-                          bool vsbl, int dispThresh, const string smry);
-
-    LayerOptions(LayerOption&& src);
+    // Constructors 
+    LayerOptions(const string& lField, PlaceFileColor clr, int lw, bool polyAsLine, 
+                          bool vsbl, int dispThresh, const string& smry);
   };
 
 private:

@@ -7,6 +7,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <stdexcept>
 #include <cstdlib>
 
 #include "PlaceFileColor.hpp"
@@ -18,15 +19,13 @@ using namespace std;
 
 AppController::AppController()
 {
-  //
-  // Initialize GDAL
-  //
+  // Initialize GDAL/OGR
   OGRRegisterAll();
 }
 
 AppController::~AppController()
 {
-  // Clean up GDAL.
+  // Clean up GDAL/OGR
   OGRCleanupAll();
 }
 
@@ -54,7 +53,7 @@ const vector<string> AppController::getLayers(const string& source)
 
   if(source == RangeRingSrc)
   {
-    for(auto val: rangeRings_)
+    for(const auto& val: rangeRings_)
     {
       layerStrings.push_back(val.first.name());
     }
@@ -62,7 +61,7 @@ const vector<string> AppController::getLayers(const string& source)
   else
   {
     LayerInfo& lyrs = get<IDX_layerInfo>(srcs_.at(source));
-    for(auto it = lyrs.begin(); it != lyrs.end(); ++ it)
+    for(auto it = lyrs.cbegin(); it != lyrs.cend(); ++ it)
     {
       if(it->second.visible) layerStrings.push_back(it->first);
     }
@@ -348,13 +347,12 @@ bool AppController::hideLayer(const string& source, const string& layer)
   // Check if it is a range ring first.
   if(source == RangeRingSrc)
   {
+    auto start = rangeRings_.cbegin();
+    auto end = rangeRings_.cend();
     // Find the layer
-    auto lyr = find_if(
-      rangeRings_.cbegin(), 
-      rangeRings_.cend(), 
-      [&layer](RRPair pp)->bool{ return pp.first.name() == layer; }
-    );
-    rangeRings_.erase(lyr);
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    if(lyr != end) rangeRings_.erase(lyr);
 
     anyVisible = rangeRings_.size() > 0;
   }
@@ -365,7 +363,11 @@ bool AppController::hideLayer(const string& source, const string& layer)
     lyr.visible = false;
     lyr.labelField = DO_NOT_USE_LAYER;
 
-    anyVisible = any_of(layers.cbegin(), layers.cend(), [](LayerInfoPair it){ return it.second.visible; });
+    anyVisible = any_of(
+      layers.cbegin(), 
+      layers.cend(), 
+      [](LayerInfoPair it){ return it.second.visible; }
+    );
     
     if(!anyVisible) deleteSource(source);
   }
@@ -373,10 +375,17 @@ bool AppController::hideLayer(const string& source, const string& layer)
   return !anyVisible;
 }
 
-void AppController::deleteSource(const string& source) { srcs_.erase(source); }
+void AppController::deleteSource(const string& source)
+{ 
+  if(source == RangeRingSrc)rangeRings_.clear();
+  else srcs_.erase(source); 
+}
 
 const vector<string> AppController::getFields(const string & source, const string & lyr)
 {
+  // No fields for a range ring. Return empty string.
+  if(source == RangeRingSrc) return vector<string>(0);
+
   vector<string> toRet;
 
   // Add default options
@@ -414,63 +423,310 @@ const vector<string> AppController::getFields(const string & source, const strin
 
 string const AppController::getLabel(const string& source, const string& layer)
 {
+  // Should not be called for range ring, return empty string for now.
+  if(source == RangeRingSrc) return string();
+
   return get<IDX_layerInfo>(srcs_.at(source)).at(layer).labelField;
 }
 
-void AppController::setLabel(const string& source, 
-  const string& layer, string label)
+void AppController::setLabel(const string& source, const string& layer, string label)
 {
+  // Shouldn't be called for a range ring, so just return with doing nothing
+  if(source == RangeRingSrc) return;
+
   auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
   opts.labelField = label;
 }
 
 bool AppController::getPolygonDisplayedAsLine(const string& source, const string& layer) 
 { 
+  // Shouldn't be called for a range ring, so just return false
+  if(source == RangeRingSrc) return false;
+
   return get<IDX_layerInfo>(srcs_.at(source)).at(layer).polyAsLine; 
 }
 
 void AppController::setPolygonDisplayedAsLine(const string& source, 
     const string& layer, bool asLine)
 {
+  // Shouldn't be called for a range ring, so just return with doing nothing
+  if(source == RangeRingSrc) return;
+
   auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
   opts.polyAsLine = asLine;
 }
 
 int AppController::getDisplayThreshold(const string& source, const string& layer) 
 { 
+  if(source == RangeRingSrc)
+  {
+    // Find the layer
+    auto start = rangeRings_.cbegin();
+    auto end = rangeRings_.cend();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Get the value if found, throw otherwise.
+    if(lyr != end) return get<1>(*lyr).displayThresh;
+    else throw out_of_range("No such range ring.");
+  }
+
   return get<IDX_layerInfo>(srcs_.at(source)).at(layer).displayThresh; 
 }
 
 void AppController::setDisplayThreshold(const string& source, const string& layer, int thresh)
 {
-  auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
-  opts.displayThresh = thresh;
+  if(source == RangeRingSrc)
+  {
+    // Find the layer
+    auto start = rangeRings_.begin();
+    auto end = rangeRings_.end();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Set the value if found, throw otherwise.
+    if(lyr != end)
+    {
+      auto& opts = get<1>(*lyr);
+      opts.displayThresh = thresh;
+    }
+    else
+    {
+      throw out_of_range("No such range ring.");
+    }
+  }
+  else
+  {
+    auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
+    opts.displayThresh = thresh;
+  }
 }
 
 PlaceFileColor AppController::getColor(const string& source, const string& layer) 
-{ 
+{
+  if(source == RangeRingSrc)
+  {
+    // Find the layer
+    auto start = rangeRings_.cbegin();
+    auto end = rangeRings_.cend();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Get the value if found, throw otherwise.
+    if(lyr != end) return get<1>(*lyr).color;
+    else throw out_of_range("No such range ring.");
+  }
+
   return get<IDX_layerInfo>(srcs_.at(source)).at(layer).color; 
 }
 
 void AppController::setColor(const string& source, const string& layer, PlaceFileColor clr)
 {
-  auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
-  opts.color = clr;
+  if(source == RangeRingSrc)
+  {
+    // Find the layer
+    auto start = rangeRings_.begin();
+    auto end = rangeRings_.end();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Set the value if found, throw otherwise.
+    if(lyr != end)
+    {
+      auto& opts = get<1>(*lyr);
+      opts.color = clr;
+    }
+    else
+    {
+      throw out_of_range("No such range ring.");
+    }
+  }
+  else
+  {
+    auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
+    opts.color = clr;
+  }
 }
 
 int AppController::getLineWidth(const string& source, const string& layer) 
 { 
+  if(source == RangeRingSrc)
+  {
+    // Find the layer
+    auto start = rangeRings_.cbegin();
+    auto end = rangeRings_.cend();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Get the value if found, throw otherwise.
+    if(lyr != end) return get<1>(*lyr).lineWidth;
+    else throw out_of_range("No such range ring.");
+  }
+
   return get<IDX_layerInfo>(srcs_.at(source)).at(layer).lineWidth; 
 }
 
 void AppController::setLineWidth(const string& source, const string& layer, int lw)
 {
-  auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
-  opts.lineWidth = lw;
+  if(source == RangeRingSrc)
+  {
+    // Find the layer
+    auto start = rangeRings_.begin();
+    auto end = rangeRings_.end();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Set the value if found, throw otherwise.
+    if(lyr != end)
+    {
+      auto& opts = get<1>(*lyr);
+      opts.lineWidth = lw;
+    }
+    else
+    {
+      throw out_of_range("No such range ring.");
+    }
+  }
+  else
+  {
+    auto& opts = get<IDX_layerInfo>(srcs_.at(source)).at(layer);
+    opts.lineWidth = lw;
+  }
+}
+
+point AppController::getRangeRingCenter(const string& source, const string& layer)
+{
+  if(source == RangeRingSrc)
+  {
+    // Find the layer
+    auto start = rangeRings_.begin();
+    auto end = rangeRings_.end();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Get the value if found, throw otherwise.
+    if(lyr != end) return get<0>(*lyr).getCenterPoint();
+    else throw out_of_range("No such range ring.");
+  }
+  else throw out_of_range("Not a range ring.");
+}
+
+void AppController::setRangeRingCenter(const string& source, const string& layer, const point pnt)
+{
+  if(source == RangeRingSrc)
+  {
+    // Find the layer
+    auto start = rangeRings_.begin();
+    auto end = rangeRings_.end();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Set the value if found, throw otherwise.
+    if(lyr != end)
+    {
+      auto& rr = get<0>(*lyr);
+      rr.setCenterPoint(pnt);
+    }
+    else throw out_of_range("No such range ring.");
+  }
+  else throw out_of_range("Not a range ring.");
+}
+
+string AppController::getRangeRingName(const string& source, const string& layer)
+{
+  if(source == RangeRingSrc)
+  {
+    // Find the layer
+    auto start = rangeRings_.begin();
+    auto end = rangeRings_.end();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Get the value if found, throw otherwise.
+    if(lyr != end) return get<0>(*lyr).name();
+    else throw out_of_range("No such range ring.");
+  }
+  else throw out_of_range("Not a range ring.");
+}
+
+void AppController::setRangeRingName(const string& source, const string& layer, const string& nm)
+{
+  if(source == RangeRingSrc)
+  {
+    // Find the layer
+    auto start = rangeRings_.begin();
+    auto end = rangeRings_.end();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Set the value if found, throw otherwise.
+    if(lyr != end)
+    {
+      auto& rr = get<0>(*lyr);
+      rr.setName(nm);
+    }
+    else throw out_of_range("No such range ring.");
+  }
+  else throw out_of_range("Not a range ring.");
+}
+
+string AppController::getRangeRingRanges(const string& source, const string& layer)
+{
+  if(source == RangeRingSrc)
+  {
+    // Find the layer
+    auto start = rangeRings_.begin();
+    auto end = rangeRings_.end();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Get the value if found, throw otherwise.
+    if(lyr != end)
+    { 
+      stringstream ss;
+      auto rngs = get<0>(*lyr).getRanges();
+      for(auto rng = rngs.begin(); rng != rngs.end(); ++rng) 
+        ss << (*rng) << (rng != rngs.end()? (',') : 0);
+      return ss.str();
+    }
+    else throw out_of_range("No such range ring.");
+  }
+  else throw out_of_range("Not a range ring.");
+}
+void AppController::setRangeRingRanges(const string& src, const string& layer, const string& rngs)
+{
+  if(src == RangeRingSrc)
+  {
+    // Parse the string into numbers
+    vector<double> newRanges;
+    stringstream ss(rngs);
+    string token;
+    while(getline(ss,token,','))
+    {
+      // Strip white space
+      token.erase(remove(token.begin(), token.end(), ' '), token.end());
+
+      // Now convert to double
+      try
+      {
+        double newVal = stod(token);
+        if(newVal > 0) newRanges.push_back(newVal);
+      }
+      catch(const exception& e){ /* ignore it, can't parse it move on */}
+    }
+
+    // Find the layer
+    auto start = rangeRings_.begin();
+    auto end = rangeRings_.end();
+    auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
+    
+    // Set the value if found, throw otherwise.
+    if(lyr != end)
+    {
+      auto& rr = get<0>(*lyr);
+      rr.clearRanges();
+      for(double newVal: newRanges)
+      {
+        rr.addRange(newVal);
+      }
+    }
+    else throw out_of_range("No such range ring.");
+  }
+  else throw out_of_range("Not a range ring.");
 }
 
 bool AppController::isPolygonLayer(const string & source, const string & lyr)
 {
+  if(source == RangeRingSrc) return false;
 
   try
   {
@@ -494,6 +750,8 @@ bool AppController::isPolygonLayer(const string & source, const string & lyr)
 
 bool AppController::isLineLayer(const string& source, const string& lyr)
 {
+  if(source == RangeRingSrc) return false;
+
   try
   {
     OGRLayer* layer = get<IDX_ogrData>(
@@ -516,6 +774,8 @@ bool AppController::isLineLayer(const string& source, const string& lyr)
 
 bool AppController::isPointLayer(const string& source, const string& lyr)
 {
+  if(source == RangeRingSrc) return false;
+
   try
   {
     OGRLayer* layer = get<IDX_ogrData>(
@@ -536,13 +796,21 @@ bool AppController::isPointLayer(const string& source, const string& lyr)
   }
 }
 
+bool AppController::isRangeRing(const string& source, const string& layer)
+{
+  return source == RangeRingSrc;
+}
+
 bool AppController::isVisible(const string & source, const string & lyr)
 {
+  // Always true for range rings. If not visible, it is deleted
+  if(source == RangeRingSrc) return true;
+
   return get<IDX_layerInfo>(srcs_.at(source)).at(lyr).visible; 
 }
 
-AppController::LayerOptions::LayerOptions(string lField, PlaceFileColor clr, int lw,
-    bool pal, bool vsbl, int dispThresh, const string smry) :
+AppController::LayerOptions::LayerOptions(const string& lField, PlaceFileColor clr, int lw,
+    bool pal, bool vsbl, int dispThresh, const string& smry) :
   labelField ( lField ), 
   color{ clr }, 
   lineWidth{ lw }, 
@@ -550,16 +818,6 @@ AppController::LayerOptions::LayerOptions(string lField, PlaceFileColor clr, int
   visible{ vsbl },
   displayThresh{ dispThresh },
   summary (smry)
-{}
-
-AppController::LayerOptions::LayerOptions(LayerOptions&& src) :
-  labelField ( src.labelField ), 
-  color{ src.clr }, 
-  lineWidth{ src.lineWidth }, 
-  polyAsLine{ src.polyAsLine },
-  visible{ src.visible },
-  displayThresh{ src.displayThresh },
-  summary (src.summary)
 {}
 
 const string AppController::RangeRingSrc = "Range Rings";

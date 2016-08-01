@@ -25,9 +25,13 @@ namespace PFB
     bool operator!=(const RangeRing& rhs) { return !(*this  == rhs); }
 
     const string& name() const;
+    void setName(const string& newName) { name_ = newName; }
 
-    void setCenterPoint(const point& newCenter) { pnt_ =newCenter; }
+    point getCenterPoint() const { return pnt_; }
+    void setCenterPoint(const point& newCenter) { pnt_ = newCenter; }
+    
     void clearRanges() { ranges_.clear(); }
+    const vector<double>& getRanges() const { return ranges_; }
     void addRange(double newRange) {ranges_.push_back(newRange); }
 
   private:
