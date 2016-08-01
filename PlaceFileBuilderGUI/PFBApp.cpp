@@ -765,43 +765,84 @@ HTREEITEM PFBApp::addSrcToTree_(const string & src)
   return hti;
 }
 
-HTREEITEM addRangeRingToTree_(const string& name)
+HTREEITEM PFBApp::addRangeRingToTree_(const string& name)
 {
+  TVITEMW tvi = { 0 };
+  TVINSERTSTRUCTW tvins = { 0 };
 
-  /*
-  std::wstring GetItemText( HWND hwndTV, HTREEITEM htItem )
-{
-    static const size_t maxLen = 128;
-    WCHAR buffer[ maxLen + 1 ];
-
-    TVITEMW tvi = { 0 };
-    tvi.hItem = htItem;         // Treeview item to query
-    tvi.mask = TVIF_TEXT;       // Request text only
-    tvi.cchTextMax = maxLen;
-    tvi.pszText = &buffer[ 0 ];
-    if ( TreeView_GetItem( hwndTV, &tvi ) )
-    {
-        return std::wstring( tvi.pszText );
-    }
-    else
-    {
-        return std::wstring();
-    }
-}
-  */
   // Search the tree for a source name Range Ring
   HTREEITEM rangeItem = nullptr;
   HTREEITEM currentItem = TreeView_GetRoot( treeView_ );
 
-  while ( currentItem != nullptr && rangeItem == nullptr )
+  while( currentItem != nullptr && rangeItem == nullptr )
   {
-    if ( GetItemText(treeView_, currentItem) == widen(AppController::RangeRingSrc).c_str() )
+    string treeItemText;
+    getTreeItemText_(currentItem, treeItemText);
+    if( treeItemText == AppController::RangeRingSrc )
     {
-        htItemMatch = htItemCurrent;
+        rangeItem = currentItem;
     }
     currentItem = TreeView_GetNextSibling( treeView_, currentItem );
   }
-  // TODO
+
+  if(!rangeItem) // Add it to the tree if needed
+  {
+
+    rangeItem = (HTREEITEM)TVI_LAST;
+
+    // Describe the item
+    tvi.mask = TVIF_TEXT | TVIF_CHILDREN | TVIF_STATE;
+    auto dst = make_unique<wchar_t[]>(AppController::RangeRingSrc.length() + 1);
+    wcscpy(dst.get(), widen(AppController::RangeRingSrc).c_str());
+    tvi.pszText = dst.get();
+    tvi.cchTextMax = sizeof(tvi.pszText) / sizeof(tvi.pszText[0]);
+    tvi.cChildren = 1;
+    tvi.state = TVIS_BOLD | TVIS_EXPANDED;
+    tvi.stateMask = TVIS_BOLD | TVIS_EXPANDED;
+
+    // Describe where to insert it
+    tvins.item = tvi;
+    tvins.hInsertAfter = rangeItem;
+    tvins.hParent = TVI_ROOT;
+
+    // Add the item to the tree-view control. 
+    rangeItem = (HTREEITEM)SendMessage(treeView_, TVM_INSERTITEM,
+      0, (LPARAM)(LPTVINSERTSTRUCT)&tvins);
+
+    // Check for an error
+    if (rangeItem == nullptr)
+    {
+      MessageBoxW(hwnd_, L"Error inserting item.", L"Error.", MB_OK | MB_ICONERROR);
+      return nullptr;
+    }
+  }
+  
+  // Now, insert the new range ring
+  tvi = { 0 };
+  tvins = { 0 }; 
+  tvi.mask = TVIF_TEXT | TVIF_CHILDREN;
+  auto dst = make_unique<wchar_t[]>(name.length() + 1);
+  wcscpy(dst.get(), widen(name).c_str());
+  tvi.pszText = dst.get();
+  tvi.cchTextMax = sizeof(tvi.pszText) / sizeof(tvi.pszText[0]);
+  tvi.cChildren = 0;
+
+  // Describe where to insert it
+  tvins.item = tvi;
+  tvins.hInsertAfter = TVI_LAST;
+  tvins.hParent = rangeItem;
+
+  // Add the item to the tree-view control. 
+  HTREEITEM hti = (HTREEITEM)SendMessage(treeView_, TVM_INSERTITEM,
+    0, (LPARAM)(LPTVINSERTSTRUCT)&tvins);
+
+  if (hti == nullptr)
+  {
+    MessageBoxW(hwnd_, L"Error inserting item.", L"Error.", MB_OK | MB_ICONERROR);
+    return nullptr;
+  }
+
+  return hti;
 
 }
 
@@ -883,7 +924,7 @@ void PFBApp::addAction_()
   InsertMenuW(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_SHAPEFILE, L"Add Shapefile"       );
   InsertMenuW(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_FILEGDB,   L"Add File GeoDatabase");
   InsertMenuW(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_KML,       L"Add KML/KMZ"         );
-  InsertMenuW(popUpMenu, -1, MF_BYPOSTIION | MF_STRING, IDB_ADD_RANGERING, L"Add Range Ring"      );
+  InsertMenuW(popUpMenu, -1, MF_BYPOSITION | MF_STRING, IDB_ADD_RANGERING, L"Add Range Ring"      );
 
   // Get the screen coordinates of the button
   RECT r;
@@ -980,11 +1021,11 @@ void PFBApp::addFileAction_(FileTypes_ tp)
   }
 }
 
-void addRangeRing_()
+void PFBApp::addRangeRing_()
 {
   // Add it to the controller
-  appCon_.addRangeRing();
-  cerr << "TODO addRangeRing\n";
+  auto name = appCon_.addRangeRing();
+  addRangeRingToTree_(name);
 }
 
 void PFBApp::deleteAction_()
