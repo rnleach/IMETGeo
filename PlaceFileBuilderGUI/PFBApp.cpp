@@ -763,6 +763,8 @@ HTREEITEM PFBApp::addSrcToTree_(const string & src)
     }
   }
 
+  TreeView_SelectItem(treeView_, hti);
+
   return hti;
 }
 
@@ -844,7 +846,6 @@ HTREEITEM PFBApp::addRangeRingToTree_(const string& name)
   }
 
   return hti;
-
 }
 
 BOOL PFBApp::preventSelectionChange_(LPARAM lparam)
@@ -1026,7 +1027,9 @@ void PFBApp::addRangeRing_()
 {
   // Add it to the controller
   auto name = appCon_.addRangeRing();
-  addRangeRingToTree_(name);
+  HTREEITEM newRangeRing = addRangeRingToTree_(name);
+
+  TreeView_SelectItem(treeView_, newRangeRing);
 }
 
 void PFBApp::deleteAction_()
