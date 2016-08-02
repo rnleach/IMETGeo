@@ -382,7 +382,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Range Ring:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 250 + 6, labelFieldsWidth, 30,
+    middleBorder + 5, 255 + 6, labelFieldsWidth, 30,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -394,7 +394,7 @@ void PFBApp::buildGUI_()
     WC_EDITW,
     nullptr,
     WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL ,
-    middleBorder + 110, 250 + 3, 175, 20,
+    middleBorder + 110, 255 + 3, 175, 20,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_RRNAME_EDIT),
     nullptr, nullptr);
