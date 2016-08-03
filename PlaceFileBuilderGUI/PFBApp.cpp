@@ -34,15 +34,17 @@ using namespace std;
 #define IDC_WIDTH_CB       1015 // Line width combobox.
 #define IDC_RRNAME_EDIT    1016 // Name for a range ring.
 #define IDB_ADD_RANGERING  1017 // Add a range ring
+#define IDC_LAT_EDIT       1018 // Edit latitude
+#define IDC_LON_EDIT       1019 // Edit longitude
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance}, appCon_{}, addButton_{ nullptr }, 
   deleteButton_{ nullptr }, deleteAllButton_{ nullptr }, treeView_{ nullptr }, 
   labelFieldComboBox_{ nullptr }, colorButton_{ nullptr }, colorButtonColor_{ nullptr },
   lineSizeComboBox_{nullptr}, fillPolygonsCheck_{ nullptr }, displayThreshStatic_{ nullptr }, 
-  displayThreshTrackBar_{ nullptr }, rrNameEdit_{ nullptr }, 
-  titleEditControl_{ nullptr }, refreshStatic_{ nullptr }, refreshTrackBar_{ nullptr }, 
-  exportPlaceFileButton_ { nullptr }
+  displayThreshTrackBar_{ nullptr }, rrNameEdit_{ nullptr }, latEdit_{ nullptr }, 
+  lonEdit_{ nullptr }, titleEditControl_{ nullptr }, refreshStatic_{ nullptr }, 
+  refreshTrackBar_{ nullptr }, exportPlaceFileButton_ { nullptr }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -84,10 +86,13 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
     buildGUI_();
     break;
   case WM_COMMAND:
-    switch (LOWORD(wParam))
+  {
+    WORD code = HIWORD(wParam);
+    WORD controlID = LOWORD(wParam);
+    switch (controlID)
     {
     case IDB_ADD:
-      addAction_();
+      if (code == BN_CLICKED) addAction_();
       break;
     case IDB_ADD_SHAPEFILE:
       addFileAction_(FileTypes_::SHP);
@@ -102,34 +107,39 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       addRangeRing_();
       break;
     case IDB_DELETE:
-      deleteAction_();
+      if (code == BN_CLICKED) deleteAction_();
       break;
     case IDB_DELETE_ALL:
-      deleteAllAction_();
+      if (code == BN_CLICKED) deleteAllAction_();
       break;
     case IDC_COMBO_LABEL:
       labelFieldCommandAction_(wParam, lParam);
       break;
     case IDB_COLOR_BUTTON:
-      colorButtonAction_();
+      if (code == BN_CLICKED) colorButtonAction_();
       break;
     case IDC_WIDTH_CB:
-      lineWidthAction_();
+      lineWidthAction_(wParam, lParam);
       break;
     case IDC_RRNAME_EDIT:
       rangeRingNameEdit_(wParam, lParam);
       break;
+    case IDC_LAT_EDIT: // Respond the same to both lat and lon edits
+    case IDC_LON_EDIT:
+      latLonEdit_(wParam, lParam);
+      break;
     case IDB_POLYGON_CHECK:
-      fillPolygonsCheckAction_();
+      if (code == BN_CLICKED) fillPolygonsCheckAction_();
       break;
     case IDC_TITLE_EDIT:
-      editTitleAction_();
+      editTitleAction_(wParam, lParam);
       break;
     case IDC_EXPORT_PF:
-      exportPlaceFileAction_();
+      if (code == BN_CLICKED) exportPlaceFileAction_();
       break;
     }
     break;
+  }
   case WM_NOTIFY:
     {
       // Unpack the notification
@@ -382,7 +392,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Range Ring:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 255 + 6, labelFieldsWidth, 30,
+    middleBorder + 5, 258 + 3, labelFieldsWidth, 30,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -394,11 +404,59 @@ void PFBApp::buildGUI_()
     WC_EDITW,
     nullptr,
     WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL ,
-    middleBorder + 110, 255 + 3, 175, 20,
+    middleBorder + 110, 258, 175, 20,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_RRNAME_EDIT),
     nullptr, nullptr);
   if (!rrNameEdit_) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add lat label
+  temp = CreateWindowExW(
+    0,
+    WC_STATICW,
+    L"Latitude",
+    WS_VISIBLE | WS_CHILD | SS_CENTER,
+    middleBorder + 5 + 25, 295, labelFieldsWidth, 20,
+    hwnd_,
+    nullptr,
+    nullptr, nullptr);
+  if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add latEdit_
+  latEdit_ = CreateWindowExW(
+    WS_EX_CLIENTEDGE,
+    WC_EDITW,
+    nullptr,
+    WS_VISIBLE | WS_CHILD | WS_BORDER | ES_CENTER | ES_AUTOHSCROLL,
+    middleBorder + 5 + 25, 315, labelFieldsWidth, 20,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_LAT_EDIT),
+    nullptr, nullptr);
+  if (!latEdit_) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add lon label
+  temp = CreateWindowExW(
+    0,
+    WC_STATICW,
+    L"Longitude",
+    WS_VISIBLE | WS_CHILD | SS_CENTER,
+    middleBorder + 25 + 110, 295, labelFieldsWidth, 20,
+    hwnd_,
+    nullptr,
+    nullptr, nullptr);
+  if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Add lonEdit_
+  lonEdit_ = CreateWindowExW(
+    WS_EX_CLIENTEDGE,
+    WC_EDITW,
+    nullptr,
+    WS_VISIBLE | WS_CHILD | WS_BORDER | ES_CENTER | ES_AUTOHSCROLL,
+    middleBorder + 110 + 25, 315, labelFieldsWidth, 20,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_LON_EDIT),
+    nullptr, nullptr);
+  if (!lonEdit_) { HandleFatalError(__FILEW__, __LINE__); }
 
   // Add a label for the titleEditControl_
   temp = CreateWindowExW(
@@ -534,7 +592,7 @@ void PFBApp::updatePropertyControls_()
   {
     vector<HWND> cntrls = {deleteButton_, deleteAllButton_, labelFieldComboBox_, colorButton_, 
       fillPolygonsCheck_, displayThreshStatic_, lineSizeComboBox_, displayThreshTrackBar_,
-      rrNameEdit_};
+      rrNameEdit_, latEdit_, lonEdit_};
 
     // Clear contents of combobox for labels
     ComboBox_ResetContent(labelFieldComboBox_);
@@ -544,6 +602,8 @@ void PFBApp::updatePropertyControls_()
 
     // Clear contents of Range Ring boxes.
     Edit_SetText(rrNameEdit_, L"");
+    Edit_SetText(latEdit_, L"");
+    Edit_SetText(lonEdit_, L"");
 
     for(auto it = cntrls.begin(); it != cntrls.end(); ++it)
     {
@@ -600,6 +660,8 @@ void PFBApp::updatePropertyControls_()
       cntrls.push_back(displayThreshStatic_);
       cntrls.push_back(displayThreshTrackBar_);
       cntrls.push_back(rrNameEdit_);
+      cntrls.push_back(latEdit_);
+      cntrls.push_back(lonEdit_);
     }
 
     for(auto it = cntrls.begin(); it != cntrls.end(); ++it)
@@ -665,7 +727,24 @@ void PFBApp::updatePropertyControls_()
       Edit_SetText(rrNameEdit_,widen(appCon_.getRangeRingName(source, layer)).c_str());
     }
     
-    // TODO more
+    // Update the latitude and longitude boxes
+    if (IsWindowEnabled(latEdit_) && IsWindowEnabled(lonEdit_))
+    {
+      // Get the values we need
+      const point center = appCon_.getRangeRingCenter(source, layer);
+      const double& lat = center.latitude;
+      const double& lon = center.longitude;
+
+      // Format those values into buffers
+      const size_t BUFF_SZ = 64;
+      PCWSTR FMT = L"%.6f";
+      WCHAR latBuffer[BUFF_SZ], lonBuffer[BUFF_SZ];
+      swprintf_s(latBuffer, BUFF_SZ, FMT, lat);
+      swprintf_s(lonBuffer, BUFF_SZ, FMT, lon);
+      Edit_SetText(latEdit_, latBuffer);
+      Edit_SetText(lonEdit_, lonBuffer);
+    }
+
   }
 }
 
@@ -1150,31 +1229,36 @@ void PFBApp::colorButtonAction_()
   InvalidateRect(colorButton_, nullptr, TRUE);
 }
 
-void PFBApp::lineWidthAction_()
+void PFBApp::lineWidthAction_(WPARAM wParam, LPARAM lParam)
 {
-  // Get the layer info to change
-  string source, layer;
-  bool success = getSourceLayerFromTree_(source, layer);
-  if (!success)
+  if (HIWORD(wParam) == CBN_SELCHANGE)
   {
-    MessageBoxW(hwnd_, L"Error getting info from tree.", L"Error", MB_OK | MB_ICONERROR);
-    return;
-  }
+    // Get the layer info to change
+    string source, layer;
+    bool success = getSourceLayerFromTree_(source, layer);
+    if (!success)
+    {
+      MessageBoxW(hwnd_, L"Error getting info from tree.", L"Error", MB_OK | MB_ICONERROR);
+      return;
+    }
 
-  int lw = ComboBox_GetCurSel(lineSizeComboBox_) + 1;
-  appCon_.setLineWidth(source, layer, lw);
+    int lw = ComboBox_GetCurSel(lineSizeComboBox_) + 1;
+    appCon_.setLineWidth(source, layer, lw);
+  }
 }
 
 void PFBApp::rangeRingNameEdit_(WPARAM wParam, LPARAM lParam)
 {
   // TODO better error checking.
-  if (SendMessageW(rrNameEdit_, EM_GETMODIFY, 0, 0))
+  WORD code = HIWORD(wParam);
+  if ((code == EN_CHANGE || code == EN_KILLFOCUS) && SendMessageW(rrNameEdit_, EM_GETMODIFY, 0, 0))
   {
     string source, layer;
     getSourceLayerFromTree_(source, layer);
     const size_t NUMCHARS = 64;
     WCHAR buffer[NUMCHARS] = { 0 };
     int numCopied = Edit_GetLine(rrNameEdit_, 0, buffer, NUMCHARS);
+
     appCon_.setRangeRingName(source, layer, narrow(buffer));
 
     // Update GUI
@@ -1186,6 +1270,16 @@ void PFBApp::rangeRingNameEdit_(WPARAM wParam, LPARAM lParam)
     tvi.pszText = buffer;
     TreeView_SetItem(treeView_, &tvi);
 
+    // Clear the set modify flag, but only if we have saved the new name, e.g. EN_KILLFOCUS
+    SendMessageW(rrNameEdit_, EM_SETMODIFY, FALSE, 0);
+  }
+}
+
+void PFBApp::latLonEdit_(WPARAM wParam, LPARAM lParam)
+{
+  if (HIWORD(wParam) == EN_KILLFOCUS)
+  {
+    cerr << "LatLon validate and update point.\n";
   }
 }
 
@@ -1230,13 +1324,16 @@ void PFBApp::displayThreshAction_()
   appCon_.setDisplayThreshold(source, layer, pos);
 }
 
-void PFBApp::editTitleAction_()
+void PFBApp::editTitleAction_(WPARAM wParam, LPARAM lParam)
 {
-  int sizeOfText = Edit_GetTextLength(titleEditControl_) + 1;
-  unique_ptr<WCHAR> newTitle(new WCHAR[sizeOfText]);
-  Edit_GetText(titleEditControl_, newTitle.get(), sizeOfText);
+  if (HIWORD(wParam) == EN_KILLFOCUS)
+  {
+    int sizeOfText = Edit_GetTextLength(titleEditControl_) + 1;
+    unique_ptr<WCHAR> newTitle(new WCHAR[sizeOfText]);
+    Edit_GetText(titleEditControl_, newTitle.get(), sizeOfText);
 
-  appCon_.setPFTitle(narrow(newTitle.get()));
+    appCon_.setPFTitle(narrow(newTitle.get()));
+  }
 }
 
 void PFBApp::refreshTimeAction_()

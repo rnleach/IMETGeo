@@ -46,6 +46,8 @@ private:
   HWND displayThreshStatic_;
   HWND displayThreshTrackBar_;
   HWND rrNameEdit_;
+  HWND latEdit_;
+  HWND lonEdit_;
 
   // Settings that apply to the whole place file
   HWND titleEditControl_;
@@ -70,11 +72,12 @@ private:
   void deleteAllAction_();
   void labelFieldCommandAction_(WPARAM wParam, LPARAM lParam);
   void colorButtonAction_();
-  void lineWidthAction_();
+  void lineWidthAction_(WPARAM wParam, LPARAM lParam);
   void rangeRingNameEdit_(WPARAM wParam, LPARAM lParam);
+  void latLonEdit_(WPARAM wParam, LPARAM lParam);
   void fillPolygonsCheckAction_();
   void displayThreshAction_();
-  void editTitleAction_();
+  void editTitleAction_(WPARAM wParam, LPARAM lParam);
   void refreshTimeAction_();
   void exportPlaceFileAction_();
 };
