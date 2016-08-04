@@ -608,6 +608,7 @@ void PFBApp::updatePropertyControls_()
     for(auto it = cntrls.begin(); it != cntrls.end(); ++it)
     {
       EnableWindow(*it, FALSE);
+      ShowWindow(*it, SW_HIDE);
     }
   }
 
@@ -625,6 +626,8 @@ void PFBApp::updatePropertyControls_()
     // We have a valid layer, so enable deleting.
     EnableWindow(deleteButton_, TRUE);
     EnableWindow(deleteAllButton_, TRUE);
+    ShowWindow(deleteButton_, SW_SHOW);
+    ShowWindow(deleteAllButton_, SW_SHOW);
 
     // Detect type: Point, line, polygon, range ring, etc and enable
     // controls as necessary.
@@ -667,6 +670,7 @@ void PFBApp::updatePropertyControls_()
     for(auto it = cntrls.begin(); it != cntrls.end(); ++it)
     {
       EnableWindow(*it, TRUE);
+      ShowWindow(*it, SW_SHOW);
     }
   
     //
