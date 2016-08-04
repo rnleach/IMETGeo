@@ -32,7 +32,7 @@ namespace PFB
       const size_t NUM_POINTS = 360; // Number of line segments to use to make up ring.
       vector<point> pnts{};
       pnts.reserve(NUM_POINTS + 1);
-      double deltaBearing = NUM_POINTS / pnts.size() / 180.0 * 3.14159; // radians
+      double deltaBearing = static_cast<double>(NUM_POINTS) / (NUM_POINTS + 1) / 180.0 * 3.14159; // radians
       for(size_t i = 0; i < NUM_POINTS + 1; i++)
       {
         const double bearing = i * deltaBearing; // radians

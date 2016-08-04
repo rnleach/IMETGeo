@@ -1329,7 +1329,7 @@ void PFBApp::rangeRingNameEdit_(WPARAM wParam, LPARAM lParam)
 void PFBApp::latLonEdit_(WPARAM wParam, LPARAM lParam)
 {
   WORD code = HIWORD(wParam);
-  if (code == EN_KILLFOCUS)
+  if (code == EN_CHANGE && SendMessage(HWND(lParam), EM_GETMODIFY, 0, 0))
   {
     // Get the strings from the latEdit_ and lonEdit_ controls
     const size_t NUMCHARS = 32;
