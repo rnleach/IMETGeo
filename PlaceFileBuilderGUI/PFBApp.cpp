@@ -36,15 +36,16 @@ using namespace std;
 #define IDB_ADD_RANGERING  1017 // Add a range ring
 #define IDC_LAT_EDIT       1018 // Edit latitude
 #define IDC_LON_EDIT       1019 // Edit longitude
+#define IDC_RANGES_EDIT    1020 // Edit a string for range rings
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance}, appCon_{}, addButton_{ nullptr }, 
   deleteButton_{ nullptr }, deleteAllButton_{ nullptr }, treeView_{ nullptr }, 
   labelFieldComboBox_{ nullptr }, colorButton_{ nullptr }, colorButtonColor_{ nullptr },
   lineSizeComboBox_{nullptr}, fillPolygonsCheck_{ nullptr }, displayThreshStatic_{ nullptr }, 
-  displayThreshTrackBar_{ nullptr }, rrNameEdit_{ nullptr }, latEdit_{ nullptr }, 
-  lonEdit_{ nullptr }, titleEditControl_{ nullptr }, refreshStatic_{ nullptr }, 
-  refreshTrackBar_{ nullptr }, exportPlaceFileButton_ { nullptr }
+  displayThreshTrackBar_{ nullptr }, rrNameEdit_{ nullptr }, latEdit_{ nullptr },
+  lonEdit_{ nullptr }, rangesEdit_{ nullptr },  titleEditControl_ { nullptr }, 
+  refreshStatic_{ nullptr }, refreshTrackBar_{ nullptr }, exportPlaceFileButton_ { nullptr }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -127,6 +128,9 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case IDC_LAT_EDIT: // Respond the same to both lat and lon edits
     case IDC_LON_EDIT:
       latLonEdit_(wParam, lParam);
+      break;
+    case IDC_RANGES_EDIT:
+      rangesEditAction_(wParam, lParam);
       break;
     case IDB_POLYGON_CHECK:
       if (code == BN_CLICKED) fillPolygonsCheckAction_();
@@ -458,6 +462,30 @@ void PFBApp::buildGUI_()
     nullptr, nullptr);
   if (!lonEdit_) { HandleFatalError(__FILEW__, __LINE__); }
 
+  // Label for the ranges edit
+  temp = CreateWindowExW(
+    0,
+    WC_STATICW,
+    L"Ranges:",
+    WS_VISIBLE | WS_CHILD | SS_RIGHT,
+    middleBorder + 5, 350 + 3, labelFieldsWidth, 30,
+    hwnd_,
+    nullptr,
+    nullptr, nullptr);
+  if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+
+  // Create the ranges edit
+  rangesEdit_ = CreateWindowExW(
+    WS_EX_CLIENTEDGE,
+    WC_EDITW,
+    nullptr,
+    WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL,
+    middleBorder + 110, 350, 175, 20,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_RANGES_EDIT),
+    nullptr, nullptr);
+  if (!rangesEdit_) { HandleFatalError(__FILEW__, __LINE__); }
+
   // Add a label for the titleEditControl_
   temp = CreateWindowExW(
     0,
@@ -592,7 +620,7 @@ void PFBApp::updatePropertyControls_()
   {
     vector<HWND> cntrls = {deleteButton_, deleteAllButton_, labelFieldComboBox_, colorButton_, 
       fillPolygonsCheck_, displayThreshStatic_, lineSizeComboBox_, displayThreshTrackBar_,
-      rrNameEdit_, latEdit_, lonEdit_};
+      rrNameEdit_, latEdit_, lonEdit_, rangesEdit_};
 
     // Clear contents of combobox for labels
     ComboBox_ResetContent(labelFieldComboBox_);
@@ -665,6 +693,7 @@ void PFBApp::updatePropertyControls_()
       cntrls.push_back(rrNameEdit_);
       cntrls.push_back(latEdit_);
       cntrls.push_back(lonEdit_);
+      cntrls.push_back(rangesEdit_);
     }
 
     for(auto it = cntrls.begin(); it != cntrls.end(); ++it)
@@ -747,6 +776,24 @@ void PFBApp::updatePropertyControls_()
       swprintf_s(lonBuffer, BUFF_SZ, FMT, lon);
       Edit_SetText(latEdit_, latBuffer);
       Edit_SetText(lonEdit_, lonBuffer);
+    }
+
+    // Update the ranges text box
+    if (IsWindowEnabled(rangesEdit_))
+    {
+      // Get the values we need
+      const vector<double>& rngs = appCon_.getRangeRingRanges(source, layer);
+
+      // Build a string
+      wstringstream ss;
+      if (rngs.size() > 0) for (size_t i = 0; i < rngs.size() - 1; ++i)
+      {
+        ss << rngs[i] << L",";
+      }
+      if (rngs.size() > 0) ss << rngs[rngs.size() - 1];
+
+      wstring formatedString = ss.str();
+      Edit_SetText(rangesEdit_, formatedString.c_str());
     }
 
   }
@@ -1325,6 +1372,61 @@ void PFBApp::latLonEdit_(WPARAM wParam, LPARAM lParam)
 
       auto msg = L"Format error: Latitude and Longitude must be in decimal degrees. Latitude must"
         L" be -90.0 to 90.0 and longitude must be -180.0 to 180.0.";
+      MessageBoxW(hwnd_, msg, L"ERROR", MB_OK | MB_ICONERROR);
+    }
+  }
+}
+
+void PFBApp::rangesEditAction_(WPARAM wParam, LPARAM lParam)
+{
+  // TODO better error checking.
+  WORD code = HIWORD(wParam);
+  if (code == EN_CHANGE && SendMessageW(rangesEdit_, EM_GETMODIFY, 0, 0))
+  {
+    string source, layer;
+    getSourceLayerFromTree_(source, layer);
+    const size_t NUMCHARS = 64;
+    WCHAR buffer[NUMCHARS] = { 0 };
+    Edit_GetLine(rangesEdit_, 0, buffer, NUMCHARS);
+
+    // Parse the string
+    vector<double> newRanges;
+    bool errorFlag = false;
+    wstringstream ss(buffer);
+    wchar_t tokenBuff[256];;
+    while (ss.getline(tokenBuff, 256, L','))
+    {
+      wstring token(tokenBuff);
+
+      // Erase white space from token
+      token.erase(remove(token.begin(), token.end(), L' '), token.end());
+
+      // Parse the double value
+      try
+      {
+        double newVal = stod(token);
+        if (newVal < 0) errorFlag = true;
+        else newRanges.push_back(newVal);
+      }
+      catch (const exception& e)
+      {
+        errorFlag = true;
+      }
+    }
+    
+    // Update the appcon if it was a valid list
+    if ((newRanges.size() > 0 && errorFlag) || !errorFlag)
+    {
+      appCon_.setRangeRingRanges(source, layer, newRanges);
+      SendMessageW(rangesEdit_, EM_SETMODIFY, FALSE, 0);
+    }
+    // If there was an error, reset the window text to the correct value and send message
+    if(errorFlag)
+    {
+      // Easiest to just call update controls here, less efficient though
+      updatePropertyControls_();
+
+      auto msg = L"Format error: use a comma seperated list of ranges in miles for ranges.";
       MessageBoxW(hwnd_, msg, L"ERROR", MB_OK | MB_ICONERROR);
     }
   }

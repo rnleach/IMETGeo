@@ -660,7 +660,7 @@ void AppController::setRangeRingName(const string& source, const string& layer, 
   else throw out_of_range("Not a range ring.");
 }
 
-string AppController::getRangeRingRanges(const string& source, const string& layer)
+vector<double> AppController::getRangeRingRanges(const string& source, const string& layer)
 {
   if(source == RangeRingSrc)
   {
@@ -670,40 +670,16 @@ string AppController::getRangeRingRanges(const string& source, const string& lay
     auto lyr = find_if(start, end, [&layer](RRPair pp)->bool{ return pp.first.name() == layer; } );
     
     // Get the value if found, throw otherwise.
-    if(lyr != end)
-    { 
-      stringstream ss;
-      auto rngs = get<0>(*lyr).getRanges();
-      for(auto rng = rngs.begin(); rng != rngs.end(); ++rng) 
-        ss << (*rng) << (rng != rngs.end()? (',') : 0);
-      return ss.str();
-    }
+    if (lyr != end) return lyr->first.getRanges();
     else throw out_of_range("No such range ring.");
   }
   else throw out_of_range("Not a range ring.");
 }
-void AppController::setRangeRingRanges(const string& src, const string& layer, const string& rngs)
+
+void AppController::setRangeRingRanges(const string& src, const string& layer, const vector<double>& rngs)
 {
   if(src == RangeRingSrc)
   {
-    // Parse the string into numbers
-    vector<double> newRanges;
-    stringstream ss(rngs);
-    string token;
-    while(getline(ss,token,','))
-    {
-      // Strip white space
-      token.erase(remove(token.begin(), token.end(), ' '), token.end());
-
-      // Now convert to double
-      try
-      {
-        double newVal = stod(token);
-        if(newVal > 0) newRanges.push_back(newVal);
-      }
-      catch(const exception& e){ /* ignore it, can't parse it move on */}
-    }
-
     // Find the layer
     auto start = rangeRings_.begin();
     auto end = rangeRings_.end();
@@ -714,7 +690,7 @@ void AppController::setRangeRingRanges(const string& src, const string& layer, c
     {
       auto& rr = get<0>(*lyr);
       rr.clearRanges();
-      for(double newVal: newRanges)
+      for(double newVal: rngs)
       {
         rr.addRange(newVal);
       }

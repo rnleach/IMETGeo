@@ -48,6 +48,7 @@ private:
   HWND rrNameEdit_;
   HWND latEdit_;
   HWND lonEdit_;
+  HWND rangesEdit_;
 
   // Settings that apply to the whole place file
   HWND titleEditControl_;
@@ -75,6 +76,7 @@ private:
   void lineWidthAction_(WPARAM wParam, LPARAM lParam);
   void rangeRingNameEdit_(WPARAM wParam, LPARAM lParam);
   void latLonEdit_(WPARAM wParam, LPARAM lParam);
+  void rangesEditAction_(WPARAM wParam, LPARAM lParam);
   void fillPolygonsCheckAction_();
   void displayThreshAction_();
   void editTitleAction_(WPARAM wParam, LPARAM lParam);

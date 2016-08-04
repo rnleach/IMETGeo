@@ -111,9 +111,9 @@ public:
   string getRangeRingName(const string& source, const string& layer);
   void setRangeRingName(const string& source, const string& layer, const string& nm);
 
-  // Get/Set ranges for range rings. Comma seperated list of numbers in miles
-  string getRangeRingRanges(const string& source, const string& layer);
-  void setRangeRingRanges(const string& source, const string& layer, const string& rngs);
+  // Get/Set ranges for range rings.
+  vector<double> getRangeRingRanges(const string& source, const string& layer);
+  void setRangeRingRanges(const string& source, const string& layer, const vector<double>& rngs);
 
   // Determine if this layer is a polygon, line, point, etc.
   bool isPolygonLayer(const string& source, const string& layer);
