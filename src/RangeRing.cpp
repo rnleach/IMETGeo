@@ -27,27 +27,31 @@ namespace PFB
 
     // Put the rings on the list
     const double earthRadius = 3959.0; // miles
+    const double PI = 3.14159;
     for(auto rng: ranges_)
     {
       const size_t NUM_POINTS = 360; // Number of line segments to use to make up ring.
       vector<point> pnts{};
       pnts.reserve(NUM_POINTS + 1);
-      double deltaBearing = static_cast<double>(NUM_POINTS) / (NUM_POINTS + 1) / 180.0 * 3.14159; // radians
+      double deltaBearing = 360.0 / (NUM_POINTS) / 180.0 * PI; // radians
       for(size_t i = 0; i < NUM_POINTS + 1; i++)
       {
         const double bearing = i * deltaBearing; // radians
         const double delta = rng/earthRadius;
 
-        const double oldLat = pnt_.latitude * 3.14159 / 180.0; // radians
-        const double oldLon = pnt_.longitude * 3.14159 / 180.0; // radians
+        const double oldLat = pnt_.latitude * PI / 180.0; // radians
+        const double oldLon = pnt_.longitude * PI / 180.0; // radians
 
+        //
+        // SIMPLIFICATION - assume we'll never be near a pole, cause there is no radar their, so why
+        // make a placefile.
+        //
         double newLat = asin(sin(oldLat)*cos(delta) + cos(oldLat)*sin(delta)*cos(bearing));
-        double newLon = oldLon + atan2(cos(delta) - sin(oldLon) * sin(newLat),
-                           sin(bearing) * sin(delta) * cos(oldLat));
+        double newLon = fmod(oldLon - asin(sin(bearing)*sin(delta)/cos(newLat)) + PI, 2*PI) - PI;
 
         // Convert back to degrees
-        newLat *= 180.0 / 3.14159;
-        newLon *= 180.0 / 3.14159;
+        newLat *= 180.0 / PI;
+        newLon *= 180.0 / PI;
 
         pnts.push_back(point(newLat, newLon));
       }
