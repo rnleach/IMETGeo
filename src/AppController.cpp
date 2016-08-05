@@ -939,6 +939,18 @@ void AppController::saveState(const string& pathToStateFile)
         n :  Repeat 5-m for each source
         . :
         . :
+        p :  Range Ring: name
+        . :  center: lat lon
+        . :  ranges: rng1 rng2 rng3 ...
+        . :  color: rrr ggg bbb
+        . :  lineWidth: integer
+        . :  displayThresh: integer value
+        q :  Range Ring End:
+        . :
+        . :
+        . : Repeat p-q for each range ring
+        . :
+        . :
         z :  End
      z + 1:
   */
@@ -964,36 +976,77 @@ void AppController::saveState(const string& pathToStateFile)
 
         for(auto lyrIt = lyrInfoMap.begin(); lyrIt != lyrInfoMap.end(); ++lyrIt)
         {
-          statefile << "Layer Start: " << lyrIt->first << "\n";
+          const string& lyrName = lyrIt->first;
+          const LayerOptions& lyrOpt = lyrIt->second;
+
+          // Name
+          statefile << "Layer Start: " << lyrName << "\n";
 
           // Label
-          statefile << "labelField: " << lyrIt->second.labelField << "\n";
+          statefile << "labelField: " << lyrOpt.labelField << "\n";
 
           // Color
-          PlaceFileColor clr = lyrIt->second.color;
+          const PlaceFileColor& clr = lyrOpt.color;
           statefile << "color: " <<
             static_cast<short>(clr.red)   << " " <<
             static_cast<short>(clr.green) << " " <<
             static_cast<short>(clr.blue)  << "\n";
 
           // Line width
-          statefile << "lineWidth: " << lyrIt->second.lineWidth << "\n";
+          statefile << "lineWidth: " << lyrOpt.lineWidth << "\n";
 
           // PolyAsLine
           statefile << "polyAsLine: " << 
-            (lyrIt->second.polyAsLine ? "True" : "False") << "\n";
+            (lyrOpt.polyAsLine ? "True" : "False") << "\n";
 
           // visible
           statefile << "visible: " << 
-            (lyrIt->second.visible ? "True" : "False") << "\n";
+            (lyrOpt.visible ? "True" : "False") << "\n";
 
           // displayThresh
-          statefile << "displayThresh: " << lyrIt->second.displayThresh << "\n";
+          statefile << "displayThresh: " << lyrOpt.displayThresh << "\n";
 
-          statefile << "Layer End: " << lyrIt->first << "\n";
+          statefile << "Layer End: " << lyrName << "\n";
         }
 
         statefile << "Source End: " << srcIt->first << "\n";
+      }
+
+      for (auto rIt = rangeRings_.cbegin(); rIt != rangeRings_.cend(); ++rIt)
+      {
+        const RangeRing& rr = rIt->first;
+        const LayerOptions& opt = rIt->second;
+
+        // Name
+        statefile << "Range Ring: " << rr.name() << "\n";
+
+        // Center point
+        const auto& cp = rr.getCenterPoint();
+        statefile << "center: " << cp.latitude << " " << cp.longitude << "\n";
+
+        // Ranges
+        const auto& rngs = rr.getRanges();
+        statefile << "ranges: ";
+        for(const double rng: rngs)
+        {
+          statefile << rng << " ";
+        }
+        statefile << "\n";
+
+        // Color
+        const PlaceFileColor& clr = opt.color;
+        statefile << "color: " <<
+          static_cast<short>(clr.red) << " " <<
+          static_cast<short>(clr.green) << " " <<
+          static_cast<short>(clr.blue) << "\n";
+
+        // Line width
+        statefile << "lineWidth: " << opt.lineWidth << "\n";
+
+        // displayThresh
+        statefile << "displayThresh: " << opt.displayThresh << "\n";
+
+        statefile << "Range Ring End: " << rr.name() << "\n";
       }
 
       statefile << "End\n";
@@ -1130,6 +1183,92 @@ void AppController::loadState(const string& pathToStateFile)
           // End of source
         } // if Start Source
 
+        // Check for a start of a range ring
+        if(line.find("Range Ring: ") != string::npos)
+        {
+          // Get the name and create the ring
+          string name = line.substr(12);
+          addRangeRing(name);
+
+          // Find the layer just added and get a reference
+          auto start = rangeRings_.begin();
+          auto end = rangeRings_.end();
+          auto lyr = find_if(start, end, [&name](RRPair pp)->bool { return pp.first.name() == name; });
+
+          auto& rr = lyr->first;
+          auto& opt = lyr->second;
+
+          // Keep searching until we find the end of the range ring
+          getline(statefile, line);
+          while (line.find("Range Ring End: ") == string::npos)
+          {
+            // Check for the point center
+            if (line.find("center: ") != string::npos)
+            {
+              stringstream cntrStr (line.substr(8));
+              string tmp;
+              cntrStr >> tmp;
+              const double lat = stod(tmp);
+              cntrStr >> tmp;
+              const double lon = stod(tmp);
+
+              rr.setCenterPoint(point(lat, lon));
+            }
+
+            // Check for the ranges
+            else if (line.find("ranges: ") != string::npos)
+            {
+              stringstream rngStr(line.substr(8));
+              string tmp;
+              while (rngStr >> tmp)
+              {
+                rr.addRange(stod(tmp));
+              }
+            }
+
+            // Parse color
+            else if (line.find("color: ") != string::npos)
+            {
+              // Get the color section of the line
+              string colorString = line.substr(7);
+
+              // Tokenize using a string stream
+              stringstream ss{ colorString };
+              string buffer;
+              vector<string> tokens;
+              while (ss >> buffer)
+              {
+                tokens.push_back(buffer);
+              }
+
+              using uchar = unsigned char;
+              // Convert to unsigned chars
+              uchar red = static_cast<uchar>(atoi(tokens[0].c_str()));
+              uchar green = static_cast<uchar>(atoi(tokens[1].c_str()));
+              uchar blue = static_cast<uchar>(atoi(tokens[2].c_str()));
+
+              opt.color = PlaceFileColor(red, green, blue);
+            }
+
+            // Parse line width
+            else if (line.find("lineWidth: ") != string::npos)
+            {
+              int lw = atoi(line.substr(11).c_str());
+              opt.lineWidth = lw;
+            }
+
+            // Parse display threshold
+            else if (line.find("displayThresh: ") != string::npos)
+            {
+              int dispThresh = atoi(line.substr(15).c_str());
+              opt.displayThresh = dispThresh;
+            }
+
+            // Get the next line
+            getline(statefile, line);
+          }
+        }
+          
         // Check for refresh minutes
         if(line.find("refreshMinutes:") != string::npos)
         {
