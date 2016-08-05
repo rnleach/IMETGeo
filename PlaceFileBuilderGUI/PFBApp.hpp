@@ -75,8 +75,8 @@ private:
   void colorButtonAction_();
   void lineWidthAction_(WPARAM wParam, LPARAM lParam);
   void rangeRingNameEdit_(WPARAM wParam, LPARAM lParam);
-  void latLonEdit_(WPARAM wParam, LPARAM lParam);
-  void rangesEditAction_(WPARAM wParam, LPARAM lParam);
+  bool latLonEdit_();       // Return true if validated and updated.
+  bool rangesEditAction_(); // Return true if validated and updated.
   void fillPolygonsCheckAction_();
   void displayThreshAction_();
   void editTitleAction_(WPARAM wParam, LPARAM lParam);

@@ -122,19 +122,11 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case IDC_WIDTH_CB:
       lineWidthAction_(wParam, lParam);
       break;
-    case IDC_RRNAME_EDIT:
-      rangeRingNameEdit_(wParam, lParam);
-      break;
-    case IDC_LAT_EDIT: // Respond the same to both lat and lon edits
-    case IDC_LON_EDIT:
-      latLonEdit_(wParam, lParam);
-      break;
-    case IDC_RANGES_EDIT:
-      rangesEditAction_(wParam, lParam);
-      break;
     case IDB_POLYGON_CHECK:
       if (code == BN_CLICKED) fillPolygonsCheckAction_();
       break;
+    case IDC_RRNAME_EDIT:
+      rangeRingNameEdit_(wParam, lParam);
     case IDC_TITLE_EDIT:
       editTitleAction_(wParam, lParam);
       break;
@@ -1000,6 +992,18 @@ BOOL PFBApp::preventSelectionChange_(LPARAM lparam)
   // If the new item has children, it cannot be selected.
   if (TreeView_GetParent(treeView_, lpnmTv->itemNew.hItem) == nullptr) return TRUE;
 
+  // Get the previous layer and source names
+  string source, layer;
+  getTreeItemText_(lpnmTv->itemOld.hItem, layer);
+  getTreeItemText_(TreeView_GetParent(treeView_, lpnmTv->itemOld.hItem), source);
+
+  // Only keep process fields if this is a RangeRing
+  if (appCon_.isRangeRing(source, layer))
+  {
+    // Prevent selection change if either fails.
+    if (!latLonEdit_() || !rangesEditAction_()) return TRUE;
+  }
+
   return FALSE;
 }
 
@@ -1326,10 +1330,13 @@ void PFBApp::rangeRingNameEdit_(WPARAM wParam, LPARAM lParam)
   }
 }
 
-void PFBApp::latLonEdit_(WPARAM wParam, LPARAM lParam)
+bool PFBApp::latLonEdit_()
 {
-  WORD code = HIWORD(wParam);
-  if (code == EN_CHANGE && SendMessage(HWND(lParam), EM_GETMODIFY, 0, 0))
+  // Flag to return to indicate success
+  bool success = true;
+
+  // Check if we even need to check.
+  if (SendMessage(latEdit_, EM_GETMODIFY, 0, 0) || SendMessage(latEdit_, EM_GETMODIFY, 0, 0))
   {
     // Get the strings from the latEdit_ and lonEdit_ controls
     const size_t NUMCHARS = 32;
@@ -1373,15 +1380,24 @@ void PFBApp::latLonEdit_(WPARAM wParam, LPARAM lParam)
       auto msg = L"Format error: Latitude and Longitude must be in decimal degrees. Latitude must"
         L" be -90.0 to 90.0 and longitude must be -180.0 to 180.0.";
       MessageBoxW(hwnd_, msg, L"ERROR", MB_OK | MB_ICONERROR);
+
+      success = false;
     }
+
+    // Clear these messages.
+    SendMessage(latEdit_, EM_SETMODIFY, FALSE, 0);
+    SendMessage(lonEdit_, EM_SETMODIFY, FALSE, 0);
   }
+
+  return success;
 }
 
-void PFBApp::rangesEditAction_(WPARAM wParam, LPARAM lParam)
+bool PFBApp::rangesEditAction_()
 {
+  bool success = true;
+
   // TODO better error checking.
-  WORD code = HIWORD(wParam);
-  if (code == EN_CHANGE && SendMessageW(rangesEdit_, EM_GETMODIFY, 0, 0))
+  if (SendMessageW(rangesEdit_, EM_GETMODIFY, 0, 0))
   {
     string source, layer;
     getSourceLayerFromTree_(source, layer);
@@ -1428,8 +1444,12 @@ void PFBApp::rangesEditAction_(WPARAM wParam, LPARAM lParam)
 
       auto msg = L"Format error: use a comma seperated list of ranges in miles for ranges.";
       MessageBoxW(hwnd_, msg, L"ERROR", MB_OK | MB_ICONERROR);
+
+      success = false;
     }
   }
+
+  return success;
 }
 
 void PFBApp::fillPolygonsCheckAction_()
