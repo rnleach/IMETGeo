@@ -2,32 +2,57 @@
 * Utilities for working with the Windows API in namespace Win32Helper.
 *
 * Layouts.hpp provides utilities for automatically arranging controls in a GUI.
+*
+* A general note on layouts: They do not respond dynamically to changes in the underlying windows
+* controls. E.g. if you call SetText on a static control, the next time the layout manager is run
+* it will not recalculate the requested size. There may be a change in the future to enable
+* limited recalculations of sizes.
 */
+#include <limits>
 #include <memory>
 #include <vector>
 
-namesapce Win32Helper
+#include <Windows.h>
+
+namespace Win32Helper
 {
-  enum class ExpandOptions
+  using namespace std;
+
+  /// Alias to use for coordinate type. 
+  using Coord = int;
+
+  /// undefined or uninitialize value flag.
+  // Goofy parenthesis to avoid max MACRO in Windows.h
+  static const Coord undefinedCoord = (numeric_limits<Coord>::max)();
+
+  enum class Expand
   {
-    NoExpand;         // Use requested size only
-    Expand;           // Grow to fill area
-    ExpandHorizontal; // Grow horizontally, but not vertically to fill area.
-    ExpandVertical;   // Grow vertically, but not horizontially to fill area.
+    No,         // Use requested size only
+    Both,       // Grow to fill area
+    Horizontal, // Grow horizontally, but not vertically to fill area.
+    Vertical,   // Grow vertically, but not horizontially to fill area.
+  };
+
+  /// Collapse options are used when hiding controls, when they are hidden, should the area they
+  /// occupy be set to zero via height and width request values?
+  enum class Collapse
+  {
+    No,   // Do not collapse, just leave a blank space there
+    Yes,  // Yes collapse.
   };
 
   enum class HorizontalAlignment
   {
-    Right;
-    Left;
-    Center;
+    Right,
+    Left,
+    Center,
   };
 
   enum class VerticalAlignment
   {
-    Top; 
-    Bottom;
-    Center;
+    Top, 
+    Bottom,
+    Center,
   };
 
   /**
@@ -42,50 +67,79 @@ namesapce Win32Helper
   */
   struct LayoutOptions
   {
-    uint overrideWidth;
-    uint overrideHeight;
-    uint overridePadding;
-    uint overrideMargins;
+    Coord overrideWidth;
+    Coord overrideHeight;
+    Coord overridePadding;
+    Coord overrideMargins;
   };
 
   /**
   * Interface for layouts. Some layout classes will hold a single window, others will compose a 
   * group of sub-layouts. This is the interface layouts will use to communicate with sub-layouts.
+  *
+  * The protected cache variables are initialized to undefinedCoord to serve as a flag that these
+  * have not yet been calculated, and so need to be.
   */
   class AbstractLayout
   {
   public:
-    AbstractLayout(ExpandOptions expOpt, LayoutOptions lytOpt);
+    AbstractLayout(Expand expOpt, LayoutOptions lytOpt, Collapse clpsOpt);
     virtual ~AbstractLayout(){};
 
     /**
     * Minimum requested height and width. Using values less than these in the layout method may
     * cause clipping (most likely) or undefined behavior.
     */
-    virtual uint requestHeight() const = 0;
-    virtual uint requestWidth() const = 0;
+    Coord requestHeight();
+    Coord requestWidth();
+
+    /// Query whether this will expand.
+    bool willExpandVertical();
+    bool willExpandHorizontal();
 
     /**
     * Height from top of conrol to text baseline. Used when aligning text in static controls with
     * edit labels and check buttons. If there is no text, just return 0.
     */
-    virtual uint baselineHeight() const = 0;
+    virtual Coord baselineHeight();
+
+    /**
+    * Hide(show) the control, this will disable(enable) the control and hide(show) it. It uses
+    * the value of clpsOpt_ to potentially resize the control to 0 so it does not affect the 
+    * layout.
+    */
+    virtual void hide() = 0;
+    virtual void show() = 0;
 
     /**
     * Set the layout options. Containers should not call these on their sub-containers, because that
     * would override the behavior specified by a programmer. These are here so the programmer can
     * specify their own overrides on a case by case basis.
     */
-    void setLayoutOptions(LayoutOptions lytOpt);
-    void setExpandOption(ExpandOptions expOpt);
+    inline void setLayoutOptions(LayoutOptions lytOpt) { lytOpt_ = lytOpt; }
+    inline void set(Expand expOpt) { expOpt_ = expOpt; }
+    inline void set(Collapse clps) { clpsOpt_ = clps; }
+    inline void set(HorizontalAlignment hAlign) { hAlign_ = hAlign; }
+    inline void set(VerticalAlignment vAlign) { vAlign_ = vAlign; }
 
 
     /// Given a starting position and overall size, do the layout.
-    virtual void layout(uint x, uint y, uint width, uint height) const = 0;
+    virtual void layout(Coord x, Coord y, Coord width, Coord height) = 0;
+
+    /// Force a refresh of the cached values for size. This may be useful if you are dynamically
+    /// changing the content of controls.
+    virtual void refreshCache() = 0;
 
   protected:
     LayoutOptions lytOpt_;
-    ExpandOptions xpOpt_;
+    Expand expOpt_;
+    Collapse clpsOpt_;
+    HorizontalAlignment hAlign_;
+    VerticalAlignment vAlign_;
+    bool hidden_;
+    Coord heightCache_;
+    Coord widthCache_;
+    Coord baselineCache_;
   };
 
   /**
@@ -97,98 +151,175 @@ namesapce Win32Helper
   * Layout to hold a single control. This is necessary so we can create general layouts that are
   * composed of polymorphic AbstractLayouts, some layouts holding multiple other controls while 
   * others only holding a single control.
+  *
+  * The margin in the LayoutOptions for a single control layout is ignored. Margins are applied
+  * to all layouts in a multiple layout container the same.
+  *
+  * If a width or height is supplied, then the padding is ignored for that calculation.
   */
   class SingleControlLayout final: public AbstractLayout
   {
   public:
-    explicit SingleContorlLayout(HWND control, ExpandOptions exOpt = ExpandOptions::NoExpand,
-      LayoutOptions lytOpt = {0});
+    
+    ~SingleControlLayout() override;
 
     /// Overridden methods of AbsractLayout
-    final uint requestHeight() const;
-    final uint requestWidth() const;
-    final uint baselineHeight() const;
-    final void layout(uint x, uint y, uint width, uint height) const;
+    void refreshCache() final;
+    void hide() final;
+    void show() final;
+    void layout(Coord x, Coord y, Coord width, Coord height) final;
+
+    /// Static factory methods
+    static LayoutPtr makeSingleCtrlLayout(
+      HWND control,
+      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord },
+      Expand exOpt = Expand::No,
+      Collapse clpsOpt = Collapse::No);
+    static LayoutPtr makeSingleCtrlLayout(
+      HWND control,
+      Coord padding,
+      Expand expOpt = Expand::No,
+      Collapse clpsOpt = Collapse::No);
+    /// Defaults to NoExpand
+    static LayoutPtr makeSingleCtrlLayout(
+      HWND control,
+      Coord padding,
+      Collapse clpsOpt);
+    static LayoutPtr makeSingleCtrlLayout(
+      HWND control,
+      Coord width,
+      Coord height,
+      Expand expOpt = Expand::No,
+      Collapse clpsOpt = Collapse::No);
+    /// Defaults to NoExpand
+    static LayoutPtr makeSingleCtrlLayout(
+      HWND control,
+      Coord width,
+      Coord height,
+      Collapse clpsOpt);
+    /// Defaults to NoExpand
+    static LayoutPtr makeSingleCtrlLayout(
+      HWND control,
+      Collapse clpsOpt);
+    static LayoutPtr makeSingleCtrlLayout(
+      HWND control,
+      Expand expOpt,
+      Collapse clpsOpt = Collapse::No);
 
   private:
+    // Private constructor, use static factory methods
+    SingleControlLayout(HWND control,
+      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord },
+      Expand exOpt = Expand::No,
+      Collapse clpsOpt = Collapse::No
+    );
+
+    // Populate the protected cache values for the base class.
     HWND hwnd_;
+
+    // Using the handle, get the control class and calculate the baseline from
+    // the control type and window styles.
+    void calcBaseline(const int borderV, const SIZE strSz, const TEXTMETRICW& textMetrics);
   };
 
   /**
   * Flow layout. Just keep adding sub-layouts and they are added horizontally or vertically.
+  *
+  * Flow layouts ignore ExpandOptions, they never provide a larger rectangle to their
+  * sub-layouts, they only give what is requested. So if you want a sub-layout to expand,
+  * you may have to provide a height/width override in the LayoutOptions.
+  *
+  * The flowDir argument always specifies the direction components will flow from.
   */
   class FlowLayout final: public AbstractLayout
   {
   public:
-    enum class Direction { Vertical; Horizontal; };
+    enum class Direction {Top, Bottom, Left, Right };
 
-    FlowLayout(
-      Direction dir              = Direction::Horizontal, 
-      HorizontalAlignment hAlign = HorizontalAlignment::Left,
-      VerticalAlignment vAlign   = VerticalAlignment::Top,
-      ExpandOptions exOpt        = ExpandOptions::NoExpand, 
-      LayoutOptions lytOpt       = {0}
-    );
+    ~FlowLayout() override {};
 
-    override ~FlowLayout();
-
-    // Add a layout to this container
+    /// Add a layout to this container
     void add(LayoutPtr lyt);
 
-    // Not sure if I should have these, should you be able to adjust these after construction?
-    // This would give you the ability to dynmaically adjust the GUI layout during run time with
-    // no real additional cost. That ability is a little fancier than my original goal for the
-    // layouts, but it is just so easy to do, I'll do it for now.
-    inline void setHorizontalAlignment(HorizontalAlignment hAlign){ hAlign_ = hAlign; }
-    inline void setVerticalAlignment(VerticalAlignment vAlign){ vAlign_ = vAlign; }
-    inline void setFlowDirection(Direction flowDir){ flowDir_ = flowDir; }
+    /// Dynamcially set the flow direction? Could be annoying to someone.
+    inline void set(Direction flowDir){ flowDir_ = flowDir; }
 
     /// Overridden methods of AbsractLayout
-    final uint requestHeight() const;
-    final uint requestWidth() const;
-    final uint baselineHeight() const;
-    final void layout(uint x, uint y, uint width, uint height) const;
+    void refreshCache() final;
+    void hide() final;
+    void show() final;
+    void layout(Coord x, Coord y, Coord width, Coord height) final;
+
+    /// Factory methods
+    static LayoutPtr makeFlowLyt(
+      Direction flowFrom,
+      Collapse clpsOpt = Collapse::No,
+      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord });
+
+    static LayoutPtr makeFlowLyt(Direction flowFrom, LayoutOptions lytOpt);
 
   private:
-    HorizontalAlignment hAlign_;  // If not expanding sub-layouts, align them how horizontally?
-    VerticalAlignment vAlign_;    // If not expanding sub-layouts, align them how vertically
-    Direction flowDir_;           // Layout vertically or horizontally
 
-    vector<LayoutPtr> lyts_;      // Store my layouts here!
+    // Private constructor, call with static factory method.
+    FlowLayout(
+      Direction dir = Direction::Left,
+      Collapse clpsOpt = Collapse::No,
+      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord }
+    );
+
+    Direction flowDir_;              // Layout vertically or horizontally
+    vector<LayoutPtr> lyts_;         // Store my layouts here!
   };
 
   /**
-  * GridLayout. Arrange controlls in a grid.
+  * GridLayout. Arrange controls in a grid.
   */
   class GridLayout final: public AbstractLayout
   {
-    GridLayout(
-      uint rows, 
-      uint columns, 
-      ExpandOptions exOpt  = ExpandOptions::NoExpand, 
-      LayoutOptions lytOpt = {0});
-
+  public:
     // Set a container to a specific grid cell location
-    void set(
-      uint row, 
-      uint col, 
-      LayoutPtr lyt, 
-      HorizontalAlignment hAlign = HorizontalAlignment::Center, 
-      VerticalAlignment vAign    = VerticalAlignment::Center
-    );
+    void set(Coord row, Coord col, LayoutPtr lyt);
 
-    override ~GridLayout();
+    ~GridLayout() override;
 
     /// Overridden methods of AbsractLayout
-    final uint requestHeight() const;
-    final uint requestWidth() const;
-    final uint baselineHeight() const;
-    final void layout(uint x, uint y, uint width, uint height) const;
+    void refreshCache() final;
+    void hide() final;
+    void show() final;
+    void layout(Coord x, Coord y, Coord width, Coord height) final;
+
+    /// Static factory functions
+    static LayoutPtr makeGridLyt(
+      Coord rows,
+      Coord columns,
+      Expand exOpt = Expand::No,
+      Collapse clpsOpt = Collapse::No,
+      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord });
+
+    static LayoutPtr makeGridLyt(
+      Coord rows,
+      Coord columns,
+      Collapse clpsOpt);
+
+    static LayoutPtr makeGridLyt(
+      Coord rows,
+      Coord columns,
+      LayoutOptions lytOpt);
 
   private:
+    // Private constructor, only get via static factory methods
+    GridLayout(
+      Coord rows,
+      Coord columns,
+      Expand exOpt = Expand::No,
+      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord },
+      Collapse clpsOpt = Collapse::No);
+
     // Store layout information in parallel vectors.
-    vector<HorizontalAlignment> hAlign_;
-    vector<VerticalAlignment> vAlign_;
     vector<LayoutPtr> lyts_;
-  }
+    vector<Coord> rowHeight_;
+    vector<Coord> colWidth_;
+    const size_t numRows_;
+    const size_t numCols_;
+  };
 }

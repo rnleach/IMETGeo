@@ -48,6 +48,9 @@
     <ClCompile Include="..\src\RangeRing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Layouts.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\AppController.hpp">
@@ -93,6 +96,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\RangeRing.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Layouts.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

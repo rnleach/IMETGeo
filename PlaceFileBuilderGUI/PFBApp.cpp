@@ -1,5 +1,6 @@
 #include "PFBApp.hpp"
 #include "../src/PlaceFileColor.hpp"
+#include "Layouts.hpp"
 
 // Handle MinGW compiler
 #ifdef __MINGW32__
@@ -15,6 +16,7 @@
 #include <Objbase.h>
 
 using namespace std;
+using namespace Win32Helper;
 
 // Control Values
 #define IDB_ADD            1001 // Add Button
@@ -191,6 +193,8 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
 
 void PFBApp::buildGUI_()
 {
+  const Coord BUTTON_PADDING = 5;
+
   // Handle for checking error status of some window creations.
   HWND temp = nullptr;
 
@@ -209,6 +213,9 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDB_ADD),
     nullptr, nullptr);
   if (!addButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
+  LayoutPtr addButtonLyt = SingleControlLayout::makeSingleCtrlLayout(addButton_, BUTTON_PADDING, Expand::Both);
+  addButtonLyt->layout(5, 5, 90, 30);
+  cerr << "Test request height: " << addButtonLyt->requestHeight() << "\n";
 
   // Create the deleteButton_
   deleteButton_ = CreateWindowExW(
@@ -221,6 +228,8 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDB_DELETE),
     nullptr, nullptr);
   if (!deleteButton_) { HandleFatalError(__FILEW__, __LINE__); }
+  LayoutPtr deleteButtonLyt = SingleControlLayout::makeSingleCtrlLayout(deleteButton_, BUTTON_PADDING);
+  cerr << "Test request height: " << deleteButtonLyt->requestHeight() << "\n";
 
   // Create the deleteButton_
   deleteAllButton_ = CreateWindowExW(

@@ -220,6 +220,7 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
     <ClCompile Include="..\src\PointFeature.cpp" />
     <ClCompile Include="..\src\PolygonFeature.cpp" />
     <ClCompile Include="..\src\RangeRing.cpp" />
+    <ClCompile Include="Layouts.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="PFBApp.cpp" />
@@ -237,6 +238,7 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
     <ClInclude Include="..\src\PointFeature.hpp" />
     <ClInclude Include="..\src\PolygonFeature.hpp" />
     <ClInclude Include="..\src\RangeRing.hpp" />
+    <ClInclude Include="Layouts.hpp" />
     <ClInclude Include="MainWindow.hpp" />
     <ClInclude Include="PFBApp.hpp" />
     <ClInclude Include="resource.h" />
