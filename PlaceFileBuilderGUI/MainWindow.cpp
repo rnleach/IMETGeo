@@ -181,7 +181,7 @@ void MainWindow::HandleFatalError(LPCWSTR file, UINT line)
   ::ExitProcess(-1);
 }
 
-void MainWindow::HandleFatalComError(LPWSTR file, UINT line, HRESULT hr)
+void MainWindow::HandleFatalComError(LPCWSTR file, UINT line, HRESULT hr)
 {
   WCHAR fullMessage[256];
   swprintf_s(

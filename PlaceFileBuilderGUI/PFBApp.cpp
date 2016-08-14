@@ -4,9 +4,10 @@
 
 // Handle MinGW compiler
 #ifdef __MINGW32__
-  #define __FILEW__ ((LPWSTR)widen(__FILE__).c_str())
+  #define __FILEW__ (widen(__FILE__).c_str())
 #endif
 
+#include <algorithm>
 #include <string>
 #include <future>
 #include <thread>

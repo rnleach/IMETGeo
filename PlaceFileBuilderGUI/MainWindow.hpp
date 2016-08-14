@@ -71,7 +71,7 @@ public:
 
   // Give up and die.
   static void HandleFatalError(LPCWSTR file, UINT line);
-  static void HandleFatalComError(LPWSTR file, UINT line, HRESULT hr);
+  static void HandleFatalComError(LPCWSTR file, UINT line, HRESULT hr);
 
   /*
   Use this at the beginning of any scope that might change the current
