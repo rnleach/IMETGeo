@@ -198,10 +198,10 @@ void PFBApp::buildGUI_()
   const Coord BUTTON_PADDING = 5;
 
   // Set up the layout managers
-  lyt_ = GridLayout::makeGridLyt(3, 2, Expand::Both, Collapse::No, {undefinedCoord, undefinedCoord, undefinedCoord, 5});
-  auto addDeleteLyt = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, {undefinedCoord, undefinedCoord,5,undefinedCoord});
+  lyt_ = GridLayout::makeGridLyt(3, 2, Expand::Both, Collapse::No, {nullVal, nullVal, nullVal, 5});
+  auto addDeleteLyt = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, {nullVal, nullVal,5,nullVal});
   auto rightLayout = GridLayout::makeGridLyt(10, 2);
-  auto bottomLayout = FlowLayout::makeFlowLyt(FlowLayout::Direction::Top, { undefinedCoord, undefinedCoord,10,5 });
+  auto bottomLayout = FlowLayout::makeFlowLyt(FlowLayout::Direction::Top, { nullVal, nullVal,10,5 });
   lyt_->set(0, 0, addDeleteLyt);
   lyt_->set(1, 1, rightLayout);
   lyt_->set(2, 0, bottomLayout);
@@ -290,7 +290,7 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_COMBO_LABEL),
     nullptr, nullptr);
   if (!labelFieldComboBox_) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(labelFieldComboBox_, 100, undefinedCoord);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(labelFieldComboBox_, 100, nullVal);
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(0, 1, tmpLayout);
 
@@ -350,7 +350,7 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_WIDTH_CB),
     nullptr, nullptr);
   if (!lineSizeComboBox_) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(lineSizeComboBox_, 50, undefinedCoord);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(lineSizeComboBox_, 50, nullVal);
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(2, 1, tmpLayout);
 
@@ -410,7 +410,7 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!displayThreshStatic_) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(displayThreshStatic_, 100, undefinedCoord);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(displayThreshStatic_, 100, nullVal);
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(4, 1, tmpLayout);
 
@@ -457,7 +457,7 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_RRNAME_EDIT),
     nullptr, nullptr);
   if (!rrNameEdit_) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(rrNameEdit_, 150, undefinedCoord);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(rrNameEdit_, 150, nullVal);
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(6, 1, tmpLayout);
 
@@ -487,7 +487,7 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_LAT_EDIT),
     nullptr, nullptr);
   if (!latEdit_) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(latEdit_, 150, undefinedCoord);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(latEdit_, 150, nullVal);
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(7, 1, tmpLayout);
 
@@ -517,7 +517,7 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_LON_EDIT),
     nullptr, nullptr);
   if (!lonEdit_) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(lonEdit_, 150, undefinedCoord);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(lonEdit_, 150, nullVal);
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(8, 1, tmpLayout);
 
@@ -547,7 +547,7 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_RANGES_EDIT),
     nullptr, nullptr);
   if (!rangesEdit_) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(rangesEdit_, 175, undefinedCoord);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(rangesEdit_, 175, nullVal);
   rightLayout->set(9, 1, tmpLayout);
 
   // Add a label for the titleEditControl_
@@ -562,7 +562,7 @@ void PFBApp::buildGUI_()
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
-  auto tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, { undefinedCoord, undefinedCoord,5,undefinedCoord });
+  auto tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, { nullVal, nullVal,5,nullVal });
   tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
   tmpLayout->set(HorizontalAlignment::Right);
   tmpFlow->add(tmpLayout);
@@ -578,7 +578,7 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_TITLE_EDIT),
     nullptr, nullptr);
   if (!titleEditControl_) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(titleEditControl_, 175, undefinedCoord, Expand::Horizontal);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(titleEditControl_, 175, nullVal, Expand::Horizontal);
   tmpLayout->set(HorizontalAlignment::Left);
   tmpFlow->add(tmpLayout);
   bottomLayout->add(tmpFlow);
@@ -594,7 +594,7 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, { undefinedCoord, undefinedCoord,5,undefinedCoord });
+  tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, { nullVal, nullVal,5,nullVal });
   tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
   tmpLayout->set(HorizontalAlignment::Right);
   tmpFlow->add(tmpLayout);
@@ -610,7 +610,7 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!refreshStatic_) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(refreshStatic_, 150, undefinedCoord);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(refreshStatic_, 150, nullVal);
   tmpLayout->set(HorizontalAlignment::Left);
   tmpFlow->add(tmpLayout);
   bottomLayout->add(tmpFlow);

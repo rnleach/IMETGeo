@@ -4,23 +4,23 @@
 
 namespace Win32Helper
 {
-  AbstractLayout::AbstractLayout(Expand expOpt, LayoutOptions lytOpt, Collapse clpsOpt) :
+  AbstractLayout::AbstractLayout(Expand expOpt, LytOpt lytOpt, Collapse clpsOpt) :
     expOpt_{ expOpt }, lytOpt_(lytOpt), clpsOpt_{ clpsOpt }, hAlign_{HorizontalAlignment::Center}, 
     vAlign_{VerticalAlignment::Center}, hidden_ { false }, 
-    heightCache_{ undefinedCoord }, widthCache_{ undefinedCoord }, baselineCache_{ undefinedCoord }
+    heightCache_{ nullVal }, widthCache_{ nullVal }, baselineCache_{ nullVal }
   {}
 
   Coord AbstractLayout::requestHeight()
   {
     if (hidden_ && clpsOpt_ == Collapse::Yes) return 0;
-    if (heightCache_ == undefinedCoord) refreshCache();
+    if (heightCache_ == nullVal) refreshCache();
     return heightCache_;
   }
 
   Coord AbstractLayout::requestWidth()
   {
     if (hidden_ && clpsOpt_ == Collapse::Yes) return 0;
-    if (widthCache_ == undefinedCoord) refreshCache();
+    if (widthCache_ == nullVal) refreshCache();
     return widthCache_;
   }
 
@@ -37,11 +37,11 @@ namespace Win32Helper
   Coord AbstractLayout::baselineHeight()
   {
     if (hidden_ && clpsOpt_ == Collapse::Yes) return 0;
-    if (baselineCache_ == undefinedCoord) refreshCache();
+    if (baselineCache_ == nullVal) refreshCache();
     return baselineCache_;
   }
 
-  SingleControlLayout::SingleControlLayout(HWND control, LayoutOptions lytOpt,
+  SingleControlLayout::SingleControlLayout(HWND control, LytOpt lytOpt,
     Expand exOpt, Collapse clpsOpt) :
     AbstractLayout(exOpt, lytOpt, clpsOpt), hwnd_{ control } {}
 
@@ -81,23 +81,23 @@ namespace Win32Helper
     ReleaseDC(hwnd_, hdc);
 
     // Calculate the new width, height, baseline
-    if (lytOpt_.overrideHeight == undefinedCoord)
+    if (lytOpt_.height == nullVal)
     {
       heightCache_ = stringSzInfo.cy + 2 * borderV;
-      if (lytOpt_.overridePadding != undefinedCoord) heightCache_ += 2 * lytOpt_.overridePadding;
-      if (lytOpt_.overrideMargins != undefinedCoord) heightCache_ += 2 * lytOpt_.overrideMargins;
+      if (lytOpt_.pad != nullVal) heightCache_ += 2 * lytOpt_.pad;
+      if (lytOpt_.margin != nullVal) heightCache_ += 2 * lytOpt_.margin;
     }
     else
-      heightCache_ = lytOpt_.overrideHeight;
+      heightCache_ = lytOpt_.height;
 
-    if (lytOpt_.overrideWidth == undefinedCoord)
+    if (lytOpt_.width == nullVal)
     {
       widthCache_ = stringSzInfo.cx + 2 * borderH;
-      if (lytOpt_.overridePadding != undefinedCoord) widthCache_ += 2 * lytOpt_.overridePadding;
-      if (lytOpt_.overrideMargins != undefinedCoord) widthCache_ += 2 * lytOpt_.overrideMargins;
+      if (lytOpt_.pad != nullVal) widthCache_ += 2 * lytOpt_.pad;
+      if (lytOpt_.margin != nullVal) widthCache_ += 2 * lytOpt_.margin;
     }
     else
-      widthCache_ = lytOpt_.overrideWidth;
+      widthCache_ = lytOpt_.width;
 
     // Now do the baseline calculation
     calcBaseline(borderV, stringSzInfo, textMetrics);
@@ -107,8 +107,8 @@ namespace Win32Helper
     const TEXTMETRICW & textMetrics)
   {
     baselineCache_ = borderV + strSz.cy - textMetrics.tmDescent;
-    if (lytOpt_.overridePadding != undefinedCoord) baselineCache_ += lytOpt_.overridePadding;
-    if (lytOpt_.overrideMargins != undefinedCoord) baselineCache_ += lytOpt_.overrideMargins;
+    if (lytOpt_.pad != nullVal) baselineCache_ += lytOpt_.pad;
+    if (lytOpt_.margin != nullVal) baselineCache_ += lytOpt_.margin;
   }
 
   void SingleControlLayout::hide()
@@ -127,7 +127,7 @@ namespace Win32Helper
 
   void SingleControlLayout::layout(Coord x, Coord y, Coord width, Coord height) 
   {
-    if (heightCache_ == undefinedCoord || widthCache_ == undefinedCoord) refreshCache();
+    if (heightCache_ == nullVal || widthCache_ == nullVal) refreshCache();
 
     int w, h, xf, yf; // The final calculated position within the space provided
 
@@ -144,7 +144,7 @@ namespace Win32Helper
 
     // Handle alignment
     xf = x;
-    if (lytOpt_.overrideMargins != undefinedCoord) xf += lytOpt_.overrideMargins;
+    if (lytOpt_.margin != nullVal) xf += lytOpt_.margin;
     if (w < width)
     {
       switch (hAlign_)
@@ -159,7 +159,7 @@ namespace Win32Helper
       }
     }
     yf = y;
-    if (lytOpt_.overrideMargins != undefinedCoord) yf += lytOpt_.overrideMargins;
+    if (lytOpt_.margin != nullVal) yf += lytOpt_.margin;
     if (h < height)
     {
       switch (vAlign_)
@@ -175,16 +175,16 @@ namespace Win32Helper
     }
 
     // Finally, shrink actual window size to account for margins.
-    if (lytOpt_.overrideMargins != undefinedCoord)
+    if (lytOpt_.margin != nullVal)
     {
-      w -= 2 * lytOpt_.overrideMargins;
-      h -= 2 * lytOpt_.overrideMargins;
+      w -= 2 * lytOpt_.margin;
+      h -= 2 * lytOpt_.margin;
     }
 
     MoveWindow(hwnd_, xf, yf, w, h, TRUE);
   }
 
-  SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, LayoutOptions lytOpt,
+  SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, LytOpt lytOpt,
     Expand exOpt, Collapse clpsOpt)
   {
     return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, exOpt, clpsOpt)));
@@ -193,53 +193,53 @@ namespace Win32Helper
   SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord padding, 
     Expand expOpt, Collapse clpsOpt)
   {
-    LayoutOptions lytOpt{undefinedCoord, undefinedCoord, padding, undefinedCoord};
+    LytOpt lytOpt{nullVal, nullVal, padding, nullVal};
     return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, expOpt, clpsOpt)));
   }
 
   SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord padding, 
     Collapse clpsOpt)
   {
-    LayoutOptions lytOpt{ undefinedCoord, undefinedCoord, padding, undefinedCoord };
+    LytOpt lytOpt{ nullVal, nullVal, padding, nullVal };
     return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, Expand::No, clpsOpt)));
   }
 
   SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord width, Coord height, 
     Expand expOpt, Collapse clpsOpt)
   {
-    LayoutOptions lytOpt{ width, height, undefinedCoord, undefinedCoord };
+    LytOpt lytOpt{ width, height, nullVal, nullVal };
     return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, expOpt, clpsOpt)));
   }
 
   SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord width, Coord height,
     Collapse clpsOpt)
   {
-    LayoutOptions lytOpt{ width, height, undefinedCoord, undefinedCoord };
+    LytOpt lytOpt{ width, height, nullVal, nullVal };
     return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, Expand::No, clpsOpt)));
   }
 
   SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Collapse clpsOpt)
   {
-    LayoutOptions lytOpt{ undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord };
+    LytOpt lytOpt{ nullVal, nullVal, nullVal, nullVal };
     return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, Expand::No, clpsOpt)));
   }
 
   SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Expand expOpt, Collapse clpsOpt)
   {
-    LayoutOptions lytOpt{ undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord };
+    LytOpt lytOpt{ nullVal, nullVal, nullVal, nullVal };
     return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, expOpt, clpsOpt)));
   }
 
   void FlowLayout::add(LayoutPtr lyt)
   {
     lyts_.push_back(move(lyt));
-    widthCache_ = undefinedCoord;
-    heightCache_ = undefinedCoord;
+    widthCache_ = nullVal;
+    heightCache_ = nullVal;
   }
 
   void FlowLayout::refreshCache()
   {
-    baselineCache_ = undefinedCoord; // Leave it if vertical flow.
+    baselineCache_ = nullVal; // Leave it if vertical flow.
     widthCache_ = 0;
     heightCache_ = 0;
 
@@ -248,7 +248,7 @@ namespace Win32Helper
       baselineCache_ = 0;
       for (auto& lyt : lyts_)
       {
-        if (lyt->baselineHeight() != undefinedCoord && lyt->baselineHeight() > baselineCache_)
+        if (lyt->baselineHeight() != nullVal && lyt->baselineHeight() > baselineCache_)
           baselineCache_ = lyt->baselineHeight();
       }
 
@@ -259,7 +259,7 @@ namespace Win32Helper
         if (lyt->requestHeight() + baselineOffset > heightCache_) 
           heightCache_ = lyt->requestHeight() + baselineOffset;
         widthCache_ += lyt->requestWidth();
-        if (lytOpt_.overridePadding != undefinedCoord) widthCache_ += lytOpt_.overridePadding;
+        if (lytOpt_.pad != nullVal) widthCache_ += lytOpt_.pad;
       }
     }
     else
@@ -269,26 +269,26 @@ namespace Win32Helper
         if (lyt->requestWidth() > widthCache_)
           widthCache_ = lyt->requestWidth();
         heightCache_ += lyt->requestHeight();
-        if (lytOpt_.overridePadding != undefinedCoord) heightCache_ += lytOpt_.overridePadding;
+        if (lytOpt_.pad != nullVal) heightCache_ += lytOpt_.pad;
       }
     }
 
     // Add control margin, remove extra padding
-    if (lytOpt_.overridePadding != undefinedCoord)
+    if (lytOpt_.pad != nullVal)
     {
       if (flowDir_ == Direction::Left || flowDir_ == Direction::Right)
       {
-        widthCache_ -= lytOpt_.overridePadding;
-        if (baselineCache_ != undefinedCoord) baselineCache_ += lytOpt_.overridePadding;
+        widthCache_ -= lytOpt_.pad;
+        if (baselineCache_ != nullVal) baselineCache_ += lytOpt_.pad;
       }
       else
-        heightCache_ -= lytOpt_.overridePadding;
+        heightCache_ -= lytOpt_.pad;
     }
-    if (lytOpt_.overrideMargins != undefinedCoord)
+    if (lytOpt_.margin != nullVal)
     {
-      heightCache_ += 2 * lytOpt_.overrideMargins;
-      widthCache_ += 2 * lytOpt_.overrideMargins;
-      if (baselineCache_ != undefinedCoord) baselineCache_ += lytOpt_.overrideMargins;
+      heightCache_ += 2 * lytOpt_.margin;
+      widthCache_ += 2 * lytOpt_.margin;
+      if (baselineCache_ != nullVal) baselineCache_ += lytOpt_.margin;
     }
   }
 
@@ -306,7 +306,7 @@ namespace Win32Helper
 
   void FlowLayout::layout(Coord x, Coord y, Coord width, Coord height)
   {
-    if (heightCache_ == undefinedCoord || widthCache_ == undefinedCoord) refreshCache();
+    if (heightCache_ == nullVal || widthCache_ == nullVal) refreshCache();
 
     // What direction is the flow, vertical or horizontal
     bool isHorizontal = flowDir_ == Direction::Left || flowDir_ == Direction::Right;
@@ -351,11 +351,11 @@ namespace Win32Helper
     {
       currX += width;
       Coord h = height;
-      if (lytOpt_.overrideMargins != undefinedCoord) 
+      if (lytOpt_.margin != nullVal) 
       { 
-        currX -= lytOpt_.overrideMargins;
-        currY += lytOpt_.overrideMargins;
-        h -= 2 * lytOpt_.overrideMargins;
+        currX -= lytOpt_.margin;
+        currY += lytOpt_.margin;
+        h -= 2 * lytOpt_.margin;
       }
 
       for(size_t i = 0; i < lyts_.size(); ++i)
@@ -365,18 +365,18 @@ namespace Win32Helper
         Coord w = lyt->requestWidth() + static_cast<Coord>(extraSize * expandFactor[i]);
         currX -= w;
         lyt->layout(currX, currY, w, h);
-        if (lytOpt_.overridePadding != undefinedCoord) currX -= lytOpt_.overridePadding;
+        if (lytOpt_.pad != nullVal) currX -= lytOpt_.pad;
       }
     }
       break;
     case Direction::Left:
     {
       Coord h = height;
-      if (lytOpt_.overrideMargins != undefinedCoord)
+      if (lytOpt_.margin != nullVal)
       {
-        currX += lytOpt_.overrideMargins;
-        currY += lytOpt_.overrideMargins;
-        h -= 2 * lytOpt_.overrideMargins;
+        currX += lytOpt_.margin;
+        currY += lytOpt_.margin;
+        h -= 2 * lytOpt_.margin;
       }
 
       for (size_t i = 0; i < lyts_.size(); ++i)
@@ -386,18 +386,18 @@ namespace Win32Helper
         Coord w = lyt->requestWidth() + static_cast<Coord>(extraSize * expandFactor[i]); 
         lyt->layout(currX, currY, w, h);
         currX += w;
-        if (lytOpt_.overridePadding != undefinedCoord) currX += lytOpt_.overridePadding;
+        if (lytOpt_.pad != nullVal) currX += lytOpt_.pad;
       }
     }
       break;
     case Direction::Top:
     {
       Coord w = width;
-      if (lytOpt_.overrideMargins != undefinedCoord)
+      if (lytOpt_.margin != nullVal)
       {
-        currX += lytOpt_.overrideMargins;
-        currY += lytOpt_.overrideMargins;
-        w -= 2 * lytOpt_.overrideMargins;
+        currX += lytOpt_.margin;
+        currY += lytOpt_.margin;
+        w -= 2 * lytOpt_.margin;
       }
 
       for (size_t i = 0; i < lyts_.size(); ++i)
@@ -407,7 +407,7 @@ namespace Win32Helper
         Coord h = lyt->requestHeight() + static_cast<Coord>(extraSize * expandFactor[i]); 
         lyt->layout(currX, currY, w, h);
         currY += h;
-        if (lytOpt_.overridePadding != undefinedCoord) currY += lytOpt_.overridePadding;
+        if (lytOpt_.pad != nullVal) currY += lytOpt_.pad;
       }
     }
       break;
@@ -415,11 +415,11 @@ namespace Win32Helper
     {
       currY += height;
       Coord w = width;
-      if (lytOpt_.overrideMargins != undefinedCoord)
+      if (lytOpt_.margin != nullVal)
       {
-        currX += lytOpt_.overrideMargins;
-        currY -= lytOpt_.overrideMargins;
-        w -= 2 * lytOpt_.overrideMargins;
+        currX += lytOpt_.margin;
+        currY -= lytOpt_.margin;
+        w -= 2 * lytOpt_.margin;
       }
 
       for (size_t i = 0; i < lyts_.size(); ++i)
@@ -429,7 +429,7 @@ namespace Win32Helper
         Coord h = lyt->requestHeight() + static_cast<Coord>(extraSize * expandFactor[i]); 
         currY -= h;
         lyt->layout(currX, currY, w, h);
-        if (lytOpt_.overridePadding != undefinedCoord) currY -= lytOpt_.overridePadding;
+        if (lytOpt_.pad != nullVal) currY -= lytOpt_.pad;
       }
     }
       break;
@@ -448,21 +448,21 @@ namespace Win32Helper
     return false;
   }
 
-  FLayoutPtr FlowLayout::makeFlowLyt(Direction flowFrom, Collapse clpsOpt, LayoutOptions lytOpt)
+  FLayoutPtr FlowLayout::makeFlowLyt(Direction flowFrom, Collapse clpsOpt, LytOpt lytOpt)
   {
     return move(FLayoutPtr(new FlowLayout(flowFrom, clpsOpt, lytOpt)));
   }
 
-  FLayoutPtr FlowLayout::makeFlowLyt(Direction flowFrom, LayoutOptions lytOpt)
+  FLayoutPtr FlowLayout::makeFlowLyt(Direction flowFrom, LytOpt lytOpt)
   {
     return move(FLayoutPtr(new FlowLayout(flowFrom, Collapse::No, lytOpt)));
   }
 
-  FlowLayout::FlowLayout(Direction dir, Collapse clpsOpt, LayoutOptions lytOpt) :
+  FlowLayout::FlowLayout(Direction dir, Collapse clpsOpt, LytOpt lytOpt) :
       AbstractLayout(Expand::No, lytOpt, clpsOpt), flowDir_{ dir }, lyts_()
   {}
 
-  GridLayout::GridLayout(Coord rows, Coord columns, Expand exOpt, LayoutOptions lytOpt,
+  GridLayout::GridLayout(Coord rows, Coord columns, Expand exOpt, LytOpt lytOpt,
     Collapse clpsOpt) : 
       AbstractLayout(exOpt, lytOpt, clpsOpt), 
     lyts_(rows * columns, nullptr), spans_(rows * columns, pair<Coord,Coord>(1,1)), 
@@ -486,7 +486,7 @@ namespace Win32Helper
     }
 
     // Reset the cached sizes so they will be recalculated when needed.
-    baselineCache_ = widthCache_ = heightCache_ = undefinedCoord;
+    baselineCache_ = widthCache_ = heightCache_ = nullVal;
   }
 
   GridLayout::~GridLayout() {}
@@ -495,7 +495,7 @@ namespace Win32Helper
   {
     heightCache_ = 0;
     widthCache_ = 0;
-    baselineCache_ = undefinedCoord;// Leave it, baseline makes no sense for a grid layout.
+    baselineCache_ = nullVal;// Leave it, baseline makes no sense for a grid layout.
 
     // Reset the cached row/col sizes
     for (auto it = rowHeight_.begin(); it != rowHeight_.end(); ++it) *it = 0;
@@ -544,10 +544,10 @@ namespace Win32Helper
     for (auto it = colWidth_.begin(); it != colWidth_.end(); ++it) widthCache_ += *it;
 
     // Handle margins
-    if (lytOpt_.overrideMargins != undefinedCoord)
+    if (lytOpt_.margin != nullVal)
     {
-      heightCache_ += lytOpt_.overrideMargins;
-      widthCache_ += lytOpt_.overrideMargins;
+      heightCache_ += lytOpt_.margin;
+      widthCache_ += lytOpt_.margin;
     }
   }
 
@@ -567,56 +567,56 @@ namespace Win32Helper
   {
     // TODO better column row expansion, only grow columns/rows with expandable controls?
 
-    if (heightCache_ == undefinedCoord || widthCache_ == undefinedCoord) refreshCache();
+    if (heightCache_ == nullVal || widthCache_ == nullVal) refreshCache();
 
     // Copy calculated, or provided, values
     vector<Coord> finalWidth(colWidth_);
     vector<Coord> finalHeight(rowHeight_);
 
     Coord finalTotalWidth = widthCache_, finalTotalHeight = heightCache_;
-    if (lytOpt_.overrideMargins != undefinedCoord)
+    if (lytOpt_.margin != nullVal)
     {
-      finalTotalWidth -= lytOpt_.overrideMargins;
-      finalTotalHeight -= lytOpt_.overrideMargins;
+      finalTotalWidth -= lytOpt_.margin;
+      finalTotalHeight -= lytOpt_.margin;
     }
 
     // if Expand, proportionally grow/shrink each row/column to fill width and height
     if (expOpt_ == Expand::Both || expOpt_ == Expand::Horizontal)
     {
       auto extraWidth = width - widthCache_;
-      if (lytOpt_.overrideMargins != undefinedCoord) extraWidth -= lytOpt_.overrideMargins;
+      if (lytOpt_.margin != nullVal) extraWidth -= lytOpt_.margin;
       for (size_t i = 0; i < numCols_; i++)
       {
         double ratio = static_cast<double>(colWidth_[i]) / widthCache_;
         finalWidth[i] += static_cast<int>((ratio * extraWidth));
       }
       finalTotalWidth = width;
-      if (lytOpt_.overrideMargins != undefinedCoord) finalTotalWidth -= lytOpt_.overrideMargins;
+      if (lytOpt_.margin != nullVal) finalTotalWidth -= lytOpt_.margin;
     }
     if (expOpt_ == Expand::Both || expOpt_ == Expand::Vertical)
     {
       auto extraHeight = height - heightCache_;
-      if (lytOpt_.overrideMargins != undefinedCoord) extraHeight -= lytOpt_.overrideMargins;
+      if (lytOpt_.margin != nullVal) extraHeight -= lytOpt_.margin;
       for (size_t i = 0; i < numRows_; i++)
       {
         double ratio = static_cast<double>(rowHeight_[i]) / heightCache_;
         finalHeight[i] += static_cast<int>((ratio * extraHeight));
       }
       finalTotalHeight = height;
-      if (lytOpt_.overrideMargins != undefinedCoord) finalTotalHeight -= lytOpt_.overrideMargins;
+      if (lytOpt_.margin != nullVal) finalTotalHeight -= lytOpt_.margin;
     }
 
     // Using alignment information, calculate the upper left corner of the layout
     Coord startX = x, startY = y;
-    if (lytOpt_.overrideMargins != undefinedCoord)
+    if (lytOpt_.margin != nullVal)
     {
-      startX += lytOpt_.overrideMargins;
-      startY += lytOpt_.overrideMargins;
+      startX += lytOpt_.margin;
+      startY += lytOpt_.margin;
     }
     if (width != finalTotalWidth)
     {
       auto extraWidth = width - finalTotalWidth;
-      if (lytOpt_.overrideMargins != undefinedCoord) extraWidth -= lytOpt_.overrideMargins;
+      if (lytOpt_.margin != nullVal) extraWidth -= lytOpt_.margin;
       switch (hAlign_)
       {
       //case HorizontalAlignment::Left: // Do nothing, startX already = x
@@ -631,7 +631,7 @@ namespace Win32Helper
     if (height != finalTotalHeight)
     {
       auto extraHeight = height - finalTotalHeight;
-      if (lytOpt_.overrideMargins != undefinedCoord) extraHeight -= lytOpt_.overrideMargins;
+      if (lytOpt_.margin != nullVal) extraHeight -= lytOpt_.margin;
       switch (vAlign_)
       {
         //case VerticalAlignment::Top: // Do nothing, startY already = y
@@ -686,18 +686,18 @@ namespace Win32Helper
   }
 
   GLayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, Expand exOpt, 
-    Collapse clpsOpt, LayoutOptions lytOpt)
+    Collapse clpsOpt, LytOpt lytOpt)
   {
     return move(GLayoutPtr(new GridLayout(rows, columns, exOpt, lytOpt, clpsOpt)));
   }
 
   GLayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, Collapse clpsOpt)
   {
-    LayoutOptions lytOpt{undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord};
+    LytOpt lytOpt{nullVal, nullVal, nullVal, nullVal};
     return move(GLayoutPtr(new GridLayout(rows, columns, Expand::No, lytOpt, clpsOpt)));
   }
 
-  GLayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, LayoutOptions lytOpt)
+  GLayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, LytOpt lytOpt)
   {
     return move(GLayoutPtr(new GridLayout(rows, columns, Expand::No, lytOpt,
       Collapse::No)));

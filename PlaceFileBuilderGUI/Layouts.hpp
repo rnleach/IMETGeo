@@ -22,24 +22,25 @@ namespace Win32Helper
   /// Alias to use for coordinate type. 
   using Coord = int;
 
-  /// undefined or uninitialize value flag.
+  /// undefined or uninitialized value flag.
   // Goofy parenthesis to avoid max MACRO in Windows.h
-  static const Coord undefinedCoord = (numeric_limits<Coord>::max)();
+  static const Coord nullVal = (numeric_limits<Coord>::max)();
 
+  /// Flag for telling how layouts to respond when given more room than they need.
   enum class Expand
   {
-    No,         // Use requested size only
-    Both,       // Grow to fill area
-    Horizontal, // Grow horizontally, but not vertically to fill area.
-    Vertical,   // Grow vertically, but not horizontially to fill area.
+    No,         /// Use requested size only
+    Both,       /// Grow to fill area
+    Horizontal, /// Grow horizontally, but not vertically to fill area.
+    Vertical,   /// Grow vertically, but not horizontially to fill area.
   };
 
   /// Collapse options are used when hiding controls, when they are hidden, should the area they
   /// occupy be set to zero via height and width request values?
   enum class Collapse
   {
-    No,   // Do not collapse, just leave a blank space there
-    Yes,  // Yes collapse.
+    No,   /// Do not collapse, just leave a blank space there
+    Yes,  /// Yes collapse.
   };
 
   enum class HorizontalAlignment
@@ -58,20 +59,20 @@ namespace Win32Helper
 
   /**
   * Layout classes will calculate automatically sizes, but if you want to override certain aspects
-  * of the calculation, you can with this struct. Default initialize it with 0 to get default
-  * behavior.
+  * of the calculation, you can with this struct. Default initialize it with undefinedCoord to get
+  * default behavior.
   *
   * Overriding will be necessary for controls like Edit, ListView, and TreeView controls, where you
   * cannot systematically determine a good width or height, it depends on the use. Whereas for 
   * buttons and static controls, a default width and height can usually be calculated the window
   * text.
   */
-  struct LayoutOptions
+  struct LytOpt
   {
-    Coord overrideWidth;
-    Coord overrideHeight;
-    Coord overridePadding;
-    Coord overrideMargins;
+    Coord width;
+    Coord height;
+    Coord pad;
+    Coord margin;
   };
 
   /**
@@ -84,12 +85,12 @@ namespace Win32Helper
   class AbstractLayout
   {
   public:
-    AbstractLayout(Expand expOpt, LayoutOptions lytOpt, Collapse clpsOpt);
+    AbstractLayout(Expand expOpt, LytOpt lytOpt, Collapse clpsOpt);
     virtual ~AbstractLayout(){};
 
     /**
     * Minimum requested height and width. Using values less than these in the layout method may
-    * cause clipping (most likely) or undefined behavior.
+    * cause clipping.
     */
     Coord requestHeight();
     Coord requestWidth();
@@ -117,7 +118,7 @@ namespace Win32Helper
     * would override the behavior specified by a programmer. These are here so the programmer can
     * specify their own overrides on a case by case basis.
     */
-    inline void setLayoutOptions(LayoutOptions lytOpt) { lytOpt_ = lytOpt; }
+    inline void set(LytOpt lytOpt) { lytOpt_ = lytOpt; }
     inline void set(Expand expOpt) { expOpt_ = expOpt; }
     inline void set(Collapse clps) { clpsOpt_ = clps; }
     inline void set(HorizontalAlignment hAlign) { hAlign_ = hAlign; }
@@ -132,7 +133,7 @@ namespace Win32Helper
     virtual void refreshCache() = 0;
 
   protected:
-    LayoutOptions lytOpt_;
+    LytOpt lytOpt_;
     Expand expOpt_;
     Collapse clpsOpt_;
     HorizontalAlignment hAlign_;
@@ -175,7 +176,7 @@ namespace Win32Helper
     /// Static factory methods
     static SCLayoutPtr makeSingleCtrlLayout(
       HWND control,
-      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord },
+      LytOpt lytOpt = { nullVal, nullVal, nullVal, nullVal },
       Expand exOpt = Expand::No,
       Collapse clpsOpt = Collapse::No);
     static SCLayoutPtr makeSingleCtrlLayout(
@@ -209,26 +210,25 @@ namespace Win32Helper
       Expand expOpt,
       Collapse clpsOpt = Collapse::No);
 
+  private:
+
     // Private constructor, use static factory methods
     SingleControlLayout(HWND control,
-      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord },
+      LytOpt lytOpt = { nullVal, nullVal, nullVal, nullVal },
       Expand exOpt = Expand::No,
       Collapse clpsOpt = Collapse::No
     );
-
-  private:
 
     // Populate the protected cache values for the base class.
     HWND hwnd_;
 
     // Using the handle, get the control class and calculate the baseline from
-    // the control type and window styles.
+    // the control type and window styles, maybe in the future.
     void calcBaseline(const int borderV, const SIZE strSz, const TEXTMETRICW& textMetrics);
   };
 
   /**
   * Flow layout. Just keep adding sub-layouts and they are added horizontally or vertically.
-  *
   *
   * The flowDir argument always specifies the direction components will flow from.
   */
@@ -246,6 +246,8 @@ namespace Win32Helper
 
     /// Dynamcially set the flow direction? Could be annoying to someone.
     inline void set(Direction flowDir){ flowDir_ = flowDir; }
+    // Bring base class methods in for overload resolution
+    using AbstractLayout::set; 
 
     /// Overridden methods of AbsractLayout
     void refreshCache() final;
@@ -259,18 +261,18 @@ namespace Win32Helper
     static FLayoutPtr makeFlowLyt(
       Direction flowFrom,
       Collapse clpsOpt = Collapse::No,
-      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord });
+      LytOpt lytOpt = { nullVal, nullVal, nullVal, nullVal });
 
-    static FLayoutPtr makeFlowLyt(Direction flowFrom, LayoutOptions lytOpt);
+    static FLayoutPtr makeFlowLyt(Direction flowFrom, LytOpt lytOpt);
+
+  private:
 
     // Private constructor, call with static factory method.
     FlowLayout(
       Direction dir = Direction::Left,
       Collapse clpsOpt = Collapse::No,
-      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord }
+      LytOpt lytOpt = { nullVal, nullVal, nullVal, nullVal }
     );
-
-  private:
 
     Direction flowDir_;              // Layout vertically or horizontally
     vector<LayoutPtr> lyts_;         // Store my layouts here!
@@ -284,8 +286,9 @@ namespace Win32Helper
   class GridLayout final: public AbstractLayout
   {
   public:
-    // Set a container to a specific grid cell location
+    /// Set a container to a specific grid cell location
     void set(Coord row, Coord col, LayoutPtr lyt, Coord rowSpan = 1, Coord colSpan = 1);
+    // Bring base class methods in for overload resolution
     using AbstractLayout::set;
 
     ~GridLayout() override;
@@ -302,7 +305,7 @@ namespace Win32Helper
       Coord columns,
       Expand exOpt = Expand::No,
       Collapse clpsOpt = Collapse::No,
-      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord });
+      LytOpt lytOpt = { nullVal, nullVal, nullVal, nullVal });
 
     static GLayoutPtr makeGridLyt(
       Coord rows,
@@ -312,16 +315,16 @@ namespace Win32Helper
     static GLayoutPtr makeGridLyt(
       Coord rows,
       Coord columns,
-      LayoutOptions lytOpt);
+      LytOpt lytOpt);
     
+  private:
+
     GridLayout(
       Coord rows,
       Coord columns,
       Expand exOpt = Expand::No,
-      LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord },
+      LytOpt lytOpt = { nullVal, nullVal, nullVal, nullVal },
       Collapse clpsOpt = Collapse::No);
-
-  private:
 
     // Store layout information in parallel vectors.
     vector<LayoutPtr> lyts_;
