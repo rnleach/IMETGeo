@@ -61,6 +61,7 @@ namespace Win32Helper
     // Get the text in the control
     WCHAR buffer[MAX_PATH];
     GetWindowTextW(hwnd_, buffer, MAX_PATH);
+    if (wcsnlen_s(buffer, MAX_PATH) == 0) wcsncpy(buffer, L"Empty String Error.", MAX_PATH);
 
     // Get the font
     HFONT hFont = (HFONT)SendMessageW(hwnd_, WM_GETFONT, 0, 0);
@@ -100,6 +101,14 @@ namespace Win32Helper
 
     // Now do the baseline calculation
     calcBaseline(borderV, stringSzInfo, textMetrics);
+  }
+
+  void SingleControlLayout::calcBaseline(const int borderV, const SIZE strSz,
+    const TEXTMETRICW & textMetrics)
+  {
+    baselineCache_ = borderV + strSz.cy - textMetrics.tmDescent;
+    if (lytOpt_.overridePadding != undefinedCoord) baselineCache_ += lytOpt_.overridePadding;
+    if (lytOpt_.overrideMargins != undefinedCoord) baselineCache_ += lytOpt_.overrideMargins;
   }
 
   void SingleControlLayout::hide()
@@ -221,19 +230,6 @@ namespace Win32Helper
     return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, expOpt, clpsOpt)));
   }
 
-  void SingleControlLayout::calcBaseline(const int borderV, const SIZE strSz,
-    const TEXTMETRICW & textMetrics)
-  {
-    // May have to add some testing in here for edit controls, since they don't automaically 
-    // center the text in their views like buttons do.
-    // May also have to do some checks for static controls, could get hairy here.
-
-    // TODO
-    baselineCache_ = borderV + strSz.cy - textMetrics.tmDescent;
-    if (lytOpt_.overridePadding != undefinedCoord) baselineCache_ += lytOpt_.overridePadding;
-    if (lytOpt_.overrideMargins != undefinedCoord) baselineCache_ += lytOpt_.overrideMargins;
-  }
-
   void FlowLayout::add(LayoutPtr lyt)
   {
     lyts_.push_back(move(lyt));
@@ -263,6 +259,7 @@ namespace Win32Helper
         if (lyt->requestHeight() + baselineOffset > heightCache_) 
           heightCache_ = lyt->requestHeight() + baselineOffset;
         widthCache_ += lyt->requestWidth();
+        if (lytOpt_.overridePadding != undefinedCoord) widthCache_ += lytOpt_.overridePadding;
       }
     }
     else
@@ -272,7 +269,26 @@ namespace Win32Helper
         if (lyt->requestWidth() > widthCache_)
           widthCache_ = lyt->requestWidth();
         heightCache_ += lyt->requestHeight();
+        if (lytOpt_.overridePadding != undefinedCoord) heightCache_ += lytOpt_.overridePadding;
       }
+    }
+
+    // Add control margin, remove extra padding
+    if (lytOpt_.overridePadding != undefinedCoord)
+    {
+      if (flowDir_ == Direction::Left || flowDir_ == Direction::Right)
+      {
+        widthCache_ -= lytOpt_.overridePadding;
+        if (baselineCache_ != undefinedCoord) baselineCache_ += lytOpt_.overridePadding;
+      }
+      else
+        heightCache_ -= lytOpt_.overridePadding;
+    }
+    if (lytOpt_.overrideMargins != undefinedCoord)
+    {
+      heightCache_ += 2 * lytOpt_.overrideMargins;
+      widthCache_ += 2 * lytOpt_.overrideMargins;
+      if (baselineCache_ != undefinedCoord) baselineCache_ += lytOpt_.overrideMargins;
     }
   }
 
@@ -296,7 +312,7 @@ namespace Win32Helper
     bool isHorizontal = flowDir_ == Direction::Left || flowDir_ == Direction::Right;
 
     // Calculate expansion factor for the flow
-    Coord extraSize =isHorizontal ? (width - widthCache_) : (height - heightCache_);
+    Coord extraSize = isHorizontal ? (width - widthCache_) : (height - heightCache_);
     Coord expandableControlsTotalSize = 0;
     vector<double> expandFactor;
     for (auto& lyt : lyts_)
@@ -334,10 +350,12 @@ namespace Win32Helper
     case Direction::Right:
     {
       currX += width;
+      Coord h = height;
       if (lytOpt_.overrideMargins != undefinedCoord) 
       { 
         currX -= lytOpt_.overrideMargins;
         currY += lytOpt_.overrideMargins;
+        h -= 2 * lytOpt_.overrideMargins;
       }
 
       for(size_t i = 0; i < lyts_.size(); ++i)
@@ -346,62 +364,72 @@ namespace Win32Helper
 
         Coord w = lyt->requestWidth() + static_cast<Coord>(extraSize * expandFactor[i]);
         currX -= w;
-        lyt->layout(currX, currY, w, height);
+        lyt->layout(currX, currY, w, h);
+        if (lytOpt_.overridePadding != undefinedCoord) currX -= lytOpt_.overridePadding;
       }
     }
       break;
     case Direction::Left:
     {
+      Coord h = height;
       if (lytOpt_.overrideMargins != undefinedCoord)
       {
         currX += lytOpt_.overrideMargins;
         currY += lytOpt_.overrideMargins;
+        h -= 2 * lytOpt_.overrideMargins;
       }
 
       for (size_t i = 0; i < lyts_.size(); ++i)
       {
         auto& lyt = lyts_[i];
 
-        Coord w = lyt->requestWidth() + static_cast<Coord>(extraSize * expandFactor[i]);
-        lyt->layout(currX, currY, w, height);
+        Coord w = lyt->requestWidth() + static_cast<Coord>(extraSize * expandFactor[i]); 
+        lyt->layout(currX, currY, w, h);
         currX += w;
+        if (lytOpt_.overridePadding != undefinedCoord) currX += lytOpt_.overridePadding;
       }
     }
       break;
     case Direction::Top:
     {
+      Coord w = width;
       if (lytOpt_.overrideMargins != undefinedCoord)
       {
         currX += lytOpt_.overrideMargins;
         currY += lytOpt_.overrideMargins;
+        w -= 2 * lytOpt_.overrideMargins;
       }
 
       for (size_t i = 0; i < lyts_.size(); ++i)
       {
         auto& lyt = lyts_[i];
 
-        Coord h = lyt->requestHeight() + static_cast<Coord>(extraSize * expandFactor[i]);
-        lyt->layout(currX, currY, width, h);
+        Coord h = lyt->requestHeight() + static_cast<Coord>(extraSize * expandFactor[i]); 
+        lyt->layout(currX, currY, w, h);
         currY += h;
+        if (lytOpt_.overridePadding != undefinedCoord) currY += lytOpt_.overridePadding;
       }
     }
       break;
     case Direction::Bottom:
     {
       currY += height;
+      Coord w = width;
       if (lytOpt_.overrideMargins != undefinedCoord)
       {
         currX += lytOpt_.overrideMargins;
         currY -= lytOpt_.overrideMargins;
+        w -= 2 * lytOpt_.overrideMargins;
       }
 
       for (size_t i = 0; i < lyts_.size(); ++i)
       {
         auto& lyt = lyts_[i];
 
-        Coord h = lyt->requestHeight() + static_cast<Coord>(extraSize * expandFactor[i]);
+        Coord h = lyt->requestHeight() + static_cast<Coord>(extraSize * expandFactor[i]); 
         currY -= h;
-        lyt->layout(currX, currY, width, h);
+        lyt->layout(currX, currY, w, h);
+        if (lytOpt_.overridePadding != undefinedCoord) currY -= lytOpt_.overridePadding;
       }
     }
       break;

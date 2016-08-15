@@ -199,9 +199,9 @@ void PFBApp::buildGUI_()
 
   // Set up the layout managers
   lyt_ = GridLayout::makeGridLyt(3, 2, Expand::Both, Collapse::No, {undefinedCoord, undefinedCoord, undefinedCoord, 5});
-  auto addDeleteLyt = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left);
+  auto addDeleteLyt = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, {undefinedCoord, undefinedCoord,5,undefinedCoord});
   auto rightLayout = GridLayout::makeGridLyt(10, 2);
-  auto bottomLayout = FlowLayout::makeFlowLyt(FlowLayout::Direction::Top);
+  auto bottomLayout = FlowLayout::makeFlowLyt(FlowLayout::Direction::Top, { undefinedCoord, undefinedCoord,10,5 });
   lyt_->set(0, 0, addDeleteLyt);
   lyt_->set(1, 1, rightLayout);
   lyt_->set(2, 0, bottomLayout);
@@ -210,12 +210,6 @@ void PFBApp::buildGUI_()
   
   // Handle for checking error status of some window creations.
   HWND temp = nullptr;
-
-  // TO DELETE BEGIN
-  // All objects right of the tree can use this position as a reference
-  const int middleBorder = 295;
-  const int labelFieldsWidth = 100;
-  // TO DELETE END
 
   // Create the addButton_
   addButton_ = CreateWindowExW(
@@ -276,7 +270,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Label Field:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 40 + 7, labelFieldsWidth, 30,
+    5, 40 + 7, 100, 30,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -291,7 +285,7 @@ void PFBApp::buildGUI_()
     WC_COMBOBOXW,
     L"",
     WS_VISIBLE | WS_CHILD | CBS_AUTOHSCROLL| CBS_DROPDOWNLIST | WS_HSCROLL | WS_VSCROLL,
-    middleBorder + 110, 40, 175, 500, // Height also includes dropdown box
+    110, 40, 175, 500, // Height also includes dropdown box
     hwnd_,
     reinterpret_cast<HMENU>(IDC_COMBO_LABEL),
     nullptr, nullptr);
@@ -306,7 +300,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Color:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 75 + 6, labelFieldsWidth, 30,
+    5, 75 + 6, 100, 30,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -321,7 +315,7 @@ void PFBApp::buildGUI_()
     WC_BUTTON,
     L"",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD |BS_OWNERDRAW,
-    middleBorder + 110, 75, 30, 30,
+    110, 75, 30, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_COLOR_BUTTON),
     nullptr, nullptr);
@@ -336,7 +330,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Line Width:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 110 + 8, labelFieldsWidth, 30,
+    5, 110 + 8, 100, 30,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -351,7 +345,7 @@ void PFBApp::buildGUI_()
     WC_COMBOBOXW,
     L"",
     WS_VISIBLE | WS_CHILD | CBS_AUTOHSCROLL| CBS_DROPDOWNLIST | WS_HSCROLL | WS_VSCROLL,
-    middleBorder + labelFieldsWidth + 10, 115, 50, 270,
+    10, 115, 50, 270,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_WIDTH_CB),
     nullptr, nullptr);
@@ -366,7 +360,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Fill Polygons:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 145 + 6, labelFieldsWidth, 30,
+    5, 145 + 6, 100, 30,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -381,7 +375,7 @@ void PFBApp::buildGUI_()
     WC_BUTTON,
     L"",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
-    middleBorder + 110, 145, 30, 30,
+    110, 145, 30, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_POLYGON_CHECK),
     nullptr, nullptr);
@@ -396,7 +390,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Disp Thresh:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 180 + 6, labelFieldsWidth, 30,
+    5, 180 + 6, 100, 30,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -411,7 +405,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"999",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
-    middleBorder + 110, 180 + 6, labelFieldsWidth, 20,
+     110, 180 + 6, 100, 20,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -426,7 +420,7 @@ void PFBApp::buildGUI_()
     TRACKBAR_CLASS,
     L"",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | TBS_AUTOTICKS,
-    middleBorder + 5, 210, labelFieldsWidth + 175, 30,
+    5, 210, 175, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_DISP_TRACK_BAR),
     nullptr, nullptr);
@@ -443,7 +437,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Range Ring:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 258 + 3, labelFieldsWidth, 30,
+    5, 258 + 3, 100, 30,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -458,7 +452,7 @@ void PFBApp::buildGUI_()
     WC_EDITW,
     nullptr,
     WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL ,
-    middleBorder + 110, 258, 175, 20,
+    110, 258, 175, 20,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_RRNAME_EDIT),
     nullptr, nullptr);
@@ -473,7 +467,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Latitude",
     WS_VISIBLE | WS_CHILD | SS_CENTER,
-    middleBorder + 5 + 25, 295, labelFieldsWidth, 20,
+    5 + 25, 295, 100, 20,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -488,7 +482,7 @@ void PFBApp::buildGUI_()
     WC_EDITW,
     nullptr,
     WS_VISIBLE | WS_CHILD | WS_BORDER | ES_CENTER | ES_AUTOHSCROLL,
-    middleBorder + 5 + 25, 315, labelFieldsWidth, 20,
+    5 + 25, 315, 100, 20,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_LAT_EDIT),
     nullptr, nullptr);
@@ -503,7 +497,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Longitude",
     WS_VISIBLE | WS_CHILD | SS_CENTER,
-    middleBorder + 25 + 110, 295, labelFieldsWidth, 20,
+    25 + 110, 295, 100, 20,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -518,7 +512,7 @@ void PFBApp::buildGUI_()
     WC_EDITW,
     nullptr,
     WS_VISIBLE | WS_CHILD | WS_BORDER | ES_CENTER | ES_AUTOHSCROLL,
-    middleBorder + 110 + 25, 315, labelFieldsWidth, 20,
+    110 + 25, 315, 100, 20,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_LON_EDIT),
     nullptr, nullptr);
@@ -533,7 +527,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Ranges:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    middleBorder + 5, 350 + 3, labelFieldsWidth, 30,
+    5, 350 + 3, 100, 30,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -548,7 +542,7 @@ void PFBApp::buildGUI_()
     WC_EDITW,
     nullptr,
     WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL,
-    middleBorder + 110, 350, 175, 20,
+    110, 350, 175, 20,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_RANGES_EDIT),
     nullptr, nullptr);
@@ -562,13 +556,13 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Title:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    5, 495 + 8, labelFieldsWidth, 20,
+    5, 495 + 8, 100, 20,
     hwnd_,
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
-  auto tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left);
+  auto tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, { undefinedCoord, undefinedCoord,5,undefinedCoord });
   tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
   tmpLayout->set(HorizontalAlignment::Right);
   tmpFlow->add(tmpLayout);
@@ -579,12 +573,12 @@ void PFBApp::buildGUI_()
     WC_EDITW,
     nullptr,
     WS_VISIBLE | WS_CHILD | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL ,
-    10 + labelFieldsWidth, 500, 180, 20,
+    10, 500, 180, 20,
     hwnd_,
     reinterpret_cast<HMENU>(IDC_TITLE_EDIT),
     nullptr, nullptr);
   if (!titleEditControl_) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(titleEditControl_, 175, undefinedCoord);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(titleEditControl_, 175, undefinedCoord, Expand::Horizontal);
   tmpLayout->set(HorizontalAlignment::Left);
   tmpFlow->add(tmpLayout);
   bottomLayout->add(tmpFlow);
@@ -595,12 +589,12 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     L"Refresh Time:",
     WS_VISIBLE | WS_CHILD | SS_RIGHT,
-    5, 525, labelFieldsWidth, 30,
+    5, 525,100, 30,
     hwnd_,
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left);
+  tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, { undefinedCoord, undefinedCoord,5,undefinedCoord });
   tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
   tmpLayout->set(HorizontalAlignment::Right);
   tmpFlow->add(tmpLayout);
@@ -611,7 +605,7 @@ void PFBApp::buildGUI_()
     WC_STATICW,
     nullptr,
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
-    10 + labelFieldsWidth, 525, 180, 20,
+    10, 525, 180, 20,
     hwnd_,
     nullptr,
     nullptr, nullptr);
@@ -635,7 +629,7 @@ void PFBApp::buildGUI_()
   SendMessage(refreshTrackBar_, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(1, 119));
   SendMessage(refreshTrackBar_, TBM_SETPAGESIZE, 0, 10);
   SendMessage(refreshTrackBar_, TBM_SETTICFREQ, 10, 0);
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(refreshTrackBar_, 250, 40);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(refreshTrackBar_, 250, 40,Expand::Horizontal);
   bottomLayout->add(tmpLayout);
 
   // Create the exportPlaceFileButton_
