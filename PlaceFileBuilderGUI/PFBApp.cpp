@@ -1,6 +1,5 @@
 #include "PFBApp.hpp"
 #include "../src/PlaceFileColor.hpp"
-#include "Layouts.hpp"
 
 // Handle MinGW compiler
 #ifdef __MINGW32__
@@ -42,8 +41,10 @@ using namespace Win32Helper;
 #define IDC_RANGES_EDIT    1020 // Edit a string for range rings
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
-  MainWindow{ hInstance}, appCon_{}, addButton_{ nullptr }, 
-  deleteButton_{ nullptr }, deleteAllButton_{ nullptr }, treeView_{ nullptr }, 
+  MainWindow{ hInstance}, 
+  lyt_{}, // Initialize grid layout
+  appCon_{}, addButton_{ nullptr }, deleteButton_{ nullptr }, deleteAllButton_{ nullptr }, 
+  treeView_{ nullptr }, 
   labelFieldComboBox_{ nullptr }, colorButton_{ nullptr }, colorButtonColor_{ nullptr },
   lineSizeComboBox_{nullptr}, fillPolygonsCheck_{ nullptr }, displayThreshStatic_{ nullptr }, 
   displayThreshTrackBar_{ nullptr }, rrNameEdit_{ nullptr }, latEdit_{ nullptr },
@@ -196,12 +197,25 @@ void PFBApp::buildGUI_()
 {
   const Coord BUTTON_PADDING = 5;
 
+  // Set up the layout managers
+  lyt_ = GridLayout::makeGridLyt(3, 2, Expand::Both, Collapse::No, {undefinedCoord, undefinedCoord, undefinedCoord, 5});
+  auto addDeleteLyt = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left);
+  auto rightLayout = GridLayout::makeGridLyt(10, 2);
+  auto bottomLayout = FlowLayout::makeFlowLyt(FlowLayout::Direction::Top);
+  lyt_->set(0, 0, addDeleteLyt);
+  lyt_->set(1, 1, rightLayout);
+  lyt_->set(2, 0, bottomLayout);
+
+  rightLayout->set(VerticalAlignment::Top);
+  
   // Handle for checking error status of some window creations.
   HWND temp = nullptr;
 
+  // TO DELETE BEGIN
   // All objects right of the tree can use this position as a reference
   const int middleBorder = 295;
   const int labelFieldsWidth = 100;
+  // TO DELETE END
 
   // Create the addButton_
   addButton_ = CreateWindowExW(
@@ -209,14 +223,12 @@ void PFBApp::buildGUI_()
     WC_BUTTON,
     L"Add Source",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-    5, 5, 90, 30,
+    5, 5, 5, 5,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_ADD),
     nullptr, nullptr);
   if (!addButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
-  LayoutPtr addButtonLyt = SingleControlLayout::makeSingleCtrlLayout(addButton_, BUTTON_PADDING, Expand::Both);
-  addButtonLyt->layout(5, 5, 90, 30);
-  cerr << "Test request height: " << addButtonLyt->requestHeight() << "\n";
+  addDeleteLyt->add(SingleControlLayout::makeSingleCtrlLayout(addButton_, BUTTON_PADDING));
 
   // Create the deleteButton_
   deleteButton_ = CreateWindowExW(
@@ -224,25 +236,25 @@ void PFBApp::buildGUI_()
     WC_BUTTON,
     L"Delete Layer",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-    100, 5, 95, 30,
+    5, 5, 5, 5,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_DELETE),
     nullptr, nullptr);
   if (!deleteButton_) { HandleFatalError(__FILEW__, __LINE__); }
-  LayoutPtr deleteButtonLyt = SingleControlLayout::makeSingleCtrlLayout(deleteButton_, BUTTON_PADDING);
-  cerr << "Test request height: " << deleteButtonLyt->requestHeight() << "\n";
+  addDeleteLyt->add(SingleControlLayout::makeSingleCtrlLayout(deleteButton_, BUTTON_PADDING));
 
-  // Create the deleteButton_
+  // Create the deleteAllButton_
   deleteAllButton_ = CreateWindowExW(
     0,
     WC_BUTTON,
     L"Delete All",
     WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-    200, 5, 90, 30,
+    5, 5, 5, 5,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_DELETE_ALL),
     nullptr, nullptr);
   if (!deleteAllButton_) { HandleFatalError(__FILEW__, __LINE__); }
+  addDeleteLyt->add(SingleControlLayout::makeSingleCtrlLayout(deleteAllButton_, BUTTON_PADDING));
 
   // Add the treeview
   treeView_ = CreateWindowExW(
@@ -256,6 +268,7 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_TREEVIEW),
     nullptr, nullptr);
   if (!treeView_) { HandleFatalError(__FILEW__, __LINE__); }
+  lyt_->set(1,0,SingleControlLayout::makeSingleCtrlLayout(treeView_, 280, 400, Expand::Both));
 
   // Add label for the 'Label Field' controller.
   temp = CreateWindowExW(
@@ -268,6 +281,9 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+  SCLayoutPtr tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
+  tmpLayout->set(HorizontalAlignment::Right);
+  rightLayout->set(0, 0, tmpLayout);
 
   // Add labelFieldComboBox_
   labelFieldComboBox_ = CreateWindowExW(
@@ -280,6 +296,9 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_COMBO_LABEL),
     nullptr, nullptr);
   if (!labelFieldComboBox_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(labelFieldComboBox_, 100, undefinedCoord);
+  tmpLayout->set(HorizontalAlignment::Left);
+  rightLayout->set(0, 1, tmpLayout);
 
   // Add label for the 'Feature Color' controller.
   temp = CreateWindowExW(
@@ -292,6 +311,9 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
+  tmpLayout->set(HorizontalAlignment::Right);
+  rightLayout->set(1, 0, tmpLayout);
 
   // Create the colorButton_
   colorButton_ = CreateWindowExW(
@@ -304,6 +326,9 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDB_COLOR_BUTTON),
     nullptr, nullptr);
   if (!colorButton_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(colorButton_, 30, 30);
+  tmpLayout->set(HorizontalAlignment::Left);
+  rightLayout->set(1, 1, tmpLayout);
 
   // Add label for the 'Line Width' controller.
   temp = CreateWindowExW(
@@ -316,6 +341,9 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
+  tmpLayout->set(HorizontalAlignment::Right);
+  rightLayout->set(2, 0, tmpLayout);
 
   // Add the line width control
   lineSizeComboBox_ = CreateWindowExW(
@@ -328,6 +356,9 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_WIDTH_CB),
     nullptr, nullptr);
   if (!lineSizeComboBox_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(lineSizeComboBox_, 50, undefinedCoord);
+  tmpLayout->set(HorizontalAlignment::Left);
+  rightLayout->set(2, 1, tmpLayout);
 
   // Add label for the Fill Polygons checkbox controller.
   temp = CreateWindowExW(
@@ -340,6 +371,9 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
+  tmpLayout->set(HorizontalAlignment::Right);
+  rightLayout->set(3, 0, tmpLayout);
 
   // Add the fillPolygonsCheck_
   fillPolygonsCheck_ = CreateWindowExW(
@@ -352,6 +386,9 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDB_POLYGON_CHECK),
     nullptr, nullptr);
   if (!fillPolygonsCheck_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(fillPolygonsCheck_, 30, 30);
+  tmpLayout->set(HorizontalAlignment::Left);
+  rightLayout->set(3, 1, tmpLayout);
 
   // Add label for the displayThreshEdit_ control.
   temp = CreateWindowExW(
@@ -364,6 +401,9 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
+  tmpLayout->set(HorizontalAlignment::Right);
+  rightLayout->set(4, 0, tmpLayout);
 
   // Add the displayThreshStatic_
   displayThreshStatic_ = CreateWindowExW(
@@ -376,6 +416,9 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!displayThreshStatic_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(displayThreshStatic_, 100, undefinedCoord);
+  tmpLayout->set(HorizontalAlignment::Left);
+  rightLayout->set(4, 1, tmpLayout);
 
   // Add the displayThreshTrackBar_
   displayThreshTrackBar_ = CreateWindowExW(
@@ -391,6 +434,8 @@ void PFBApp::buildGUI_()
   SendMessage(displayThreshTrackBar_, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(0, 100));
   SendMessage(displayThreshTrackBar_, TBM_SETPAGESIZE, 0, 10);
   SendMessage(displayThreshTrackBar_, TBM_SETTICFREQ, 10, 0);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(displayThreshTrackBar_, 275, 30);
+  rightLayout->set(5, 0, tmpLayout, 1, 2);
 
   // Add a label for the rrNameEdit_ control
   temp = CreateWindowExW(
@@ -403,6 +448,9 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
+  tmpLayout->set(HorizontalAlignment::Right);
+  rightLayout->set(6, 0, tmpLayout);
   
   // Create the range ring name edit control
   rrNameEdit_ = CreateWindowExW(
@@ -415,6 +463,9 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_RRNAME_EDIT),
     nullptr, nullptr);
   if (!rrNameEdit_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(rrNameEdit_, 150, undefinedCoord);
+  tmpLayout->set(HorizontalAlignment::Left);
+  rightLayout->set(6, 1, tmpLayout);
 
   // Add lat label
   temp = CreateWindowExW(
@@ -427,6 +478,9 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
+  tmpLayout->set(HorizontalAlignment::Right);
+  rightLayout->set(7, 0, tmpLayout);
 
   // Add latEdit_
   latEdit_ = CreateWindowExW(
@@ -439,6 +493,9 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_LAT_EDIT),
     nullptr, nullptr);
   if (!latEdit_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(latEdit_, 150, undefinedCoord);
+  tmpLayout->set(HorizontalAlignment::Left);
+  rightLayout->set(7, 1, tmpLayout);
 
   // Add lon label
   temp = CreateWindowExW(
@@ -451,6 +508,9 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
+  tmpLayout->set(HorizontalAlignment::Right);
+  rightLayout->set(8, 0, tmpLayout);
 
   // Add lonEdit_
   lonEdit_ = CreateWindowExW(
@@ -463,6 +523,9 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_LON_EDIT),
     nullptr, nullptr);
   if (!lonEdit_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(lonEdit_, 150, undefinedCoord);
+  tmpLayout->set(HorizontalAlignment::Left);
+  rightLayout->set(8, 1, tmpLayout);
 
   // Label for the ranges edit
   temp = CreateWindowExW(
@@ -475,6 +538,9 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
+  tmpLayout->set(HorizontalAlignment::Right);
+  rightLayout->set(9, 0, tmpLayout);
 
   // Create the ranges edit
   rangesEdit_ = CreateWindowExW(
@@ -487,6 +553,8 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_RANGES_EDIT),
     nullptr, nullptr);
   if (!rangesEdit_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(rangesEdit_, 175, undefinedCoord);
+  rightLayout->set(9, 1, tmpLayout);
 
   // Add a label for the titleEditControl_
   temp = CreateWindowExW(
@@ -500,6 +568,11 @@ void PFBApp::buildGUI_()
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
 
+  auto tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
+  tmpLayout->set(HorizontalAlignment::Right);
+  tmpFlow->add(tmpLayout);
+
   // Add the titleEditControl_
   titleEditControl_ = CreateWindowExW(
     WS_EX_CLIENTEDGE,
@@ -511,6 +584,10 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_TITLE_EDIT),
     nullptr, nullptr);
   if (!titleEditControl_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(titleEditControl_, 175, undefinedCoord);
+  tmpLayout->set(HorizontalAlignment::Left);
+  tmpFlow->add(tmpLayout);
+  bottomLayout->add(tmpFlow);
 
   // Add label for the refreshStatic_ and refreshTrackBar_ control.
   temp = CreateWindowExW(
@@ -523,6 +600,10 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!temp) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(temp);
+  tmpLayout->set(HorizontalAlignment::Right);
+  tmpFlow->add(tmpLayout);
 
   // Add the refreshStatic_
   refreshStatic_ = CreateWindowExW(
@@ -535,6 +616,10 @@ void PFBApp::buildGUI_()
     nullptr,
     nullptr, nullptr);
   if (!refreshStatic_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(refreshStatic_, 150, undefinedCoord);
+  tmpLayout->set(HorizontalAlignment::Left);
+  tmpFlow->add(tmpLayout);
+  bottomLayout->add(tmpFlow);
 
   // Add the displayThreshTrackBar_
   refreshTrackBar_ = CreateWindowExW(
@@ -550,6 +635,8 @@ void PFBApp::buildGUI_()
   SendMessage(refreshTrackBar_, TBM_SETRANGE, (WPARAM)TRUE, (LPARAM)MAKELONG(1, 119));
   SendMessage(refreshTrackBar_, TBM_SETPAGESIZE, 0, 10);
   SendMessage(refreshTrackBar_, TBM_SETTICFREQ, 10, 0);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(refreshTrackBar_, 250, 40);
+  bottomLayout->add(tmpLayout);
 
   // Create the exportPlaceFileButton_
   exportPlaceFileButton_ = CreateWindowExW(
@@ -562,6 +649,10 @@ void PFBApp::buildGUI_()
     reinterpret_cast<HMENU>(IDC_EXPORT_PF),
     nullptr, nullptr);
   if (!exportPlaceFileButton_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Right);
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(exportPlaceFileButton_, BUTTON_PADDING);
+  tmpFlow->add(tmpLayout);
+  bottomLayout->add(tmpFlow);
 
   /****************************************************************************
   * Now that everything is built, initialize the GUI with pre-loaded data.
@@ -799,6 +890,10 @@ void PFBApp::updatePropertyControls_()
     }
 
   }
+
+  RECT clientArea{ 0 };
+  GetClientRect(hwnd_, &clientArea);
+  lyt_->layout(0, 0, clientArea.right, clientArea.bottom);
 }
 
 void PFBApp::updateColorButton_(LPARAM lParam)

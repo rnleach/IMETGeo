@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MainWindow.hpp"
+#include "Layouts.hpp"
 
 #include <string>
 using std::string;
@@ -21,6 +22,8 @@ public:
   ~PFBApp();
 
 private:
+  Win32Helper::GLayoutPtr lyt_;
+
   AppController appCon_;
   string pathToAppConSavedState_;
 

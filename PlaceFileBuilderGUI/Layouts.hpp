@@ -1,3 +1,4 @@
+#pragma once
 /**
 * Utilities for working with the Windows API in namespace Win32Helper.
 *
@@ -94,8 +95,8 @@ namespace Win32Helper
     Coord requestWidth();
 
     /// Query whether this will expand.
-    bool willExpandVertical();
-    bool willExpandHorizontal();
+    virtual bool willExpandVertical();
+    virtual bool willExpandHorizontal();
 
     /**
     * Height from top of conrol to text baseline. Used when aligning text in static controls with
@@ -157,6 +158,8 @@ namespace Win32Helper
   *
   * If a width or height is supplied, then the padding is ignored for that calculation.
   */
+  class SingleControlLayout;
+  using SCLayoutPtr = shared_ptr<SingleControlLayout>;
   class SingleControlLayout final: public AbstractLayout
   {
   public:
@@ -170,49 +173,50 @@ namespace Win32Helper
     void layout(Coord x, Coord y, Coord width, Coord height) final;
 
     /// Static factory methods
-    static LayoutPtr makeSingleCtrlLayout(
+    static SCLayoutPtr makeSingleCtrlLayout(
       HWND control,
       LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord },
       Expand exOpt = Expand::No,
       Collapse clpsOpt = Collapse::No);
-    static LayoutPtr makeSingleCtrlLayout(
+    static SCLayoutPtr makeSingleCtrlLayout(
       HWND control,
       Coord padding,
       Expand expOpt = Expand::No,
       Collapse clpsOpt = Collapse::No);
     /// Defaults to NoExpand
-    static LayoutPtr makeSingleCtrlLayout(
+    static SCLayoutPtr makeSingleCtrlLayout(
       HWND control,
       Coord padding,
       Collapse clpsOpt);
-    static LayoutPtr makeSingleCtrlLayout(
+    static SCLayoutPtr makeSingleCtrlLayout(
       HWND control,
       Coord width,
       Coord height,
       Expand expOpt = Expand::No,
       Collapse clpsOpt = Collapse::No);
     /// Defaults to NoExpand
-    static LayoutPtr makeSingleCtrlLayout(
+    static SCLayoutPtr makeSingleCtrlLayout(
       HWND control,
       Coord width,
       Coord height,
       Collapse clpsOpt);
     /// Defaults to NoExpand
-    static LayoutPtr makeSingleCtrlLayout(
+    static SCLayoutPtr makeSingleCtrlLayout(
       HWND control,
       Collapse clpsOpt);
-    static LayoutPtr makeSingleCtrlLayout(
+    static SCLayoutPtr makeSingleCtrlLayout(
       HWND control,
       Expand expOpt,
       Collapse clpsOpt = Collapse::No);
 
-  private:
     // Private constructor, use static factory methods
     SingleControlLayout(HWND control,
       LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord },
       Expand exOpt = Expand::No,
       Collapse clpsOpt = Collapse::No
     );
+
+  private:
 
     // Populate the protected cache values for the base class.
     HWND hwnd_;
@@ -225,12 +229,11 @@ namespace Win32Helper
   /**
   * Flow layout. Just keep adding sub-layouts and they are added horizontally or vertically.
   *
-  * Flow layouts ignore ExpandOptions, they never provide a larger rectangle to their
-  * sub-layouts, they only give what is requested. So if you want a sub-layout to expand,
-  * you may have to provide a height/width override in the LayoutOptions.
   *
   * The flowDir argument always specifies the direction components will flow from.
   */
+  class FlowLayout;
+  using FLayoutPtr = shared_ptr<FlowLayout>;
   class FlowLayout final: public AbstractLayout
   {
   public:
@@ -249,16 +252,16 @@ namespace Win32Helper
     void hide() final;
     void show() final;
     void layout(Coord x, Coord y, Coord width, Coord height) final;
+    bool willExpandVertical() final;
+    bool willExpandHorizontal() final;
 
     /// Factory methods
-    static LayoutPtr makeFlowLyt(
+    static FLayoutPtr makeFlowLyt(
       Direction flowFrom,
       Collapse clpsOpt = Collapse::No,
       LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord });
 
-    static LayoutPtr makeFlowLyt(Direction flowFrom, LayoutOptions lytOpt);
-
-  private:
+    static FLayoutPtr makeFlowLyt(Direction flowFrom, LayoutOptions lytOpt);
 
     // Private constructor, call with static factory method.
     FlowLayout(
@@ -267,6 +270,8 @@ namespace Win32Helper
       LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord }
     );
 
+  private:
+
     Direction flowDir_;              // Layout vertically or horizontally
     vector<LayoutPtr> lyts_;         // Store my layouts here!
   };
@@ -274,11 +279,14 @@ namespace Win32Helper
   /**
   * GridLayout. Arrange controls in a grid.
   */
+  class GridLayout;
+  using GLayoutPtr = shared_ptr<GridLayout>;
   class GridLayout final: public AbstractLayout
   {
   public:
     // Set a container to a specific grid cell location
-    void set(Coord row, Coord col, LayoutPtr lyt);
+    void set(Coord row, Coord col, LayoutPtr lyt, Coord rowSpan = 1, Coord colSpan = 1);
+    using AbstractLayout::set;
 
     ~GridLayout() override;
 
@@ -289,25 +297,23 @@ namespace Win32Helper
     void layout(Coord x, Coord y, Coord width, Coord height) final;
 
     /// Static factory functions
-    static LayoutPtr makeGridLyt(
+    static GLayoutPtr makeGridLyt(
       Coord rows,
       Coord columns,
       Expand exOpt = Expand::No,
       Collapse clpsOpt = Collapse::No,
       LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord });
 
-    static LayoutPtr makeGridLyt(
+    static GLayoutPtr makeGridLyt(
       Coord rows,
       Coord columns,
       Collapse clpsOpt);
 
-    static LayoutPtr makeGridLyt(
+    static GLayoutPtr makeGridLyt(
       Coord rows,
       Coord columns,
       LayoutOptions lytOpt);
-
-  private:
-    // Private constructor, only get via static factory methods
+    
     GridLayout(
       Coord rows,
       Coord columns,
@@ -315,8 +321,11 @@ namespace Win32Helper
       LayoutOptions lytOpt = { undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord },
       Collapse clpsOpt = Collapse::No);
 
+  private:
+
     // Store layout information in parallel vectors.
     vector<LayoutPtr> lyts_;
+    vector<pair<Coord,Coord>> spans_;
     vector<Coord> rowHeight_;
     vector<Coord> colWidth_;
     const size_t numRows_;

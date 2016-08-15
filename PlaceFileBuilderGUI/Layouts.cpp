@@ -175,50 +175,50 @@ namespace Win32Helper
     MoveWindow(hwnd_, xf, yf, w, h, TRUE);
   }
 
-  LayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, LayoutOptions lytOpt,
+  SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, LayoutOptions lytOpt,
     Expand exOpt, Collapse clpsOpt)
   {
-    return move(LayoutPtr(new SingleControlLayout(control, lytOpt, exOpt, clpsOpt)));
+    return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, exOpt, clpsOpt)));
   }
 
-  LayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord padding, 
+  SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord padding, 
     Expand expOpt, Collapse clpsOpt)
   {
     LayoutOptions lytOpt{undefinedCoord, undefinedCoord, padding, undefinedCoord};
-    return move(LayoutPtr(new SingleControlLayout(control, lytOpt, expOpt, clpsOpt)));
+    return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, expOpt, clpsOpt)));
   }
 
-  LayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord padding, 
+  SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord padding, 
     Collapse clpsOpt)
   {
     LayoutOptions lytOpt{ undefinedCoord, undefinedCoord, padding, undefinedCoord };
-    return move(LayoutPtr(new SingleControlLayout(control, lytOpt, Expand::No, clpsOpt)));
+    return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, Expand::No, clpsOpt)));
   }
 
-  LayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord width, Coord height, 
+  SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord width, Coord height, 
     Expand expOpt, Collapse clpsOpt)
   {
     LayoutOptions lytOpt{ width, height, undefinedCoord, undefinedCoord };
-    return move(LayoutPtr(new SingleControlLayout(control, lytOpt, expOpt, clpsOpt)));
+    return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, expOpt, clpsOpt)));
   }
 
-  LayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord width, Coord height,
+  SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Coord width, Coord height,
     Collapse clpsOpt)
   {
     LayoutOptions lytOpt{ width, height, undefinedCoord, undefinedCoord };
-    return move(LayoutPtr(new SingleControlLayout(control, lytOpt, Expand::No, clpsOpt)));
+    return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, Expand::No, clpsOpt)));
   }
 
-  LayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Collapse clpsOpt)
+  SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Collapse clpsOpt)
   {
     LayoutOptions lytOpt{ undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord };
-    return move(LayoutPtr(new SingleControlLayout(control, lytOpt, Expand::No, clpsOpt)));
+    return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, Expand::No, clpsOpt)));
   }
 
-  LayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Expand expOpt, Collapse clpsOpt)
+  SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, Expand expOpt, Collapse clpsOpt)
   {
     LayoutOptions lytOpt{ undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord };
-    return move(LayoutPtr(new SingleControlLayout(control, lytOpt, expOpt, clpsOpt)));
+    return move(SCLayoutPtr(new SingleControlLayout(control, lytOpt, expOpt, clpsOpt)));
   }
 
   void SingleControlLayout::calcBaseline(const int borderV, const SIZE strSz,
@@ -290,23 +290,61 @@ namespace Win32Helper
 
   void FlowLayout::layout(Coord x, Coord y, Coord width, Coord height)
   {
+    if (heightCache_ == undefinedCoord || widthCache_ == undefinedCoord) refreshCache();
+
+    // What direction is the flow, vertical or horizontal
+    bool isHorizontal = flowDir_ == Direction::Left || flowDir_ == Direction::Right;
+
+    // Calculate expansion factor for the flow
+    Coord extraSize =isHorizontal ? (width - widthCache_) : (height - heightCache_);
+    Coord expandableControlsTotalSize = 0;
+    vector<double> expandFactor;
+    for (auto& lyt : lyts_)
+    {
+      if (isHorizontal)
+      {
+        if (lyt->willExpandHorizontal()) expandableControlsTotalSize += lyt->requestWidth();
+      }
+      else
+      {
+        if (lyt->willExpandVertical()) expandableControlsTotalSize += lyt->requestHeight();
+      }
+    }
+    for (auto& lyt : lyts_)
+    {
+      if (isHorizontal)
+      {
+        if (lyt->willExpandHorizontal()) 
+          expandFactor.push_back(static_cast<double>(lyt->requestWidth()) / expandableControlsTotalSize);
+        else expandFactor.push_back(0.0);
+      }
+      else
+      {
+        if (lyt->willExpandVertical())
+          expandFactor.push_back(static_cast<double>(lyt->requestHeight()) / expandableControlsTotalSize);
+        else expandFactor.push_back(0.0);
+      }
+    }
+
     Coord currX = x;
     Coord currY = y;
-
+    
     switch (flowDir_) 
     {
     case Direction::Right:
     {
       currX += width;
-      if (lytOpt_.overrideHeight != undefinedCoord) 
+      if (lytOpt_.overrideMargins != undefinedCoord) 
       { 
         currX -= lytOpt_.overrideMargins;
         currY += lytOpt_.overrideMargins;
       }
 
-      for (auto& lyt : lyts_)
+      for(size_t i = 0; i < lyts_.size(); ++i)
       {
-        Coord w = lyt->requestWidth();
+        auto& lyt = lyts_[i];
+
+        Coord w = lyt->requestWidth() + static_cast<Coord>(extraSize * expandFactor[i]);
         currX -= w;
         lyt->layout(currX, currY, w, height);
       }
@@ -314,15 +352,17 @@ namespace Win32Helper
       break;
     case Direction::Left:
     {
-      if (lytOpt_.overrideHeight != undefinedCoord)
+      if (lytOpt_.overrideMargins != undefinedCoord)
       {
         currX += lytOpt_.overrideMargins;
         currY += lytOpt_.overrideMargins;
       }
 
-      for (auto& lyt : lyts_)
+      for (size_t i = 0; i < lyts_.size(); ++i)
       {
-        Coord w = lyt->requestWidth();
+        auto& lyt = lyts_[i];
+
+        Coord w = lyt->requestWidth() + static_cast<Coord>(extraSize * expandFactor[i]);
         lyt->layout(currX, currY, w, height);
         currX += w;
       }
@@ -330,15 +370,17 @@ namespace Win32Helper
       break;
     case Direction::Top:
     {
-      if (lytOpt_.overrideHeight != undefinedCoord)
+      if (lytOpt_.overrideMargins != undefinedCoord)
       {
         currX += lytOpt_.overrideMargins;
         currY += lytOpt_.overrideMargins;
       }
 
-      for (auto& lyt : lyts_)
+      for (size_t i = 0; i < lyts_.size(); ++i)
       {
-        Coord h = lyt->requestHeight();
+        auto& lyt = lyts_[i];
+
+        Coord h = lyt->requestHeight() + static_cast<Coord>(extraSize * expandFactor[i]);
         lyt->layout(currX, currY, width, h);
         currY += h;
       }
@@ -347,15 +389,17 @@ namespace Win32Helper
     case Direction::Bottom:
     {
       currY += height;
-      if (lytOpt_.overrideHeight != undefinedCoord)
+      if (lytOpt_.overrideMargins != undefinedCoord)
       {
         currX += lytOpt_.overrideMargins;
         currY -= lytOpt_.overrideMargins;
       }
 
-      for (auto& lyt : lyts_)
+      for (size_t i = 0; i < lyts_.size(); ++i)
       {
-        Coord h = lyt->requestHeight();
+        auto& lyt = lyts_[i];
+
+        Coord h = lyt->requestHeight() + static_cast<Coord>(extraSize * expandFactor[i]);
         currY -= h;
         lyt->layout(currX, currY, width, h);
       }
@@ -364,14 +408,26 @@ namespace Win32Helper
     }
   }
 
-  LayoutPtr FlowLayout::makeFlowLyt(Direction flowFrom, Collapse clpsOpt, LayoutOptions lytOpt)
+  bool FlowLayout::willExpandVertical()
   {
-    return move(LayoutPtr(new FlowLayout(flowFrom, clpsOpt, lytOpt)));
+    for (auto& lyt : lyts_) if (lyt->willExpandVertical()) return true;
+    return false;
   }
 
-  LayoutPtr FlowLayout::makeFlowLyt(Direction flowFrom, LayoutOptions lytOpt)
+  bool FlowLayout::willExpandHorizontal()
   {
-    return move(LayoutPtr(new FlowLayout(flowFrom, Collapse::No, lytOpt)));
+    for (auto& lyt : lyts_) if (lyt->willExpandHorizontal()) return true;
+    return false;
+  }
+
+  FLayoutPtr FlowLayout::makeFlowLyt(Direction flowFrom, Collapse clpsOpt, LayoutOptions lytOpt)
+  {
+    return move(FLayoutPtr(new FlowLayout(flowFrom, clpsOpt, lytOpt)));
+  }
+
+  FLayoutPtr FlowLayout::makeFlowLyt(Direction flowFrom, LayoutOptions lytOpt)
+  {
+    return move(FLayoutPtr(new FlowLayout(flowFrom, Collapse::No, lytOpt)));
   }
 
   FlowLayout::FlowLayout(Direction dir, Collapse clpsOpt, LayoutOptions lytOpt) :
@@ -381,14 +437,25 @@ namespace Win32Helper
   GridLayout::GridLayout(Coord rows, Coord columns, Expand exOpt, LayoutOptions lytOpt,
     Collapse clpsOpt) : 
       AbstractLayout(exOpt, lytOpt, clpsOpt), 
-    lyts_(rows * columns, nullptr), rowHeight_(rows,0), colWidth_(columns,0),
-    numRows_{ rows }, numCols_{columns}
+    lyts_(rows * columns, nullptr), spans_(rows * columns, pair<Coord,Coord>(1,1)), 
+    rowHeight_(rows,0), colWidth_(columns,0), numRows_{ rows }, numCols_{columns}
   {}
 
-  void GridLayout::set(Coord row, Coord col, LayoutPtr lyt)
+  void GridLayout::set(Coord row, Coord col, LayoutPtr lyt, Coord rowSpan, Coord colSpan)
   {
     const size_t pos = row * numCols_ + col;
     lyts_[pos] = lyt;
+    spans_[pos] = pair<Coord, Coord>(rowSpan, colSpan);
+
+    // Zero out other members of row spans_
+    for (Coord r = row + 1; r < row + rowSpan; r++)
+    {
+      for (Coord c = col + 1; c < col + colSpan; c++)
+      {
+        const size_t pos2 = r * numCols_ + c;
+        spans_[pos2] = pair<Coord, Coord>(0, 0);
+      }
+    }
 
     // Reset the cached sizes so they will be recalculated when needed.
     baselineCache_ = widthCache_ = heightCache_ = undefinedCoord;
@@ -413,15 +480,47 @@ namespace Win32Helper
         auto pos = r * numCols_ + c;
         if (lyts_[pos])
         {
-          if (lyts_[pos]->requestHeight() > rowHeight_[r])
+          if (spans_[pos].first == 1 && lyts_[pos]->requestHeight() > rowHeight_[r])
             rowHeight_[r] = lyts_[pos]->requestHeight();
-          if (lyts_[pos]->requestWidth() > colWidth_[c])
+          if (spans_[pos].second == 1 && lyts_[pos]->requestWidth() > colWidth_[c])
             colWidth_[c] = lyts_[pos]->requestWidth();
+        }
+      }
+    // Handle multiple spanning rows/cols
+    for (size_t r = 0; r < numRows_; ++r)
+      for (size_t c = 0; c < numCols_; ++c)
+      {
+        auto pos = r * numCols_ + c;
+        if (lyts_[pos])
+        {
+          if (spans_[pos].first > 1) // Spans multiple rows
+          {
+            const Coord spanRows = spans_[pos].first;
+            Coord extraH = lyts_[pos]->requestHeight();
+            for (Coord rr = r; rr < r + spanRows; ++rr) extraH -= rowHeight_[rr];
+            // Add extra height to last row
+            if (extraH > 0) rowHeight_[r + spanRows - 1] += extraH;
+          }
+          if (spans_[pos].second > 1)
+          {
+            const Coord spanCols = spans_[pos].second;
+            Coord extraW = lyts_[pos]->requestWidth();
+            for (Coord cc = c; cc < c + spanCols; ++cc) extraW -= colWidth_[cc];
+            // Add extra width to last col
+            if (extraW > 0) colWidth_[c + spanCols - 1] += extraW;
+          }
         }
       }
 
     for (auto it = rowHeight_.begin(); it != rowHeight_.end(); ++it) heightCache_ += *it;
     for (auto it = colWidth_.begin(); it != colWidth_.end(); ++it) widthCache_ += *it;
+
+    // Handle margins
+    if (lytOpt_.overrideMargins != undefinedCoord)
+    {
+      heightCache_ += lytOpt_.overrideMargins;
+      widthCache_ += lytOpt_.overrideMargins;
+    }
   }
 
   void GridLayout::hide()
@@ -438,40 +537,58 @@ namespace Win32Helper
 
   void GridLayout::layout(Coord x, Coord y, Coord width, Coord height)
   {
+    // TODO better column row expansion, only grow columns/rows with expandable controls?
+
     if (heightCache_ == undefinedCoord || widthCache_ == undefinedCoord) refreshCache();
 
     // Copy calculated, or provided, values
     vector<Coord> finalWidth(colWidth_);
     vector<Coord> finalHeight(rowHeight_);
+
     Coord finalTotalWidth = widthCache_, finalTotalHeight = heightCache_;
+    if (lytOpt_.overrideMargins != undefinedCoord)
+    {
+      finalTotalWidth -= lytOpt_.overrideMargins;
+      finalTotalHeight -= lytOpt_.overrideMargins;
+    }
 
     // if Expand, proportionally grow/shrink each row/column to fill width and height
     if (expOpt_ == Expand::Both || expOpt_ == Expand::Horizontal)
     {
       auto extraWidth = width - widthCache_;
+      if (lytOpt_.overrideMargins != undefinedCoord) extraWidth -= lytOpt_.overrideMargins;
       for (size_t i = 0; i < numCols_; i++)
       {
         double ratio = static_cast<double>(colWidth_[i]) / widthCache_;
         finalWidth[i] += static_cast<int>((ratio * extraWidth));
       }
       finalTotalWidth = width;
+      if (lytOpt_.overrideMargins != undefinedCoord) finalTotalWidth -= lytOpt_.overrideMargins;
     }
     if (expOpt_ == Expand::Both || expOpt_ == Expand::Vertical)
     {
       auto extraHeight = height - heightCache_;
+      if (lytOpt_.overrideMargins != undefinedCoord) extraHeight -= lytOpt_.overrideMargins;
       for (size_t i = 0; i < numRows_; i++)
       {
         double ratio = static_cast<double>(rowHeight_[i]) / heightCache_;
         finalHeight[i] += static_cast<int>((ratio * extraHeight));
       }
       finalTotalHeight = height;
+      if (lytOpt_.overrideMargins != undefinedCoord) finalTotalHeight -= lytOpt_.overrideMargins;
     }
 
     // Using alignment information, calculate the upper left corner of the layout
     Coord startX = x, startY = y;
+    if (lytOpt_.overrideMargins != undefinedCoord)
+    {
+      startX += lytOpt_.overrideMargins;
+      startY += lytOpt_.overrideMargins;
+    }
     if (width != finalTotalWidth)
     {
       auto extraWidth = width - finalTotalWidth;
+      if (lytOpt_.overrideMargins != undefinedCoord) extraWidth -= lytOpt_.overrideMargins;
       switch (hAlign_)
       {
       //case HorizontalAlignment::Left: // Do nothing, startX already = x
@@ -486,6 +603,7 @@ namespace Win32Helper
     if (height != finalTotalHeight)
     {
       auto extraHeight = height - finalTotalHeight;
+      if (lytOpt_.overrideMargins != undefinedCoord) extraHeight -= lytOpt_.overrideMargins;
       switch (vAlign_)
       {
         //case VerticalAlignment::Top: // Do nothing, startY already = y
@@ -507,7 +625,29 @@ namespace Win32Helper
       for (size_t c = 0; c < numCols_; c++)
       {
         auto pos = r * numCols_ + c;
-        if(lyts_[pos]) lyts_[pos]->layout(currX, currY, finalWidth[c], finalHeight[r]);
+        if (lyts_[pos])
+        {
+          auto calcWidth = finalWidth[c];
+          auto calcHeight = finalHeight[r];
+          if (spans_[pos].first > 1) // Increase height for row span
+          {
+            for (size_t rr = r + 1; rr < r + spans_[pos].first; ++rr)
+            {
+              auto pos2 = rr * numCols_ + c;
+              calcHeight += finalHeight[rr];
+            }
+          }
+          if (spans_[pos].second > 1) // Increase width for col span
+          {
+            for (size_t cc = c + 1; cc < c + spans_[pos].second; ++cc)
+            {
+              auto pos2 = r * numCols_ + cc;
+              calcWidth += finalWidth[cc];
+            }
+          }
+
+          lyts_[pos]->layout(currX, currY, calcWidth, calcHeight);
+        }
 
         // Move to the next column
         currX += finalWidth[c];
@@ -517,21 +657,22 @@ namespace Win32Helper
     }
   }
 
-  LayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, Expand exOpt, 
+  GLayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, Expand exOpt, 
     Collapse clpsOpt, LayoutOptions lytOpt)
   {
-    return move(LayoutPtr(new GridLayout(rows, columns, exOpt, lytOpt, clpsOpt)));
+    return move(GLayoutPtr(new GridLayout(rows, columns, exOpt, lytOpt, clpsOpt)));
   }
 
-  LayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, Collapse clpsOpt)
+  GLayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, Collapse clpsOpt)
   {
     LayoutOptions lytOpt{undefinedCoord, undefinedCoord, undefinedCoord, undefinedCoord};
-    return move(LayoutPtr(new GridLayout(rows, columns, Expand::No, lytOpt, clpsOpt)));
+    return move(GLayoutPtr(new GridLayout(rows, columns, Expand::No, lytOpt, clpsOpt)));
   }
 
-  LayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, LayoutOptions lytOpt)
+  GLayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, LayoutOptions lytOpt)
   {
-    return move(LayoutPtr(new GridLayout(rows, columns, Expand::No, lytOpt,
+    return move(GLayoutPtr(new GridLayout(rows, columns, Expand::No, lytOpt,
       Collapse::No)));
   }
+
 }
