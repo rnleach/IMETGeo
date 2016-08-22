@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "MainWindow.hpp"
+
 namespace Win32Helper
 {
   AbstractLayout::AbstractLayout(Expand expOpt, LytOpt lytOpt, Collapse clpsOpt) :
@@ -49,14 +51,22 @@ namespace Win32Helper
 
   void SingleControlLayout::refreshCache()
   {
+    // Is this a static control?
+    wchar_t className[MAX_PATH];
+    GetClassNameW(hwnd_, className, MAX_PATH);
+    bool isStatic = wcscmp(className, L"Static") == 0;
     // Get the window style information
     DWORD dwxStyle = GetWindowLongPtrW(hwnd_, GWL_EXSTYLE);
 
     // Use window style information to choose message to send to get border sizes
-    int borderV = (dwxStyle && WS_EX_CLIENTEDGE) ? SM_CYEDGE : SM_CYBORDER;
-    int borderH = (dwxStyle && WS_EX_CLIENTEDGE) ? SM_CXEDGE : SM_CXBORDER;
-    borderV = GetSystemMetrics(borderV);
-    borderH = GetSystemMetrics(borderH);
+    int borderV = 0, borderH = 0;
+    if (!isStatic)
+    {
+      borderV = (dwxStyle && WS_EX_CLIENTEDGE) ? SM_CYEDGE : SM_CYBORDER;
+      borderH = (dwxStyle && WS_EX_CLIENTEDGE) ? SM_CXEDGE : SM_CXBORDER;
+      borderV = GetSystemMetrics(borderV);
+      borderH = GetSystemMetrics(borderH);
+    }
 
     // Get the text in the control
     WCHAR buffer[MAX_PATH];
@@ -85,7 +95,6 @@ namespace Win32Helper
     {
       heightCache_ = stringSzInfo.cy + 2 * borderV;
       if (lytOpt_.pad != nullVal) heightCache_ += 2 * lytOpt_.pad;
-      if (lytOpt_.margin != nullVal) heightCache_ += 2 * lytOpt_.margin;
     }
     else
       heightCache_ = lytOpt_.height;
@@ -94,10 +103,25 @@ namespace Win32Helper
     {
       widthCache_ = stringSzInfo.cx + 2 * borderH;
       if (lytOpt_.pad != nullVal) widthCache_ += 2 * lytOpt_.pad;
-      if (lytOpt_.margin != nullVal) widthCache_ += 2 * lytOpt_.margin;
     }
     else
       widthCache_ = lytOpt_.width;
+
+    if (!isStatic)
+    {
+      RECT r{ 0 };
+      GetWindowRect(hwnd_, &r);
+      if ((r.right - r.left) > widthCache_)
+        widthCache_ = r.right - r.left;
+      if ((r.bottom - r.top) > heightCache_)
+        heightCache_ = r.bottom - r.top;
+    }
+
+    if (lytOpt_.margin != nullVal)
+    {
+      heightCache_ += 2 * lytOpt_.margin;
+      widthCache_ += 2 * lytOpt_.margin;
+    }
 
     // Now do the baseline calculation
     calcBaseline(borderV, stringSzInfo, textMetrics);
@@ -134,13 +158,6 @@ namespace Win32Helper
     // Get the width and height - potential for clipping!
     w = widthCache_ < width ? widthCache_ : width;
     h = heightCache_ < height ? heightCache_ : height;
-
-
-    // Handle expanding
-    if ((expOpt_ == Expand::Both || expOpt_ == Expand::Horizontal) && width > w)
-      w = width;
-    if ((expOpt_ == Expand::Both || expOpt_ == Expand::Vertical) && height > h)
-      h = height;
 
     // Handle alignment
     xf = x;
@@ -182,6 +199,8 @@ namespace Win32Helper
     }
 
     MoveWindow(hwnd_, xf, yf, w, h, TRUE);
+
+    cerr << hwnd_ << " " << height << " " << h << " " << width << " " << w << "\n";
   }
 
   SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, LytOpt lytOpt,
@@ -239,6 +258,9 @@ namespace Win32Helper
 
   void FlowLayout::refreshCache()
   {
+    // Refresh cached values for components too
+    for (auto& lyt : lyts_) lyt->refreshCache();
+
     baselineCache_ = nullVal; // Leave it if vertical flow.
     widthCache_ = 0;
     heightCache_ = 0;
@@ -493,9 +515,12 @@ namespace Win32Helper
 
   void GridLayout::refreshCache()
   {
+    for (auto& lyt : lyts_) if (lyt) lyt->refreshCache();
+
+    // Ignore padding, just use margins
     heightCache_ = 0;
     widthCache_ = 0;
-    baselineCache_ = nullVal;// Leave it, baseline makes no sense for a grid layout.
+    baselineCache_ = nullVal; // Leave it, baseline makes no sense for a grid layout.
 
     // Reset the cached row/col sizes
     for (auto it = rowHeight_.begin(); it != rowHeight_.end(); ++it) *it = 0;
@@ -514,6 +539,7 @@ namespace Win32Helper
             colWidth_[c] = lyts_[pos]->requestWidth();
         }
       }
+
     // Handle multiple spanning rows/cols
     for (size_t r = 0; r < numRows_; ++r)
       for (size_t c = 0; c < numCols_; ++c)
@@ -565,45 +591,81 @@ namespace Win32Helper
 
   void GridLayout::layout(Coord x, Coord y, Coord width, Coord height)
   {
-    // TODO better column row expansion, only grow columns/rows with expandable controls?
-
+    // Check the cache for a refresh
     if (heightCache_ == nullVal || widthCache_ == nullVal) refreshCache();
+
+    bool expandHorizontal = expOpt_ == Expand::Both || expOpt_ == Expand::Horizontal;
+    bool expandVertical = expOpt_ == Expand::Both || expOpt_ == Expand::Vertical;
 
     // Copy calculated, or provided, values
     vector<Coord> finalWidth(colWidth_);
     vector<Coord> finalHeight(rowHeight_);
 
-    Coord finalTotalWidth = widthCache_, finalTotalHeight = heightCache_;
-    if (lytOpt_.margin != nullVal)
+    // Extra space to expand into, or to use alignment info for
+    Coord extraHeight = height - heightCache_;
+    Coord extraWidth = width - widthCache_;
+
+    // If expanding, calculate new column widths
+    if (expandHorizontal)
     {
-      finalTotalWidth -= lytOpt_.margin;
-      finalTotalHeight -= lytOpt_.margin;
+      Coord expandableWidth = 0;
+      vector<bool> expandCol(numCols_, false);
+
+      // Calculate total requested width of expandable columns for proportional expansion
+      for (size_t c = 0; c < numCols_; c++)
+      {
+        for (size_t r = 0; r < numRows_; r++)
+        {
+          auto pos = r * numCols_ + c;
+          if (lyts_[pos] && lyts_[pos]->willExpandHorizontal())
+          {
+            expandableWidth += finalWidth[c];
+            expandCol[c] = true;
+            break;
+          }
+        }
+      }
+      // Now expand those columns
+      for (size_t c = 0; c < numCols_; c++)
+      {
+        if (expandCol[c])
+        {
+          double ratio = static_cast<double>(colWidth_[c]) / expandableWidth;
+          finalWidth[c] += static_cast<int>((ratio * extraWidth));
+        }
+      }
     }
 
-    // if Expand, proportionally grow/shrink each row/column to fill width and height
-    if (expOpt_ == Expand::Both || expOpt_ == Expand::Horizontal)
+    // If expanding, calculate new row heights
+    if (expandVertical)
     {
-      auto extraWidth = width - widthCache_;
-      if (lytOpt_.margin != nullVal) extraWidth -= lytOpt_.margin;
-      for (size_t i = 0; i < numCols_; i++)
+      vector<bool> expandRow(numRows_, false);
+      Coord expandableHeight = 0;
+
+      // Calculate total requested height of expandable rows for proportional expansion
+      for (size_t r = 0; r < numRows_; r++)
       {
-        double ratio = static_cast<double>(colWidth_[i]) / widthCache_;
-        finalWidth[i] += static_cast<int>((ratio * extraWidth));
+        for (size_t c = 0; c < numCols_; c++)
+        {
+          auto pos = r * numCols_ + c;
+          if (lyts_[pos] && lyts_[pos]->willExpandVertical())
+          {
+            expandableHeight += finalHeight[r];
+            expandRow[r] = true;
+            break;
+          }
+        }
       }
-      finalTotalWidth = width;
-      if (lytOpt_.margin != nullVal) finalTotalWidth -= lytOpt_.margin;
-    }
-    if (expOpt_ == Expand::Both || expOpt_ == Expand::Vertical)
-    {
-      auto extraHeight = height - heightCache_;
-      if (lytOpt_.margin != nullVal) extraHeight -= lytOpt_.margin;
-      for (size_t i = 0; i < numRows_; i++)
+
+      // Now extend those rows
+      for (size_t r = 0; r < numRows_; r++)
       {
-        double ratio = static_cast<double>(rowHeight_[i]) / heightCache_;
-        finalHeight[i] += static_cast<int>((ratio * extraHeight));
+        if (expandRow[r])
+        {
+          double ratio = static_cast<double>(rowHeight_[r]) / expandableHeight;
+          finalHeight[r] += static_cast<int>((ratio * extraHeight));
+        }
       }
-      finalTotalHeight = height;
-      if (lytOpt_.margin != nullVal) finalTotalHeight -= lytOpt_.margin;
     }
 
     // Using alignment information, calculate the upper left corner of the layout
@@ -613,10 +675,9 @@ namespace Win32Helper
       startX += lytOpt_.margin;
       startY += lytOpt_.margin;
     }
-    if (width != finalTotalWidth)
+    // if expanding, we will fill it, otherwise re-align
+    if (!expandHorizontal)
     {
-      auto extraWidth = width - finalTotalWidth;
-      if (lytOpt_.margin != nullVal) extraWidth -= lytOpt_.margin;
       switch (hAlign_)
       {
       //case HorizontalAlignment::Left: // Do nothing, startX already = x
@@ -628,10 +689,8 @@ namespace Win32Helper
         break;
       }
     }
-    if (height != finalTotalHeight)
+    if (!expandVertical)
     {
-      auto extraHeight = height - finalTotalHeight;
-      if (lytOpt_.margin != nullVal) extraHeight -= lytOpt_.margin;
       switch (vAlign_)
       {
         //case VerticalAlignment::Top: // Do nothing, startY already = y
@@ -657,23 +716,13 @@ namespace Win32Helper
         {
           auto calcWidth = finalWidth[c];
           auto calcHeight = finalHeight[r];
-          if (spans_[pos].first > 1) // Increase height for row span
-          {
-            for (size_t rr = r + 1; rr < r + spans_[pos].first; ++rr)
-            {
-              auto pos2 = rr * numCols_ + c;
-              calcHeight += finalHeight[rr];
-            }
-          }
-          if (spans_[pos].second > 1) // Increase width for col span
-          {
-            for (size_t cc = c + 1; cc < c + spans_[pos].second; ++cc)
-            {
-              auto pos2 = r * numCols_ + cc;
-              calcWidth += finalWidth[cc];
-            }
-          }
-
+          // Increase height for row span
+          for (size_t rr = r + 1; rr < r + spans_[pos].first; ++rr)
+            calcHeight += finalHeight[rr];
+          // Increase width for col span
+          for (size_t cc = c + 1; cc < c + spans_[pos].second; ++cc)
+            calcWidth += finalWidth[cc];
+          
           lyts_[pos]->layout(currX, currY, calcWidth, calcHeight);
         }
 
