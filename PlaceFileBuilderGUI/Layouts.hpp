@@ -100,12 +100,6 @@ namespace Win32Helper
     virtual bool willExpandHorizontal();
 
     /**
-    * Height from top of conrol to text baseline. Used when aligning text in static controls with
-    * edit labels and check buttons. If there is no text, just return 0.
-    */
-    virtual Coord baselineHeight();
-
-    /**
     * Hide(show) the control, this will disable(enable) the control and hide(show) it. It uses
     * the value of clpsOpt_ to potentially resize the control to 0 so it does not affect the 
     * layout.
@@ -123,7 +117,9 @@ namespace Win32Helper
     inline void set(Collapse clps) { clpsOpt_ = clps; }
     inline void set(HorizontalAlignment hAlign) { hAlign_ = hAlign; }
     inline void set(VerticalAlignment vAlign) { vAlign_ = vAlign; }
-
+    
+    /// Force reset of cache for this layout and all sub-layouts
+    virtual void resetCache();
 
     /// Given a starting position and overall size, do the layout.
     virtual void layout(Coord x, Coord y, Coord width, Coord height) = 0;
@@ -141,7 +137,6 @@ namespace Win32Helper
     bool hidden_;
     Coord heightCache_;
     Coord widthCache_;
-    Coord baselineCache_;
   };
 
   /**
@@ -222,9 +217,6 @@ namespace Win32Helper
     // Populate the protected cache values for the base class.
     HWND hwnd_;
 
-    // Using the handle, get the control class and calculate the baseline from
-    // the control type and window styles, maybe in the future.
-    void calcBaseline(const int borderV, const SIZE strSz, const TEXTMETRICW& textMetrics);
   };
 
   /**
@@ -256,6 +248,7 @@ namespace Win32Helper
     void layout(Coord x, Coord y, Coord width, Coord height) final;
     bool willExpandVertical() final;
     bool willExpandHorizontal() final;
+    void resetCache() final;
 
     /// Factory methods
     static FLayoutPtr makeFlowLyt(
@@ -298,6 +291,7 @@ namespace Win32Helper
     void hide() final;
     void show() final;
     void layout(Coord x, Coord y, Coord width, Coord height) final;
+    void resetCache() final;
 
     /// Static factory functions
     static GLayoutPtr makeGridLyt(

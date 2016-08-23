@@ -203,6 +203,7 @@ void PFBApp::buildGUI_()
   auto addDeleteLyt = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, {nullVal, nullVal,5,DEF_MRGN});
   auto rightLayout = GridLayout::makeGridLyt(10, 2, { nullVal, nullVal, nullVal,DEF_MRGN });
   auto bottomLayout = FlowLayout::makeFlowLyt(FlowLayout::Direction::Top, { nullVal, nullVal,5,DEF_MRGN });
+  bottomLayout->set(Expand::Both);
   lyt_->set(0, 0, addDeleteLyt);
   lyt_->set(1, 1, rightLayout);
   lyt_->set(2, 0, bottomLayout);
@@ -325,7 +326,7 @@ void PFBApp::buildGUI_()
     nullptr, nullptr);
   if (!colorButton_) { HandleFatalError(__FILEW__, __LINE__); }
   tmpLayout = SingleControlLayout::makeSingleCtrlLayout(colorButton_);
-  tmpLayout->set({30,30,nullVal,DEF_MRGN});
+  tmpLayout->set({60,30,nullVal,DEF_MRGN});
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(1, 1, tmpLayout);
 
@@ -904,7 +905,6 @@ void PFBApp::updatePropertyControls_()
 
   RECT clientArea{ 0 };
   GetClientRect(hwnd_, &clientArea);
-  lyt_->refreshCache();
   lyt_->layout(0, 0, clientArea.right, clientArea.bottom);
 }
 

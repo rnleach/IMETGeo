@@ -2,14 +2,12 @@
 
 #include <iostream>
 
-#include "MainWindow.hpp"
-
 namespace Win32Helper
 {
   AbstractLayout::AbstractLayout(Expand expOpt, LytOpt lytOpt, Collapse clpsOpt) :
     expOpt_{ expOpt }, lytOpt_(lytOpt), clpsOpt_{ clpsOpt }, hAlign_{HorizontalAlignment::Center}, 
     vAlign_{VerticalAlignment::Center}, hidden_ { false }, 
-    heightCache_{ nullVal }, widthCache_{ nullVal }, baselineCache_{ nullVal }
+    heightCache_{ nullVal }, widthCache_{ nullVal }
   {}
 
   Coord AbstractLayout::requestHeight()
@@ -36,11 +34,9 @@ namespace Win32Helper
     return expOpt_ == Expand::Horizontal || expOpt_ == Expand::Both;
   }
 
-  Coord AbstractLayout::baselineHeight()
+  void AbstractLayout::resetCache()
   {
-    if (hidden_ && clpsOpt_ == Collapse::Yes) return 0;
-    if (baselineCache_ == nullVal) refreshCache();
-    return baselineCache_;
+    widthCache_ = heightCache_ = nullVal;
   }
 
   SingleControlLayout::SingleControlLayout(HWND control, LytOpt lytOpt,
@@ -55,6 +51,7 @@ namespace Win32Helper
     wchar_t className[MAX_PATH];
     GetClassNameW(hwnd_, className, MAX_PATH);
     bool isStatic = wcscmp(className, L"Static") == 0;
+    
     // Get the window style information
     DWORD dwxStyle = GetWindowLongPtrW(hwnd_, GWL_EXSTYLE);
 
@@ -90,7 +87,7 @@ namespace Win32Helper
     hFont = (HFONT)SelectObject(hdc, oldFont);
     ReleaseDC(hwnd_, hdc);
 
-    // Calculate the new width, height, baseline
+    // Calculate the new width and height
     if (lytOpt_.height == nullVal)
     {
       heightCache_ = stringSzInfo.cy + 2 * borderV;
@@ -122,17 +119,6 @@ namespace Win32Helper
       heightCache_ += 2 * lytOpt_.margin;
       widthCache_ += 2 * lytOpt_.margin;
     }
-
-    // Now do the baseline calculation
-    calcBaseline(borderV, stringSzInfo, textMetrics);
-  }
-
-  void SingleControlLayout::calcBaseline(const int borderV, const SIZE strSz,
-    const TEXTMETRICW & textMetrics)
-  {
-    baselineCache_ = borderV + strSz.cy - textMetrics.tmDescent;
-    if (lytOpt_.pad != nullVal) baselineCache_ += lytOpt_.pad;
-    if (lytOpt_.margin != nullVal) baselineCache_ += lytOpt_.margin;
   }
 
   void SingleControlLayout::hide()
@@ -158,6 +144,9 @@ namespace Win32Helper
     // Get the width and height - potential for clipping!
     w = widthCache_ < width ? widthCache_ : width;
     h = heightCache_ < height ? heightCache_ : height;
+
+    if (expOpt_ == Expand::Both || expOpt_ == Expand::Horizontal) w = width;
+    if (expOpt_ == Expand::Both || expOpt_ == Expand::Vertical) h = height;
 
     // Handle alignment
     xf = x;
@@ -199,8 +188,6 @@ namespace Win32Helper
     }
 
     MoveWindow(hwnd_, xf, yf, w, h, TRUE);
-
-    cerr << hwnd_ << " " << height << " " << h << " " << width << " " << w << "\n";
   }
 
   SCLayoutPtr SingleControlLayout::makeSingleCtrlLayout(HWND control, LytOpt lytOpt,
@@ -261,25 +248,16 @@ namespace Win32Helper
     // Refresh cached values for components too
     for (auto& lyt : lyts_) lyt->refreshCache();
 
-    baselineCache_ = nullVal; // Leave it if vertical flow.
     widthCache_ = 0;
     heightCache_ = 0;
 
     if (flowDir_ == Direction::Left || flowDir_ == Direction::Right)
     {
-      baselineCache_ = 0;
+     
       for (auto& lyt : lyts_)
       {
-        if (lyt->baselineHeight() != nullVal && lyt->baselineHeight() > baselineCache_)
-          baselineCache_ = lyt->baselineHeight();
-      }
-
-      for (auto& lyt : lyts_)
-      {
-        Coord baselineOffset = 0;
-        if (lyt->baselineHeight() < baselineCache_) baselineOffset = baselineCache_ - lyt->baselineHeight();
-        if (lyt->requestHeight() + baselineOffset > heightCache_) 
-          heightCache_ = lyt->requestHeight() + baselineOffset;
+        if (lyt->requestHeight() > heightCache_) 
+          heightCache_ = lyt->requestHeight();
         widthCache_ += lyt->requestWidth();
         if (lytOpt_.pad != nullVal) widthCache_ += lytOpt_.pad;
       }
@@ -301,7 +279,6 @@ namespace Win32Helper
       if (flowDir_ == Direction::Left || flowDir_ == Direction::Right)
       {
         widthCache_ -= lytOpt_.pad;
-        if (baselineCache_ != nullVal) baselineCache_ += lytOpt_.pad;
       }
       else
         heightCache_ -= lytOpt_.pad;
@@ -310,7 +287,6 @@ namespace Win32Helper
     {
       heightCache_ += 2 * lytOpt_.margin;
       widthCache_ += 2 * lytOpt_.margin;
-      if (baselineCache_ != nullVal) baselineCache_ += lytOpt_.margin;
     }
   }
 
@@ -470,6 +446,12 @@ namespace Win32Helper
     return false;
   }
 
+  void FlowLayout::resetCache()
+  {
+    AbstractLayout::resetCache();
+    for (auto lyt : lyts_) lyt->resetCache();
+  }
+
   FLayoutPtr FlowLayout::makeFlowLyt(Direction flowFrom, Collapse clpsOpt, LytOpt lytOpt)
   {
     return move(FLayoutPtr(new FlowLayout(flowFrom, clpsOpt, lytOpt)));
@@ -508,7 +490,7 @@ namespace Win32Helper
     }
 
     // Reset the cached sizes so they will be recalculated when needed.
-    baselineCache_ = widthCache_ = heightCache_ = nullVal;
+    widthCache_ = heightCache_ = nullVal;
   }
 
   GridLayout::~GridLayout() {}
@@ -520,7 +502,6 @@ namespace Win32Helper
     // Ignore padding, just use margins
     heightCache_ = 0;
     widthCache_ = 0;
-    baselineCache_ = nullVal; // Leave it, baseline makes no sense for a grid layout.
 
     // Reset the cached row/col sizes
     for (auto it = rowHeight_.begin(); it != rowHeight_.end(); ++it) *it = 0;
@@ -732,6 +713,12 @@ namespace Win32Helper
       // Move to the next row
       currY += finalHeight[r];
     }
+  }
+
+  void GridLayout::resetCache()
+  {
+    AbstractLayout::resetCache();
+    for (auto& lyt: lyts_) if (lyt) lyt->resetCache();
   }
 
   GLayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, Expand exOpt, 
