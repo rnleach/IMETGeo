@@ -292,6 +292,8 @@ namespace Win32Helper
     void show() final;
     void layout(Coord x, Coord y, Coord width, Coord height) final;
     void resetCache() final;
+    bool willExpandHorizontal() final;
+    bool willExpandVertical() final;
 
     /// Static factory functions
     static GLayoutPtr makeGridLyt(

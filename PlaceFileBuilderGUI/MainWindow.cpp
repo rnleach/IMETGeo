@@ -34,7 +34,7 @@ MainWindow::MainWindow(HINSTANCE hInstance, int menuID) :
   // No additional extended styles
 
   // Default window styles
-  dwStyle_ = WS_OVERLAPPED | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+  dwStyle_ = WS_OVERLAPPED | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_THICKFRAME;
 }
 
 MainWindow::MainWindow(MainWindow && other) : 

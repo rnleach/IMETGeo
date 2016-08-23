@@ -88,58 +88,61 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
   switch (msg)
   {
   case WM_CREATE:
-    buildGUI_();
+    {
+      buildGUI_();
+    }
     break;
   case WM_COMMAND:
-  {
-    WORD code = HIWORD(wParam);
-    WORD controlID = LOWORD(wParam);
-    switch (controlID)
     {
-    case IDB_ADD:
-      if (code == BN_CLICKED) addAction_();
-      break;
-    case IDB_ADD_SHAPEFILE:
-      addFileAction_(FileTypes_::SHP);
-      break;
-    case IDB_ADD_FILEGDB:
-      addFileAction_(FileTypes_::GDB);
-      break;
-    case IDB_ADD_KML:
-      addFileAction_(FileTypes_::KML);
-      break;
-    case IDB_ADD_RANGERING:
-      addRangeRing_();
-      break;
-    case IDB_DELETE:
-      if (code == BN_CLICKED) deleteAction_();
-      break;
-    case IDB_DELETE_ALL:
-      if (code == BN_CLICKED) deleteAllAction_();
-      break;
-    case IDC_COMBO_LABEL:
-      labelFieldCommandAction_(wParam, lParam);
-      break;
-    case IDB_COLOR_BUTTON:
-      if (code == BN_CLICKED) colorButtonAction_();
-      break;
-    case IDC_WIDTH_CB:
-      lineWidthAction_(wParam, lParam);
-      break;
-    case IDB_POLYGON_CHECK:
-      if (code == BN_CLICKED) fillPolygonsCheckAction_();
-      break;
-    case IDC_RRNAME_EDIT:
-      rangeRingNameEdit_(wParam, lParam);
-    case IDC_TITLE_EDIT:
-      editTitleAction_(wParam, lParam);
-      break;
-    case IDC_EXPORT_PF:
-      if (code == BN_CLICKED) exportPlaceFileAction_();
+      WORD code = HIWORD(wParam);
+      WORD controlID = LOWORD(wParam);
+      switch (controlID)
+      {
+      case IDB_ADD:
+        if (code == BN_CLICKED) addAction_();
+        break;
+      case IDB_ADD_SHAPEFILE:
+        addFileAction_(FileTypes_::SHP);
+        break;
+      case IDB_ADD_FILEGDB:
+        addFileAction_(FileTypes_::GDB);
+        break;
+      case IDB_ADD_KML:
+        addFileAction_(FileTypes_::KML);
+        break;
+      case IDB_ADD_RANGERING:
+        addRangeRing_();
+        break;
+      case IDB_DELETE:
+        if (code == BN_CLICKED) deleteAction_();
+        break;
+      case IDB_DELETE_ALL:
+        if (code == BN_CLICKED) deleteAllAction_();
+        break;
+      case IDC_COMBO_LABEL:
+        labelFieldCommandAction_(wParam, lParam);
+        break;
+      case IDB_COLOR_BUTTON:
+        if (code == BN_CLICKED) colorButtonAction_();
+        break;
+      case IDC_WIDTH_CB:
+        lineWidthAction_(wParam, lParam);
+        break;
+      case IDB_POLYGON_CHECK:
+        if (code == BN_CLICKED) fillPolygonsCheckAction_();
+        break;
+      case IDC_RRNAME_EDIT:
+        rangeRingNameEdit_(wParam, lParam);
+      case IDC_TITLE_EDIT:
+        editTitleAction_(wParam, lParam);
+        break;
+      case IDC_EXPORT_PF:
+        if (code == BN_CLICKED) exportPlaceFileAction_();
+        break;
+      }
       break;
     }
     break;
-  }
   case WM_NOTIFY:
     {
       // Unpack the notification
@@ -185,6 +188,14 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       {
         refreshTimeAction_();
       }
+    }
+    break;
+  case WM_SIZE:
+    {
+      lyt_->resetCache();
+      RECT winRect{ 0 };
+      GetClientRect(hwnd_, &winRect);
+      lyt_->layout(0, 0, winRect.right, winRect.bottom);
     }
     break;
   }
@@ -265,6 +276,7 @@ void PFBApp::buildGUI_()
     nullptr, nullptr);
   if (!treeView_) { HandleFatalError(__FILEW__, __LINE__); }
   SCLayoutPtr tmpLayout = SingleControlLayout::makeSingleCtrlLayout(treeView_, {280, 400, nullVal,DEF_MRGN});
+  tmpLayout->set(Expand::Both);
   lyt_->set(1,0,tmpLayout);
 
   // Add label for the 'Label Field' controller.

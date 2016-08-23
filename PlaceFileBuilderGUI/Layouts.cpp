@@ -575,8 +575,8 @@ namespace Win32Helper
     // Check the cache for a refresh
     if (heightCache_ == nullVal || widthCache_ == nullVal) refreshCache();
 
-    bool expandHorizontal = expOpt_ == Expand::Both || expOpt_ == Expand::Horizontal;
-    bool expandVertical = expOpt_ == Expand::Both || expOpt_ == Expand::Vertical;
+    bool expandHorizontal = willExpandHorizontal() || expOpt_ == Expand::Both || expOpt_ == Expand::Horizontal;
+    bool expandVertical = willExpandVertical() || expOpt_ == Expand::Both || expOpt_ == Expand::Vertical;
 
     // Copy calculated, or provided, values
     vector<Coord> finalWidth(colWidth_);
@@ -719,6 +719,24 @@ namespace Win32Helper
   {
     AbstractLayout::resetCache();
     for (auto& lyt: lyts_) if (lyt) lyt->resetCache();
+  }
+
+  bool GridLayout::willExpandHorizontal()
+  {
+    for (auto& lyt : lyts_) 
+    { 
+      if (lyt && lyt->willExpandHorizontal()) return true; 
+    }
+    return false;
+  }
+
+  bool GridLayout::willExpandVertical()
+  {
+    for (auto& lyt : lyts_)
+    {
+      if (lyt && lyt->willExpandVertical()) return true;
+    }
+    return false;
   }
 
   GLayoutPtr GridLayout::makeGridLyt(Coord rows, Coord columns, Expand exOpt, 
