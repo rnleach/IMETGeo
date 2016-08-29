@@ -48,9 +48,9 @@ namespace Win32Helper
   void SingleControlLayout::refreshCache()
   {
     // Is this a static control?
-    wchar_t className[MAX_PATH];
-    GetClassNameW(hwnd_, className, MAX_PATH);
-    bool isStatic = wcscmp(className, L"Static") == 0;
+    wchar_t buffer[MAX_PATH];
+    GetClassNameW(hwnd_, buffer, MAX_PATH);
+    bool isStatic = wcsncmp(buffer, L"Static", MAX_PATH) == 0;
     
     // Get the window style information
     DWORD dwxStyle = GetWindowLongPtrW(hwnd_, GWL_EXSTYLE);
@@ -66,7 +66,7 @@ namespace Win32Helper
     }
 
     // Get the text in the control
-    WCHAR buffer[MAX_PATH];
+    // re-use buffer from above
     GetWindowTextW(hwnd_, buffer, MAX_PATH);
     if (wcsnlen_s(buffer, MAX_PATH) == 0) wcsncpy(buffer, L"Empty String Error.", MAX_PATH);
 
