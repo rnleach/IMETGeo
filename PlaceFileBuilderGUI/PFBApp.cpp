@@ -92,6 +92,16 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       buildGUI_();
     }
     break;
+  case WM_SHOWWINDOW:
+    {
+      // Do the layout
+      lyt_->resetCache();
+      RECT winRect{ 0 };
+      GetClientRect(hwnd_, &winRect);
+      lyt_->layout(0, 0, winRect.right, winRect.bottom);
+
+    }
+    break;
   case WM_COMMAND:
     {
       WORD code = HIWORD(wParam);
