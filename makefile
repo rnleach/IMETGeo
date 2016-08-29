@@ -31,7 +31,7 @@ POSTCOMPILE = mv -f $(OBJDIR)/$*.Td $(OBJDIR)/$*.d
 #
 # Compiler flags, includes, and programs
 #
-CPPFLAGS = -std=c++14 -D_UNICODE -DUNICODE -DWINVER=0x0601 -D_WIN32_WINNT=0x0601 -DWIN32
+CPPFLAGS = -std=c++14 -D_UNICODE -DUNICODE -DWINVER=0x0601 -D_WIN32_WINNT=0x0601 -DWIN32 -O3 -flto
 CPP_INCLUDES = `gdal-config --cflags`
 COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c
 
@@ -45,7 +45,7 @@ WINDRES    = windres $(RES_SOURCE) -O coff -o $(RESFILE)
 #
 # Linker directories, flags, and program
 #
-LINKFLAGS =  -mwindows 
+LINKFLAGS =  -mwindows -O3 -flto
 LIBS      =  -lmingw32 -lole32 -lgdi32 -lkernel32 -luser32 -lShell32 -lShlwapi `gdal-config --libs` 
 LINK      =  g++  $(OBJFILES) $(GUI_OBJFILES) $(RESFILE) $(LIBS) -o $(PROGDIR)/$(PROGNAME)
 LINK      += $(LINKFLAGS)
@@ -140,7 +140,8 @@ $(OBJDIR): | objDir
 build: distDirs $(OBJFILES) $(GUI_OBJFILES) $(RESFILE)
 	$(LINK)
 	-$(COPY_DEPS)
-	-cp -uR ./src/* $(DISTDIR)/Source
+	-cp -uR ./src/* $(DISTDIR)/Source/
+	-cp -uR ./PlaceFileBuilderGUI $(DISTDIR)/Source/
 	-cp -uR ./res/* $(DISTDIR)/res/
 
 #
