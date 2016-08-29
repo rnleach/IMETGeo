@@ -9,8 +9,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 {
   DEBUG_CONSOLE;
 
-  std::cerr << "Begin Debug: " << __FILE__ << " " << __LINE__ << std::endl;
-
   // Create a main window
   PFBApp mainWindow (hInstance);
   mainWindow.create(nCmdShow, L"PlaceFile Builder");
