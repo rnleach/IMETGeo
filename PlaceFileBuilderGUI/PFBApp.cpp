@@ -190,12 +190,21 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       }
     }
     break;
-  case WM_SIZE:
+  case WM_EXITSIZEMOVE:
     {
+      // Disable drawing while we figure everything out.
+      SendMessageW(hwnd_, WM_SETREDRAW, WPARAM(FALSE), 0);
+
+      // Do the layout
       lyt_->resetCache();
       RECT winRect{ 0 };
       GetClientRect(hwnd_, &winRect);
       lyt_->layout(0, 0, winRect.right, winRect.bottom);
+
+      // Restart drawing controls
+      SendMessage(hwnd_, WM_SETREDRAW, WPARAM(TRUE), 0);
+      // Force a repaint of the window and all of its child controls
+      RedrawWindow(hwnd_, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
     }
     break;
   }
@@ -733,6 +742,9 @@ void PFBApp::buildGUI_()
 
 void PFBApp::updatePropertyControls_()
 {
+  // Disable drawing while we figure everything out.
+  SendMessageW(hwnd_, WM_SETREDRAW, WPARAM(FALSE), 0);
+
   // Disable all controls, will re-enable on an as need basis
   {
     vector<HWND> cntrls = {deleteButton_, deleteAllButton_, labelFieldComboBox_, colorButton_, 
@@ -918,6 +930,11 @@ void PFBApp::updatePropertyControls_()
   RECT clientArea{ 0 };
   GetClientRect(hwnd_, &clientArea);
   lyt_->layout(0, 0, clientArea.right, clientArea.bottom);
+
+  // Restart drawing controls
+  SendMessage(hwnd_, WM_SETREDRAW, WPARAM(TRUE), 0);
+  // Force a repaint of the window and all of its child controls
+  RedrawWindow(hwnd_, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
 }
 
 void PFBApp::updateColorButton_(LPARAM lParam)
