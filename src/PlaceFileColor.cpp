@@ -1,5 +1,10 @@
-#include "PlaceFileColor.h"
+#include "PlaceFileColor.hpp"
 #include <cstdio>
+#include <cstdlib>
+
+#if defined(_MSC_VER) && _MSC_VER <= 1900
+  #define snprintf(a,b,c,d) _snprintf_s((a), (b), _TRUNCATE, (c), (d))
+#endif
 
 using namespace std;
 using PFB::PlaceFileColor;

@@ -1,18 +1,4 @@
 #
-# System info
-#
-SYS = $(shell gcc -dumpmachine)
-ifneq (,$(findstring linux, $(SYS)))
-  SYS = linux
-else 
-  ifneq (,$(findstring mingw, $(SYS)))
-    SYS = mingw
-  else
-    SYS = 
-  endif
-endif
-
-#
 # Target directory and name of library
 #
 DISTDIR   = ./dist
@@ -24,7 +10,8 @@ TEST_NAME = PFB_Unittests.exe
 #
 # Source files
 #
-SRCS = $(wildcard ./src/*.cpp)
+SRCS      = $(wildcard ./src/*.cpp)
+GUI_SRCS  = $(wildcard ./PlaceFileBuilderGUI/*.cpp)
 SRCS_TEST = $(wildcard ./test/src/*.cpp)
 
 #
@@ -32,6 +19,7 @@ SRCS_TEST = $(wildcard ./test/src/*.cpp)
 #
 OBJDIR        = ./obj
 OBJFILES      = $(patsubst %.cpp, $(OBJDIR)/%.o, $(notdir $(SRCS)))
+GUI_OBJFILES  = $(patsubst %.cpp, $(OBJDIR)/%.o, $(notdir $(GUI_SRCS)))
 OBJFILES_TEST = $(patsubst %.cpp, $(OBJDIR)/%.o, $(notdir $(SRCS_TEST)))
 
 #
@@ -43,41 +31,41 @@ POSTCOMPILE = mv -f $(OBJDIR)/$*.Td $(OBJDIR)/$*.d
 #
 # Compiler flags, includes, and programs
 #
-CPPFLAGS = -std=c++11 -Wall
-CPP_INCLUDES = `pkg-config --cflags gtkmm-3.0` `gdal-config --cflags`
+CPPFLAGS = -std=c++14 -D_UNICODE -DUNICODE -DWINVER=0x0601 -D_WIN32_WINNT=0x0601 -DWIN32 -O3 -flto
+CPP_INCLUDES = `gdal-config --cflags`
 COMPILE = g++ $(DEPFLAGS) $(CPPFLAGS) $(CPP_INCLUDES) -c
 
 #
 # Compile resources
 #
-RESFILE = 
-WINDRES = 
-RES_SOURCE = 
-ifeq ($(SYS),mingw)
-  RES_SOURCE += ./src/pfb.rc
-  RESFILE    += $(OBJDIR)/pfbrc.res
-  WINDRES    += windres $(RES_SOURCE) -O coff -o $(RESFILE)
-endif 
+RES_SOURCE = ./PlaceFileBuilderGUI/PlaceFileBuilderGUI.rc
+RESFILE    = $(OBJDIR)/pfbrc.res
+WINDRES    = windres $(RES_SOURCE) -O coff -o $(RESFILE)
 
 #
 # Linker directories, flags, and program
 #
-LINKFLAGS =
-ifeq ($(SYS),mingw)
-  LINKFLAGS += -mwindows
-endif
-LIBS      =  `pkg-config --libs gtkmm-3.0` `gdal-config --libs`
-LINK      =  g++ -o $(PROGDIR)/$(PROGNAME) $(LINKFLAGS) 
-ifeq ($(SYS),mingw)
-  LINK += $(RESFILE)
-endif
-LINK      += $(OBJFILES) $(LIBS)
+LINKFLAGS =  -mwindows -O3 -flto
+LIBS      =  -lmingw32 -lole32 -lgdi32 -lkernel32 -luser32 -lShell32 -lShlwapi `gdal-config --libs` 
+LINK      =  g++  $(OBJFILES) $(GUI_OBJFILES) $(RESFILE) $(LIBS) -o $(PROGDIR)/$(PROGNAME)
+LINK      += $(LINKFLAGS)
 LINK_TEST =  g++ -o $(TESTDIR)/$(TEST_NAME) $(OBJFILES) $(OBJFILES_TEST)
+
+#
+# Set up distribution directories
+#
+BUILD_DIST =  mkdir -p $(DISTDIR) && mkdir -p $(DISTDIR)/bin
+BUILD_DIST += && mkdir -p $(DISTDIR)/res && mkdir -p $(DISTDIR)/Source 
+BUILD_DIST += && mkdir -p $(DISTDIR)/config
+
+#
+# Copy dependencies - dll's on windows, msys2
+#
+COPY_DEPS = ldd $(PROGDIR)/$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{}  cp -u "{}" $(PROGDIR)/
 
 #
 # Output all variables to terminal for inspection during build process....
 #
-$(info SYS                = $(SYS)               )
 $(info DISTDIR            = $(DISTDIR)           )
 $(info PROGDIR            = $(PROGDIR)           )
 $(info TESTDIR            = $(TESTDIR)           )
@@ -86,11 +74,13 @@ $(info TEST_NAME          = $(TEST_NAME)         )
 $(info                                           )
 
 $(info SRCS               = $(SRCS)              )
+$(info GUI_SRCS           = $(GUI_SRCS)          )
 $(info SRCS_TEST          = $(SRCS_TEST)         )
 $(info                                           )
 
 $(info OBJDIR             = $(OBJDIR)            )
 $(info OBJFILES           = $(OBJFILES)          )
+$(info GUI_OBJFILES       = $(GUI_OBJFILES)      )
 $(info OBJFILES_TEST      = $(OBJFILES_TEST)     )
 $(info                                           )
 
@@ -114,6 +104,10 @@ $(info LINK               = $(LINK)              )
 $(info LINK_TEST          = $(LINK_TEST)         )
 $(info                                           )
 
+$(info BUILD_DIST         = $(BUILD_DIST)        )
+$(info COPY_DEPS          = $(COPY_DEPS)         )
+$(info                                           )
+
 #
 # Build the program.
 #
@@ -123,15 +117,7 @@ default: update
 # Make sure all the directories exist
 #
 distDirs:
-	-mkdir -p $(DISTDIR)
-	-mkdir -p $(DISTDIR)/bin
-	-mkdir -p $(DISTDIR)/share
-	-mkdir -p $(DISTDIR)/share/icons
-	-mkdir -p $(DISTDIR)/share/glib-2.0
-	-mkdir -p $(DISTDIR)/share/glib-2.0/schemas
-	-mkdir -p $(DISTDIR)/res
-	-mkdir -p $(DISTDIR)/Source
-	-mkdir -p $(DISTDIR)/config
+	-$(BUILD_DIST)
 
 objDir:
 	-mkdir -p $(OBJDIR)
@@ -139,25 +125,24 @@ objDir:
 $(OBJDIR): | objDir
 
 #
-# Build and run tests
+# Build and run tests - no unit tests at this time, so commented out.
 #
-test: $(OBJFILES) $(OBJFILES_TEST)
-	-mkdir $(TESTDIR)
-	-rm $(TESTDIR)/$(TEST_NAME)
-	-$(LINK_TEST)
-	-ldd $(TESTDIR)/$(TEST_NAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{} cp -u "{}" $(TESTDIR)/
-	-$(TESTDIR)/$(TEST_NAME)
+#test: $(OBJFILES) $(OBJFILES_TEST)
+#	-mkdir $(TESTDIR)
+#	-rm $(TESTDIR)/$(TEST_NAME)
+#	-$(LINK_TEST)
+#	-ldd $(TESTDIR)/$(TEST_NAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{} cp -u "{}" $(TESTDIR)/
+#	-$(TESTDIR)/$(TEST_NAME)
 
 #
-# Build the data target
+# Build the main target
 #
-build: distDirs $(OBJFILES) $(RESFILE)
+build: distDirs $(OBJFILES) $(GUI_OBJFILES) $(RESFILE)
 	$(LINK)
-	-ldd $(PROGDIR)/$(PROGNAME) | grep -v '/c/' | awk '/=>/{print $$(NF-1)}' | xargs -I{}  cp -u "{}" $(PROGDIR)/
-	-cp -uR ./src/* $(DISTDIR)/Source
+	-$(COPY_DEPS)
+	-cp -uR ./src/* $(DISTDIR)/Source/
+	-cp -uR ./PlaceFileBuilderGUI $(DISTDIR)/Source/
 	-cp -uR ./res/* $(DISTDIR)/res/
-	-cp -uR /usr/local/share/icons/* $(DISTDIR)/share/icons/
-	-cp -uR /usr/local/share/glib-2.0/schemas/* $(DISTDIR)/share/glib-2.0/schemas/
 
 #
 # Build the resource file
@@ -168,7 +153,7 @@ $(RESFILE): $(RES_SOURCE) | objDir
 #
 # Update just my files
 #
-update: $(OBJFILES)
+update: $(OBJFILES) $(GUI_OBJFILES)
 	$(LINK)
 
 #
@@ -182,13 +167,17 @@ $(OBJFILES_TEST): $(OBJDIR)/%.o: ./test/src/%.cpp $(OBJDIR)/%.d | objDir
 	$(COMPILE) $< -o$@
 	$(POSTCOMPILE)
 
+$(GUI_OBJFILES): $(OBJDIR)/%.o: ./PlaceFileBuilderGUI/%.cpp $(OBJDIR)/%.d | objDir
+	$(COMPILE) $< -o$@
+	$(POSTCOMPILE)
+
 #
-# Make a target to automatically...OK, I'm not sure, I got this from the internet
+# Make a target to automatically...OK, I'm not sure, I got this from the Internet
 #
 $(OBJDIR)/%.d: ;
 
 #
-# Include depenencies
+# Include dependencies
 #
 include $(patsubst %,$(OBJDIR)/%.d,$(basename $(notdir $(SRCS))))
 
@@ -197,7 +186,5 @@ include $(patsubst %,$(OBJDIR)/%.d,$(basename $(notdir $(SRCS))))
 #
 clean:
 	-cd $(OBJDIR) && rm *.o *.d
-	-cd $(PROGDIR) && rm *
-	-cd $(TESTDIR) && rm *
 	-rm -rf $(DISTDIR)
 	

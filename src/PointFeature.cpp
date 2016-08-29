@@ -1,4 +1,4 @@
-#include "PointFeature.h"
+#include "PointFeature.hpp"
 
 using namespace std;
 using PFB::PointFeature;
@@ -12,16 +12,19 @@ PFB::PointFeature::PointFeature(double latitude, double longitude) :
   Feature(), _lat(latitude), _lon(longitude) {}
 
 PFB::PointFeature::PointFeature(const string & label, const PlaceFileColor & color, point pnt, int displayThresh)
-  : Feature(label, color, displayThresh), _lat{ pnt.latitude }, _lon{pnt.longitude}{}
+  : Feature(label, color, displayThresh, 2), _lat{ pnt.latitude }, _lon{pnt.longitude}{}
 
 PFB::PointFeature::PointFeature(const string& label, const PlaceFileColor& color, double latitude, double longitude, int displayThresh) :
-  Feature(label, color, displayThresh), _lat(latitude), _lon (longitude){}
+  Feature(label, color, displayThresh, 2), _lat(latitude), _lon (longitude){}
 
 PFB::PointFeature::PointFeature(const string& label, const PlaceFileColor& color, const OGRPoint & point, int displayThresh) :
-  Feature(label, color, displayThresh), _lat(point.getY()), _lon(point.getX()){}
+  Feature(label, color, displayThresh, 2), _lat(point.getY()), _lon(point.getX()){}
 
 PFB::PointFeature::PointFeature(PointFeature && src)
   : Feature(move(src)),_lat(src._lat),_lon(src._lon){}
+
+PFB::PointFeature::PointFeature(const PointFeature& src)
+  : Feature(src),_lat(src._lat),_lon(src._lon){}
 
 PointFeature & PFB::PointFeature::operator=(PointFeature && src)
 {

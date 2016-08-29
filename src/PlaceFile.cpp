@@ -1,12 +1,12 @@
-#include "PlaceFile.h"
+#include "PlaceFile.hpp"
 
 #include <exception>
 #include <sstream>
 
-#include "PointFeature.h"
-#include "PolygonFeature.h"
-#include "LineFeature.h"
-#include "OFileWrapper.h"
+#include "PointFeature.hpp"
+#include "PolygonFeature.hpp"
+#include "LineFeature.hpp"
+#include "OFileWrapper.hpp"
 
 using namespace std;
 using namespace PFB;
@@ -28,14 +28,14 @@ void PFB::PlaceFile::saveFile(const string & path)
   out.file << s.rdbuf();
 }
 
-void PFB::PlaceFile::addFeature(FP ft)
+void PFB::PlaceFile::addFeature(FP&& ft)
 {
   _features[_nextKey++] = move(ft);
 }
 
-void PFB::PlaceFile::addOGRGeometry(const string& label, 
-  const PlaceFileColor& color, OGRGeometry& ft, 
-  OGRCoordinateTransformation *trans, bool PolyAsString, int displayThresh)
+void PFB::PlaceFile::addOGRGeometry(const string& label, const PlaceFileColor& color, 
+  OGRGeometry& ft, OGRCoordinateTransformation *trans, bool PolyAsString, int displayThresh, 
+  int lineWidth)
 {
   FP newFeature;
   vector<Feature*> multiGeo;
@@ -71,7 +71,7 @@ void PFB::PlaceFile::addOGRGeometry(const string& label,
     // that GRAnalyst errors on.
     if (poLine->getNumPoints() > 1)
     {
-      newFeature = FP(new LineFeature(label, color, *poLine, displayThresh));
+      newFeature = FP(new LineFeature(label, color, *poLine, displayThresh, lineWidth));
     }
     break;
 
@@ -85,7 +85,7 @@ void PFB::PlaceFile::addOGRGeometry(const string& label,
       * setting a value for feature and going to the end of the function.      *
       *************************************************************************/
       vector<LP> lines = 
-          LineFeature::PolygonToLines(label, color, *poPoly, displayThresh);
+          LineFeature::PolygonToLines(label, color, *poPoly, displayThresh, lineWidth);
       while(!lines.empty())
       {
         _features[_nextKey++] = move(lines.back());
@@ -95,7 +95,7 @@ void PFB::PlaceFile::addOGRGeometry(const string& label,
     }
     else
     {
-      newFeature = FP(new PolygonFeature(label, color, *poPoly, displayThresh));
+      newFeature = FP(new PolygonFeature(label, color, *poPoly, displayThresh, lineWidth));
     }
     break;
 
@@ -107,7 +107,7 @@ void PFB::PlaceFile::addOGRGeometry(const string& label,
     for (int i = 0; i != numGeos; ++i)
     {
       tmp = coll->getGeometryRef(i);
-      addOGRGeometry(label, color, *tmp, trans, PolyAsString, displayThresh);
+      addOGRGeometry(label, color, *tmp, trans, PolyAsString, displayThresh, lineWidth);
     }
     break;
 
@@ -152,6 +152,13 @@ void PFB::PlaceFile::setThreshold(const unsigned int t)
 void PFB::PlaceFile::setRefreshMinutes(const unsigned int m)
 {
   _refreshMinutes = m;
+  _refreshSeconds = 0;
+}
+
+void PFB::PlaceFile::setRefreshSeconds(const unsigned int s)
+{
+  _refreshMinutes = 0;
+  _refreshSeconds = s;
 }
 
 unsigned int PFB::PlaceFile::getThreshold() const
@@ -162,6 +169,11 @@ unsigned int PFB::PlaceFile::getThreshold() const
 unsigned int PFB::PlaceFile::getRefreshMinutes() const
 {
   return _refreshMinutes;
+}
+
+unsigned int PFB::PlaceFile::getRefreshSeconds() const
+{
+  return _refreshSeconds;
 }
 
 void PFB::PlaceFile::setTitle(const string& title)
@@ -183,7 +195,8 @@ ostream& PFB::operator<<(ostream& ost, const PlaceFile& pf)
 
   // Header, data that goes at the top.
   ost << "Title: " << pf._title << "\n";
-  ost << "Refresh: " << pf.getRefreshMinutes() << "\n";
+  if(pf.getRefreshMinutes() > 0) ost << "Refresh: " << pf.getRefreshMinutes() << "\n";
+  if (pf.getRefreshSeconds() > 0) ost << "RefreshSeconds: " << pf.getRefreshSeconds() << "\n";
   ost << "Threshold: " << pf.getThreshold() << "\n";
 
   // Font required for PointFeatures without a label.

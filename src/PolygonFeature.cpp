@@ -1,10 +1,10 @@
-#include "PolygonFeature.h"
+#include "PolygonFeature.hpp"
 
 using PFB::PolygonFeature;
 
-PFB::PolygonFeature::PolygonFeature(const std::string & label, 
-  const PlaceFileColor & color, const OGRPolygon & polygon, int displayThresh)
-  :Feature(label, color, displayThresh)
+PFB::PolygonFeature::PolygonFeature(const std::string & label, const PlaceFileColor & color, 
+  const OGRPolygon & polygon, int displayThresh, int lineWidth)
+  :Feature(label, color, displayThresh, lineWidth)
 {
   int numLines = polygon.getNumInteriorRings() + 1; // +1 for exterior ring.
 

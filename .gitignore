@@ -32,5 +32,12 @@ bin/
 obj/
 dist/
 
-# Sublime editor files
+# Sublime editor files or Visual Studio IDE specific files.
 *.sublime-workspace
+*.suo
+*.user
+*.opendb
+*.VC.db
+PlaceFileBuilderGUI/x64/
+*.aps
+PlaceFileBuilderGUI/Win32/
