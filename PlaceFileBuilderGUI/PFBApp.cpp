@@ -976,7 +976,7 @@ void PFBApp::updateColorButton_(LPARAM lParam)
     colorButtonColor_ = CreateSolidBrush(RGB(color.red,color.green,color.blue));
   }
   HBRUSH old = (HBRUSH)SelectObject(hdc, colorButtonColor_);
-  RoundRect(hdc, 0, 0, rect->right, rect->bottom, 0.3*rect->right, 0.3*rect->bottom);
+  RoundRect(hdc, 0, 0, rect->right, rect->bottom, static_cast<int>(0.3*rect->right), static_cast<int>(0.3*rect->bottom));
   colorButtonColor_ = (HBRUSH)SelectObject(hdc, old);
 }
 
@@ -1173,7 +1173,7 @@ bool PFBApp::getTreeItemText_(HTREEITEM hti, string& src)
   tvi.hItem = hti;
   tvi.pszText = itemChars;
   tvi.cchTextMax = MAX_PATH;
-  hResult = SendMessageW(treeView_, TVM_GETITEMW, 0, reinterpret_cast<LPARAM>(&tvi));
+  hResult = static_cast<HREFTYPE>(SendMessageW(treeView_, TVM_GETITEMW, 0, reinterpret_cast<LPARAM>(&tvi)));
   if (FAILED(hResult))
   {
     MessageBoxW(hwnd_, L"Failed to get item text.", L"Error", MB_OK | MB_ICONERROR);
@@ -1515,8 +1515,8 @@ bool PFBApp::latLonEdit_()
       // Range check
       if (lat < -90.0 || lat > 90.0 || lon < -180.0 || lon > 180.0) validStrings = false;
     }
-    catch (const invalid_argument& e) { validStrings = false; }
-    catch (const out_of_range& e) { validStrings = false; }
+    catch (const invalid_argument) { validStrings = false; }
+    catch (const out_of_range) { validStrings = false; }
 
     // If valid, update values in appCon_
     string source, layer;
@@ -1580,7 +1580,7 @@ bool PFBApp::rangesEditAction_()
         if (newVal < 0) errorFlag = true;
         else newRanges.push_back(newVal);
       }
-      catch (const exception& e)
+      catch (const exception)
       {
         errorFlag = true;
       }
@@ -1628,7 +1628,7 @@ void PFBApp::fillPolygonsCheckAction_()
 void PFBApp::displayThreshAction_()
 {
   // Get the value
-  int pos = SendMessage(displayThreshTrackBar_, TBM_GETPOS, 0, 0);
+  int pos = static_cast<int>(SendMessage(displayThreshTrackBar_, TBM_GETPOS, 0, 0));
   pos *= 10;
   if (pos > 999) pos = 999;
 
@@ -1664,7 +1664,7 @@ void PFBApp::editTitleAction_(WPARAM wParam, LPARAM lParam)
 void PFBApp::refreshTimeAction_()
 {
   // Get the value
-  int pos = SendMessage(refreshTrackBar_, TBM_GETPOS, 0, 0);
+  int pos = static_cast<int>(SendMessage(refreshTrackBar_, TBM_GETPOS, 0, 0));
   bool isSeconds;
   int seconds = 0;
   int minutes = 0;

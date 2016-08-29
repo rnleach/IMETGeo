@@ -53,7 +53,7 @@ namespace Win32Helper
     bool isStatic = wcsncmp(buffer, L"Static", MAX_PATH) == 0;
     
     // Get the window style information
-    DWORD dwxStyle = GetWindowLongPtrW(hwnd_, GWL_EXSTYLE);
+    DWORD dwxStyle = static_cast<DWORD>(GetWindowLongPtrW(hwnd_, GWL_EXSTYLE));
 
     // Use window style information to choose message to send to get border sizes
     int borderV = 0, borderH = 0;
@@ -80,7 +80,7 @@ namespace Win32Helper
     // Get the text info and text metrics
     SIZE stringSzInfo{ 0 };
     TEXTMETRICW textMetrics{ 0 };
-    GetTextExtentPoint32W(hdc, buffer, wcsnlen_s(buffer,MAX_PATH), &stringSzInfo);
+    GetTextExtentPoint32W(hdc, buffer, (int)wcsnlen_s(buffer,MAX_PATH), &stringSzInfo);
     GetTextMetricsW(hdc, &textMetrics);
 
     // Return the font to the DC, and release the DC
@@ -508,8 +508,8 @@ namespace Win32Helper
     for (auto it = colWidth_.begin(); it != colWidth_.end(); ++it) *it = 0;
 
     // iterate over all the rows/columns, get their height/width
-    for (size_t r = 0; r < numRows_; ++r)
-      for (size_t c = 0; c < numCols_; ++c)
+    for (Coord r = 0; r < numRows_; ++r)
+      for (Coord c = 0; c < numCols_; ++c)
       {
         auto pos = r * numCols_ + c;
         if (lyts_[pos])
@@ -522,8 +522,8 @@ namespace Win32Helper
       }
 
     // Handle multiple spanning rows/cols
-    for (size_t r = 0; r < numRows_; ++r)
-      for (size_t c = 0; c < numCols_; ++c)
+    for (Coord r = 0; r < numRows_; ++r)
+      for (Coord c = 0; c < numCols_; ++c)
       {
         auto pos = r * numCols_ + c;
         if (lyts_[pos])

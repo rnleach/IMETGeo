@@ -143,7 +143,7 @@ LRESULT MainWindow::internal_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
     {
     case WM_DESTROY:
       PostQuitMessage(0);
-      break;
+      return 0;
     default:
       return it->second->WindowProc(msg, wParam, lParam);
     }
