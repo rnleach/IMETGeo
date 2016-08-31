@@ -16,16 +16,12 @@ Installer built with Inno Setup 5.5.8 (or later).
 
 Three future versions are planned. 
 
-First, from this branch, version 1.0.1 will be a switch from the gtkmm based 
-GUI and the MSYS2 development environment. I found this approach to be 
-difficult due to frequent updates to MSYS2 breaking the code. GTK doesn't look 
-as good on Windows, and since [GRlevelX](http://www.grlevelx.com) products only
-run on Windows, there was no point in having portability across operating 
-systems.
-
-Version 1.1 will add the ability to quickly add range rings. This way you can
-choose a latitude/longitude and create range rings around it.
+Version 1.1.1 will add some basic features back that were in the older gtkmm
+versions, like the about box and the layer summary.
 
 Version 1.2 will upgrade to major version 2 of the GDAL library, and possibly
 add placefile support directly into GDAL via my own plugin. This would allow
 users to load place files as well as other GIS formats.
+
+Version 2.0 will focus on adding gridded data in, especially PDF maps, as a 
+background image.
