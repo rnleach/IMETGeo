@@ -12,7 +12,7 @@ MainWindow::MainWindow(HINSTANCE hInstance, int menuID) :
   // Set up the window class
   wc_ = {}; // Forced zero initialization for VS2013, can't use {} in constructor.
   wc_.cbSize = sizeof(WNDCLASSEX);
-  wc_.style = CS_HREDRAW | CS_VREDRAW;
+  wc_.style = 0;
   wc_.lpszClassName = L"MainWindow";
   wc_.hInstance = hInstance;
   wc_.hbrBackground = GetSysColorBrush(COLOR_3DFACE);

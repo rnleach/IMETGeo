@@ -752,8 +752,6 @@ void PFBApp::buildGUI_()
 
 void PFBApp::updatePropertyControls_()
 {
-  // Disable drawing while we figure everything out.
-  SendMessageW(hwnd_, WM_SETREDRAW, WPARAM(FALSE), 0);
 
   // Disable all controls, will re-enable on an as need basis
   {
@@ -936,15 +934,6 @@ void PFBApp::updatePropertyControls_()
     }
 
   }
-
-  RECT clientArea{ 0 };
-  GetClientRect(hwnd_, &clientArea);
-  lyt_->layout(0, 0, clientArea.right, clientArea.bottom);
-
-  // Restart drawing controls
-  SendMessage(hwnd_, WM_SETREDRAW, WPARAM(TRUE), 0);
-  // Force a repaint of the window and all of its child controls
-  RedrawWindow(hwnd_, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
 }
 
 void PFBApp::updateColorButton_(LPARAM lParam)
