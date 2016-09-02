@@ -1492,7 +1492,7 @@ bool PFBApp::latLonEdit_()
   bool success = true;
 
   // Check if we even need to check.
-  if (SendMessage(latEdit_, EM_GETMODIFY, 0, 0) || SendMessage(latEdit_, EM_GETMODIFY, 0, 0))
+  if (SendMessage(latEdit_, EM_GETMODIFY, 0, 0) || SendMessage(lonEdit_, EM_GETMODIFY, 0, 0))
   {
     // Get the strings from the latEdit_ and lonEdit_ controls
     const size_t NUMCHARS = 32;
