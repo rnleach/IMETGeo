@@ -85,4 +85,8 @@ private:
   void editTitleAction_(WPARAM wParam, LPARAM lParam);
   void refreshTimeAction_();
   void exportPlaceFileAction_();
+
+  // Custom window procedures for subclassing controls
+  static LRESULT CALLBACK TreeViewWinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 };

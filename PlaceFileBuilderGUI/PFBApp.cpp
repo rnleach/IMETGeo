@@ -168,6 +168,7 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
         case TVN_SELCHANGINGW:
           return preventSelectionChange_(lParam);
         case TVN_SELCHANGEDW:
+          InvalidateRect(treeView_, NULL, FALSE);
           updatePropertyControls_();
           break;
         }
@@ -228,7 +229,9 @@ void PFBApp::buildGUI_()
   const Coord BUTTON_PADDING = 5;
   const Coord DEF_MRGN = 3;
 
+  //
   // Set up the layout managers
+  //
   lyt_ = GridLayout::makeGridLyt(3, 2, Expand::Both, Collapse::No, {nullVal, nullVal, nullVal,DEF_MRGN});
   auto addDeleteLyt = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, {nullVal, nullVal,5,DEF_MRGN});
   auto rightLayout = GridLayout::makeGridLyt(10, 2, { nullVal, nullVal, nullVal,DEF_MRGN });
@@ -243,7 +246,9 @@ void PFBApp::buildGUI_()
   // Handle for checking error status of some window creations.
   HWND temp = nullptr;
 
+  //
   // Create the addButton_
+  //
   addButton_ = CreateWindowExW(
     0,
     WC_BUTTON,
@@ -256,7 +261,9 @@ void PFBApp::buildGUI_()
   if (!addButton_) { HandleFatalError(widen(__FILE__).c_str(), __LINE__); }
   addDeleteLyt->add(SingleControlLayout::makeSingleCtrlLayout(addButton_, BUTTON_PADDING));
 
+  //
   // Create the deleteButton_
+  //
   deleteButton_ = CreateWindowExW(
     0,
     WC_BUTTON,
@@ -269,7 +276,9 @@ void PFBApp::buildGUI_()
   if (!deleteButton_) { HandleFatalError(__FILEW__, __LINE__); }
   addDeleteLyt->add(SingleControlLayout::makeSingleCtrlLayout(deleteButton_, BUTTON_PADDING));
 
+  //
   // Create the deleteAllButton_
+  //
   deleteAllButton_ = CreateWindowExW(
     0,
     WC_BUTTON,
@@ -282,7 +291,9 @@ void PFBApp::buildGUI_()
   if (!deleteAllButton_) { HandleFatalError(__FILEW__, __LINE__); }
   addDeleteLyt->add(SingleControlLayout::makeSingleCtrlLayout(deleteAllButton_, BUTTON_PADDING));
 
-  // Add the treeview
+  //
+  // Add the treeview, and sub-class it
+  //
   treeView_ = CreateWindowExW(
     WS_EX_CLIENTEDGE | TVS_EX_AUTOHSCROLL,
     WC_TREEVIEW,
@@ -297,8 +308,18 @@ void PFBApp::buildGUI_()
   SCLayoutPtr tmpLayout = SingleControlLayout::makeSingleCtrlLayout(treeView_, {280, 400, nullVal,DEF_MRGN});
   tmpLayout->set(Expand::Both);
   lyt_->set(1,0,tmpLayout);
+  // Sub-class it
+  auto defaultTreeViewWindProc = SetWindowLongPtrW(
+    treeView_, 
+    GWLP_WNDPROC, 
+    reinterpret_cast<LONG_PTR>(TreeViewWinProc)
+  );
+  SetWindowLongPtrW(treeView_, GWLP_USERDATA, defaultTreeViewWindProc);
 
+
+  //
   // Add label for the 'Label Field' controller.
+  //
   temp = CreateWindowExW(
     0,
     WC_STATICW,
@@ -314,7 +335,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(Expand::No);
   rightLayout->set(0, 0, tmpLayout);
 
+  //
   // Add labelFieldComboBox_
+  //
   labelFieldComboBox_ = CreateWindowExW(
     0,
     WC_COMBOBOXW,
@@ -1809,5 +1832,62 @@ void PFBApp::exportPlaceFileAction_()
       MessageBoxW(hwnd_, errMsg, L"ERROR", MB_OK | MB_ICONERROR);
     }
   }
+}
+
+LRESULT CALLBACK PFBApp::TreeViewWinProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+  static unsigned long paintHits = 0;
+  /*
+    This was done to intercept the WM_ERASEBKGND and WM_PAINT messages to stop the flickering
+    of the control during resize.
+  */
+
+  // Get the original window procedure.
+  WNDPROC defaultWinProc = reinterpret_cast<WNDPROC>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+
+  switch (msg)
+  {
+    // Prevent erasing - first step in preventing flicker
+    case WM_ERASEBKGND: return TRUE;
+    
+      // Use double buffered painting
+    case WM_PAINT:
+    {
+      HDC hdc, hdcNew;
+      HBITMAP hbm, hbmOld;
+      PAINTSTRUCT ps;
+
+      hdc = BeginPaint(hWnd, &ps);
+
+      // Force repainting whole view.
+      if (ps.rcPaint.top != 0 || ps.rcPaint.left != 0)
+      {
+        ps.rcPaint.top = 0;
+        ps.rcPaint.left = 0;
+      }
+      
+      hdcNew = CreateCompatibleDC(hdc);
+      hbm = CreateCompatibleBitmap(
+        hdc, 
+        ps.rcPaint.right - ps.rcPaint.left, 
+        ps.rcPaint.bottom - ps.rcPaint.top);
+      hbmOld = static_cast<HBITMAP>(SelectObject(hdcNew, hbm));
+
+      SendMessage(hWnd, WM_PRINT, reinterpret_cast<WPARAM>(hdcNew), static_cast<LPARAM>(PRF_CLIENT | PRF_CHILDREN |PRF_OWNED));
+      BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top, ps.rcPaint.right, ps.rcPaint.bottom, 
+        hdcNew, ps.rcPaint.left, ps.rcPaint.top, SRCCOPY);
+
+      SelectObject(hdcNew, hbmOld);
+      DeleteObject(hbm);
+      DeleteObject(hdcNew);
+
+      EndPaint(hWnd, &ps);
+      return TRUE;
+    }
+    break;
+  }
+
+  // Forward all other messages to original window procedure.
+  return CallWindowProcW(defaultWinProc, hWnd, msg, wParam, lParam);
 }
 
