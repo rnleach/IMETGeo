@@ -43,6 +43,7 @@ private:
   // Controls for properties on the right
   HWND labelFieldComboBox_;
   HWND colorButton_;
+  HWND colorButton2_;
   HBRUSH colorButtonColor_;
   HWND lineSizeComboBox_;
   HWND fillPolygonsCheck_;
@@ -86,7 +87,9 @@ private:
   void refreshTimeAction_();
   void exportPlaceFileAction_();
 
-  // Custom window procedures for subclassing controls
+  // Custom window procedures for subclassing/superclassing controls
   static LRESULT CALLBACK TreeViewWinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
+  static void RegisterColorButton(); // Register a window class for the color button
+  static LRESULT CALLBACK ColorButtonProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+  static const int defButtonProcIndex = 0;
 };
