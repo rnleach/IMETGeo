@@ -818,11 +818,11 @@ const string AppController::summarize(OGRLayer * layer)
   case wkbPolygon:         geometryType = "Polygon"; break;
   default: geometryType = "Unknown! May cause error.";
   }
-  oss << "Geometry Type: " << geometryType << "\n";
+  oss << "Geometry Type: " << geometryType << "\r\n";
   
   // Number of features
   size_t numFeatures = layer->GetFeatureCount();
-  oss << "Number of features: " << numFeatures << "\n\n";
+  oss << "Number of features: " << numFeatures << "\r\n\r\n";
 
   // Projection info
   OGRSpatialReference *spatialRef = layer->GetSpatialRef() ;
@@ -831,26 +831,33 @@ const string AppController::summarize(OGRLayer * layer)
     oss << "Projected or Geographic coordinates: ";
     if (spatialRef->IsProjected())
     {
-      oss << "Projected\n";
+      oss << "Projected\r\n";
     }
     else if(spatialRef->IsGeographic())
     {
-      oss << "Geographic\n";
+      oss << "Geographic\r\n";
     }
     else
     {
-      oss << "Unknown\n";
+      oss << "Unknown\r\n";
     }
-    oss << "Projection Details:\n";
+    oss << "Projection Details:\r\n";
     char *buf = nullptr;
     spatialRef->exportToPrettyWkt(&buf);
-    oss << buf << "\n\n";
+    string projectionDetails{ buf };
+    std::string::size_type pos = 0;
+    while ((pos = projectionDetails.find("\n", pos)) != std::string::npos)
+    {
+      projectionDetails.insert(pos, "\r");
+      pos += 2;
+    }
+    oss << projectionDetails << "\r\n\r\n";
     OGRFree(buf);
   }
   else
   {
-    oss << "No projection information, \n"
-           "  assuming points are in degrees lon-lat.\n\n";
+    oss << "No projection information, \r\n"
+           "  assuming points are in degrees lon-lat.\r\n\r\n";
   }
   
   // Use these to store strings for formatting the columns
@@ -893,14 +900,14 @@ const string AppController::summarize(OGRLayer * layer)
   }
 
   // Build up the string in here
-  oss << "Field Type : Field Name" << "\n";
-  oss << "-----------------------\n";
+  oss << "Field Type : Field Name" << "\r\n";
+  oss << "-----------------------\r\n";
   for (unsigned int i = 0; i < fields.size(); ++i)
   {
     oss << setw(maxFieldTypeWidth) << setiosflags(ios::left) 
         << fieldValues[i] << " : ";
     oss << setw(maxFieldWidth) << setiosflags(ios::left) << fields[i] 
-        << "   \n";
+        << "   \r\n";
   }
 
   return oss.str();
