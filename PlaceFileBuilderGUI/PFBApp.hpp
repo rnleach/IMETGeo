@@ -43,7 +43,6 @@ private:
   // Controls for properties on the right
   HWND labelFieldComboBox_;
   HWND colorButton_;
-  HBRUSH colorButtonColor_;
   HWND lineSizeComboBox_;
   HWND fillPolygonsCheck_;
   HWND displayThreshStatic_;
@@ -65,7 +64,7 @@ private:
   // Build the GUI upon receipt of the WM_CREATE message
   void buildGUI_();
   void updatePropertyControls_();
-  void updateColorButton_(LPARAM lparam);
+  void updateColorButton_();
 
   // Button handlers
   enum class FileTypes_ {SHP, KML, GDB}; // Selector for what type of file to add
@@ -86,7 +85,9 @@ private:
   void refreshTimeAction_();
   void exportPlaceFileAction_();
 
-  // Custom window procedures for subclassing controls
+  // Custom window procedures for subclassing/superclassing controls
   static LRESULT CALLBACK TreeViewWinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
+  static void RegisterColorButton(); // Register a window class for the color button
+  static LRESULT CALLBACK ColorButtonProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+  static const int defButtonProcIndex = 0;
 };
