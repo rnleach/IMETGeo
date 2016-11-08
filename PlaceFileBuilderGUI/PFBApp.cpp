@@ -28,7 +28,6 @@ using namespace Win32Helper;
 #define IDC_TREEVIEW       1007 // Treeview for layers
 #define IDC_COMBO_LABEL    1008 // Combo box for layer label field
 #define IDB_COLOR_BUTTON   1009 // Choose the color of the features
-#define IDB_COLOR_BUTTON2   10092 // Choose the color of the features
 #define IDB_POLYGON_CHECK  1010 // Fill polygons check button
 #define IDC_DISP_TRACK_BAR 1011 // Trackbar for setting display threshold
 #define IDC_TITLE_EDIT     1012 // Edit control for setting placefile title
@@ -46,7 +45,7 @@ PFBApp::PFBApp(HINSTANCE hInstance) :
   lyt_{}, // Initialize grid layout
   appCon_{}, addButton_{ nullptr }, deleteButton_{ nullptr }, deleteAllButton_{ nullptr }, 
   treeView_{ nullptr }, 
-  labelFieldComboBox_{ nullptr }, colorButton_{ nullptr }, colorButton2_{ nullptr }, colorButtonColor_ { nullptr },
+  labelFieldComboBox_{ nullptr }, colorButton_{ nullptr },
   lineSizeComboBox_{nullptr}, fillPolygonsCheck_{ nullptr }, displayThreshStatic_{ nullptr }, 
   displayThreshTrackBar_{ nullptr }, rrNameEdit_{ nullptr }, latEdit_{ nullptr },
   lonEdit_{ nullptr }, rangesEdit_{ nullptr },  titleEditControl_ { nullptr }, 
@@ -83,7 +82,6 @@ PFBApp::PFBApp(HINSTANCE hInstance) :
 PFBApp::~PFBApp()
 {
   appCon_.saveState(pathToAppConSavedState_);
-  DeleteObject(colorButtonColor_);
   CoUninitialize();
 }
 
@@ -179,16 +177,6 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       }
     }
     // End processing for WM_NOTIFY
-    break;
-  case WM_DRAWITEM:
-    {
-      switch (wParam)
-      {
-      case IDB_COLOR_BUTTON:
-        updateColorButton_(lParam);
-        break;
-      }
-    }
     break;
   case WM_CTLCOLORBTN:
     return reinterpret_cast<LRESULT>(GetSysColorBrush(COLOR_3DFACE));
@@ -358,7 +346,7 @@ void PFBApp::buildGUI_()
   rightLayout->set(0, 1, tmpLayout);
 
   //
-  // Add label for the 'Feature Color' controller.
+  // Add label for the 'Feature Color' button.
   //
   temp = CreateWindowExW(
     0,
@@ -379,38 +367,22 @@ void PFBApp::buildGUI_()
   //
   colorButton_ = CreateWindowExW(
     0,
-    WC_BUTTON,
+    L"COLORBUTTON",
     L"",
-    WS_TABSTOP | WS_VISIBLE | WS_CHILD |BS_OWNERDRAW,
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD,
     110, 75, 30, 30,
     hwnd_,
     reinterpret_cast<HMENU>(IDB_COLOR_BUTTON),
     nullptr, nullptr);
   if (!colorButton_) { HandleFatalError(__FILEW__, __LINE__); }
   tmpLayout = SingleControlLayout::makeSingleCtrlLayout(colorButton_);
-  tmpLayout->set({60,30,nullVal,DEF_MRGN});
-  tmpLayout->set(HorizontalAlignment::Left);
-  //rightLayout->set(1, 1, tmpLayout);
-
-  //
-  // Create the colorButton2_
-  //
-  colorButton2_ = CreateWindowExW(
-    0,
-    L"COLORBUTTON",
-    L"",
-    WS_TABSTOP | WS_VISIBLE | WS_CHILD,
-    110, 75, 30, 30,
-    hwnd_,
-    reinterpret_cast<HMENU>(IDB_COLOR_BUTTON2),
-    nullptr, nullptr);
-  if (!colorButton2_) { HandleFatalError(__FILEW__, __LINE__); }
-  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(colorButton2_);
-  tmpLayout->set({ 60,30,nullVal,DEF_MRGN });
+  tmpLayout->set({ 30,30,nullVal,DEF_MRGN });
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(1, 1, tmpLayout);
 
+  //
   // Add label for the 'Line Width' controller.
+  //
   temp = CreateWindowExW(
     0,
     WC_STATICW,
@@ -426,7 +398,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(VerticalAlignment::Center);
   rightLayout->set(2, 0, tmpLayout);
 
+  //
   // Add the line width control
+  //
   lineSizeComboBox_ = CreateWindowExW(
     0,
     WC_COMBOBOXW,
@@ -443,7 +417,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set({ 50, nullVal, nullVal, DEF_MRGN });
   rightLayout->set(2, 1, tmpLayout);
 
+  //
   // Add label for the Fill Polygons checkbox controller.
+  //
   temp = CreateWindowExW(
     0,
     WC_STATICW,
@@ -458,7 +434,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Right);
   rightLayout->set(3, 0, tmpLayout);
 
+  //
   // Add the fillPolygonsCheck_
+  //
   fillPolygonsCheck_ = CreateWindowExW(
     0,
     WC_BUTTON,
@@ -474,7 +452,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(3, 1, tmpLayout);
 
+  //
   // Add label for the displayThreshEdit_ control.
+  //
   temp = CreateWindowExW(
     0,
     WC_STATICW,
@@ -489,7 +469,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Right);
   rightLayout->set(4, 0, tmpLayout);
 
+  //
   // Add the displayThreshStatic_
+  //
   displayThreshStatic_ = CreateWindowExW(
     0,
     WC_STATICW,
@@ -505,7 +487,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set({ 100,nullVal,nullVal,DEF_MRGN });
   rightLayout->set(4, 1, tmpLayout);
 
+  //
   // Add the displayThreshTrackBar_
+  //
   displayThreshTrackBar_ = CreateWindowExW(
     0,
     TRACKBAR_CLASS,
@@ -523,7 +507,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set({ 275,30,nullVal,DEF_MRGN });
   rightLayout->set(5, 0, tmpLayout, 1, 2);
 
+  //
   // Add a label for the rrNameEdit_ control
+  //
   temp = CreateWindowExW(
     0,
     WC_STATICW,
@@ -538,7 +524,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Right);
   rightLayout->set(6, 0, tmpLayout);
   
+  //
   // Create the range ring name edit control
+  //
   rrNameEdit_ = CreateWindowExW(
     WS_EX_CLIENTEDGE,
     WC_EDITW,
@@ -554,7 +542,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(6, 1, tmpLayout);
 
+  //
   // Add lat label
+  //
   temp = CreateWindowExW(
     0,
     WC_STATICW,
@@ -569,7 +559,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Right);
   rightLayout->set(7, 0, tmpLayout);
 
+  //
   // Add latEdit_
+  //
   latEdit_ = CreateWindowExW(
     WS_EX_CLIENTEDGE,
     WC_EDITW,
@@ -585,7 +577,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(7, 1, tmpLayout);
 
+  //
   // Add lon label
+  //
   temp = CreateWindowExW(
     0,
     WC_STATICW,
@@ -600,7 +594,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Right);
   rightLayout->set(8, 0, tmpLayout);
 
+  //
   // Add lonEdit_
+  //
   lonEdit_ = CreateWindowExW(
     WS_EX_CLIENTEDGE,
     WC_EDITW,
@@ -616,7 +612,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(8, 1, tmpLayout);
 
+  //
   // Label for the ranges edit
+  //
   temp = CreateWindowExW(
     0,
     WC_STATICW,
@@ -631,7 +629,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Right);
   rightLayout->set(9, 0, tmpLayout);
 
+  //
   // Create the ranges edit
+  //
   rangesEdit_ = CreateWindowExW(
     WS_EX_CLIENTEDGE,
     WC_EDITW,
@@ -647,7 +647,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Left);
   rightLayout->set(9, 1, tmpLayout);
 
+  //
   // Add a label for the titleEditControl_
+  //
   temp = CreateWindowExW(
     0,
     WC_STATICW,
@@ -664,7 +666,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Right);
   tmpFlow->add(tmpLayout);
 
+  //
   // Add the titleEditControl_
+  //
   titleEditControl_ = CreateWindowExW(
     WS_EX_CLIENTEDGE,
     WC_EDITW,
@@ -680,7 +684,9 @@ void PFBApp::buildGUI_()
   tmpFlow->add(tmpLayout);
   bottomLayout->add(tmpFlow);
 
+  //
   // Add label for the refreshStatic_ and refreshTrackBar_ control.
+  //
   temp = CreateWindowExW(
     0,
     WC_STATICW,
@@ -696,7 +702,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set(HorizontalAlignment::Right);
   tmpFlow->add(tmpLayout);
 
+  //
   // Add the refreshStatic_
+  //
   refreshStatic_ = CreateWindowExW(
     0,
     WC_STATICW,
@@ -712,7 +720,9 @@ void PFBApp::buildGUI_()
   tmpFlow->add(tmpLayout);
   bottomLayout->add(tmpFlow);
 
+  //
   // Add the displayThreshTrackBar_
+  //
   refreshTrackBar_ = CreateWindowExW(
     0,
     TRACKBAR_CLASS,
@@ -730,7 +740,9 @@ void PFBApp::buildGUI_()
   tmpLayout->set({ 250,40,nullVal, DEF_MRGN });
   bottomLayout->add(tmpLayout);
 
+  //
   // Create the exportPlaceFileButton_
+  //
   exportPlaceFileButton_ = CreateWindowExW(
     0,
     WC_BUTTON,
@@ -904,7 +916,7 @@ void PFBApp::updatePropertyControls_()
     //
     // Update the colorButton_
     //
-    InvalidateRect(colorButton_, nullptr, TRUE);
+    updateColorButton_();
 
     //
     // Update the lineSizeComboBox_ control
@@ -985,21 +997,17 @@ void PFBApp::updatePropertyControls_()
   }
 }
 
-void PFBApp::updateColorButton_(LPARAM lParam)
+void PFBApp::updateColorButton_()
 {
-  LPDRAWITEMSTRUCT dis = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
-  HDC hdc = dis->hDC;
-  LPRECT rect = &dis->rcItem;
-  DeleteObject(colorButtonColor_);
-
+  COLORREF buttonColor{ 0 };
   if(!IsWindowEnabled(colorButton_))
   {
-    // Get the brush color
-    colorButtonColor_ = GetSysColorBrush(COLOR_3DFACE);
+    LOGBRUSH lb{ 0 };
+    GetObjectW(GetSysColorBrush(COLOR_3DFACE),sizeof(LOGBRUSH), &lb);
+    buttonColor = lb.lbColor;
   }
   else
   {
-    
     string source, layer;
     bool success = getSourceLayerFromTree_(source, layer);
     if (!success) 
@@ -1009,13 +1017,10 @@ void PFBApp::updateColorButton_(LPARAM lParam)
     }
 
     PlaceFileColor color = appCon_.getColor(source, layer);
-    
-    // Get the brush color
-    colorButtonColor_ = CreateSolidBrush(RGB(color.red,color.green,color.blue));
+    buttonColor = RGB(color.red,color.green,color.blue);
   }
-  HBRUSH old = (HBRUSH)SelectObject(hdc, colorButtonColor_);
-  RoundRect(hdc, 0, 0, rect->right, rect->bottom, static_cast<int>(0.3*rect->right), static_cast<int>(0.3*rect->bottom));
-  colorButtonColor_ = (HBRUSH)SelectObject(hdc, old);
+  SetWindowLongPtrW(colorButton_, GWLP_USERDATA, static_cast<LONG_PTR>(buttonColor));
+  InvalidateRect(colorButton_, nullptr, TRUE);
 }
 
 HTREEITEM PFBApp::addSrcToTree_(const string & src)
@@ -1443,38 +1448,16 @@ void PFBApp::labelFieldCommandAction_(WPARAM wParam, LPARAM lParam)
 
 void PFBApp::colorButtonAction_()
 {
-  CHOOSECOLOR cc{ 0 };            // common dialog box structure 
-  static COLORREF acrCustClr[16]; // array of custom colors 
+  COLORREF newColor = static_cast<COLORREF>(GetWindowLongPtrW(colorButton_, GWLP_USERDATA));
 
-  // Get the current color
-  LOGBRUSH lb{ 0 };
-  GetObject(colorButtonColor_, sizeof(LOGBRUSH), &lb);
-  COLORREF rgbCurrent = lb.lbColor;
-
-  // Initialize cc struct
-  cc.lStructSize = sizeof(cc);
-  cc.hwndOwner = hwnd_;
-  cc.lpCustColors = (LPDWORD)acrCustClr;
-  cc.rgbResult = rgbCurrent;
-  cc.Flags = CC_FULLOPEN | CC_RGBINIT;
-
-  // Open the dialog
-  BOOL success = ChooseColor(&cc);
-  if (success != TRUE)
-  {
-    // User clicked cancel or closed window without choosing a color.
-    return;
-  }
-  
-  // Set the new colors
   string source, layer;
-  bool success2 = getSourceLayerFromTree_(source, layer);
-  if (!success2)
+  bool success = getSourceLayerFromTree_(source, layer);
+  if (!success)
   {
     MessageBoxW(hwnd_, L"Error getting source/layer information from the tree.", L"Error", MB_OK | MB_ICONERROR);
     return;
   }
-  appCon_.setColor(source, layer, PlaceFileColor(GetRValue(cc.rgbResult), GetGValue(cc.rgbResult), GetBValue(cc.rgbResult)));
+  appCon_.setColor(source, layer, PlaceFileColor(GetRValue(newColor), GetGValue(newColor), GetBValue(newColor)));
   InvalidateRect(colorButton_, nullptr, TRUE);
 }
 
@@ -1932,28 +1915,22 @@ void PFBApp::RegisterColorButton()
 
 LRESULT PFBApp::ColorButtonProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-  // Fetch the default class window procedure
-  WNDPROC defProc = reinterpret_cast<WNDPROC>(GetClassLongPtrW(hwnd, defButtonProcIndex));
+  WNDPROC defaultWindowProcedure = reinterpret_cast<WNDPROC>(GetClassLongPtrW(hwnd, defButtonProcIndex));
 
-  // Check that it has been intialized - if not, do it.
-  if (!defProc)
+  if (!defaultWindowProcedure)
   {
-    // Get the default window procedure for buttons
+    // Get the default window procedure for buttons and use that, save it.
     WNDCLASSW wc;
     GetClassInfo(nullptr, L"BUTTON", &wc);
-
-    // Save the pointer to the default window procedure on the window instance
     SetClassLongPtrW(hwnd, defButtonProcIndex, reinterpret_cast<LONG_PTR>(wc.lpfnWndProc));
-
-    // Save it for the rest of this function
-    defProc = wc.lpfnWndProc;
+    defaultWindowProcedure = wc.lpfnWndProc;
   }
   
   switch (msg)
   {
     case WM_NCCREATE:
       {
-        if(!CallWindowProcW(defProc, hwnd, msg, wParam, lParam)) return FALSE;
+        if(!CallWindowProcW(defaultWindowProcedure, hwnd, msg, wParam, lParam)) return FALSE;
 
         // Set white as the default color for this control
         LOGBRUSH lb{ 0 };
@@ -1966,11 +1943,6 @@ LRESULT PFBApp::ColorButtonProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
       break;
     case WM_PAINT:
       {
-        cerr << "PAINTING ";
-
-        // Paint like a default button would be - backgrounds and borders
-        //CallWindowProcW(defProc, hwnd, msg, wParam, lParam);
-
         HDC hdc = nullptr;
         HBRUSH colorBrushHandle = nullptr;
         HPEN nullPen = CreatePen(PS_NULL, 0, 0);
@@ -1990,27 +1962,19 @@ LRESULT PFBApp::ColorButtonProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
           // otherwise retrieve color value from the window storage
           COLORREF color;
           color = static_cast<COLORREF>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
-          cerr << "0x" << setfill('0') << setw(8) << hex << color << dec << " button" << endl;
           colorBrushHandle = CreateSolidBrush(color);
         }
         HBRUSH oldColorBrushHandle = static_cast<HBRUSH>(SelectObject(hdc, colorBrushHandle));
         HPEN oldPen = static_cast<HPEN>(SelectObject(hdc, nullPen));
 
-        // Get the area to draw in - include some padding so we don't overwrite button borders et.
         RECT clientArea = ps.rcPaint;
-        //GetClientRect(hwnd, &clientArea);
-        const int padding = 4;
+        DrawFrameControl(hdc, &clientArea, DFC_BUTTON, DFCS_BUTTONPUSH);
+        const int padding = 3;
         clientArea.top    += padding;
         clientArea.bottom -= padding;
         clientArea.left   += padding;
         clientArea.right  -= padding;
-        const int width = clientArea.right - clientArea.left;
-        const int height = clientArea.bottom - clientArea.top;
-
-        // Draw the color swatch
-        /*RoundRect(hdc, 
-          clientArea.left, clientArea.top, clientArea.right, clientArea.bottom, 
-          static_cast<int>(0.2 * width), static_cast<int>(0.2 * height));*/
+        
         Ellipse(hdc,
           clientArea.left, clientArea.top, clientArea.right, clientArea.bottom);
 
@@ -2021,49 +1985,47 @@ LRESULT PFBApp::ColorButtonProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         DeleteObject(nullPen);
         EndPaint(hwnd, &ps);
 
-        // TODO create region and pass to wparam
-        SendMessageW(hwnd, WM_NCPAINT, 0, 0);
-
         return FALSE;
       }
       break;
     case WM_LBUTTONUP:
     {
-      cerr << "CLICK COLORBUTTON" << endl;
       CHOOSECOLOR cc{ 0 };            // common dialog box structure 
       static COLORREF acrCustClr[16]; // array of custom colors 
 
       // Get the current color from the window storage area
       COLORREF rgbCurrent = static_cast<COLORREF>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
 
-      // Initialize cc struct
       cc.lStructSize = sizeof(cc);
       cc.hwndOwner = hwnd;
       cc.lpCustColors = static_cast<LPDWORD>(acrCustClr);
       cc.rgbResult = rgbCurrent;
       cc.Flags = CC_FULLOPEN | CC_RGBINIT;
 
-      // Open the dialog
       BOOL success = ChooseColor(&cc);
       if (success != TRUE)
       {
-        // User clicked cancel or closed window without choosing a color.
+        // User clicked cancel or closed window without choosing a color, so abort.
         return FALSE;
       }
 
-      // Set the new color
       SetWindowLongPtrW(hwnd, GWLP_USERDATA, static_cast<LONG_PTR>(cc.rgbResult));
-
-      // Invalidate the button
       InvalidateRect(hwnd, nullptr, FALSE);
 
+      SendMessageW(
+        GetParent(hwnd), 
+        WM_COMMAND, 
+        MAKEWPARAM(GetWindowLongPtrW(hwnd, GWLP_ID),BN_CLICKED), 
+        reinterpret_cast<LPARAM>(hwnd)
+      );
+
       // Finish with default button handling, eg. send the WM_COMMAND message with the BN_CLICKED parameter
-      return CallWindowProcW(defProc, hwnd, msg, wParam, lParam);
+      return CallWindowProcW(defaultWindowProcedure, hwnd, msg, wParam, lParam);
     }
     break;
     default:
       // Default to normal button behavior for other messages
-      return CallWindowProcW(defProc, hwnd, msg, wParam, lParam);
+      return CallWindowProcW(defaultWindowProcedure, hwnd, msg, wParam, lParam);
   }
 }
 

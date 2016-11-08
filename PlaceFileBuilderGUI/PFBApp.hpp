@@ -43,8 +43,6 @@ private:
   // Controls for properties on the right
   HWND labelFieldComboBox_;
   HWND colorButton_;
-  HWND colorButton2_;
-  HBRUSH colorButtonColor_;
   HWND lineSizeComboBox_;
   HWND fillPolygonsCheck_;
   HWND displayThreshStatic_;
@@ -66,7 +64,7 @@ private:
   // Build the GUI upon receipt of the WM_CREATE message
   void buildGUI_();
   void updatePropertyControls_();
-  void updateColorButton_(LPARAM lparam);
+  void updateColorButton_();
 
   // Button handlers
   enum class FileTypes_ {SHP, KML, GDB}; // Selector for what type of file to add
