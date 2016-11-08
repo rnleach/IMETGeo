@@ -51,6 +51,7 @@ private:
   HWND latEdit_;
   HWND lonEdit_;
   HWND rangesEdit_;
+  HWND summaryEdit_;
 
   // Settings that apply to the whole place file
   HWND titleEditControl_;

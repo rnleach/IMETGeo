@@ -39,17 +39,20 @@ using namespace Win32Helper;
 #define IDC_LAT_EDIT       1018 // Edit latitude
 #define IDC_LON_EDIT       1019 // Edit longitude
 #define IDC_RANGES_EDIT    1020 // Edit a string for range rings
+#define IDC_SUMMARY_EDIT   1021 // Summary text box
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance}, 
-  lyt_{}, // Initialize grid layout
-  appCon_{}, addButton_{ nullptr }, deleteButton_{ nullptr }, deleteAllButton_{ nullptr }, 
+  lyt_{},
+  appCon_{},
+  addButton_{ nullptr }, deleteButton_{ nullptr }, deleteAllButton_{ nullptr }, 
   treeView_{ nullptr }, 
-  labelFieldComboBox_{ nullptr }, colorButton_{ nullptr },
-  lineSizeComboBox_{nullptr}, fillPolygonsCheck_{ nullptr }, displayThreshStatic_{ nullptr }, 
-  displayThreshTrackBar_{ nullptr }, rrNameEdit_{ nullptr }, latEdit_{ nullptr },
-  lonEdit_{ nullptr }, rangesEdit_{ nullptr },  titleEditControl_ { nullptr }, 
-  refreshStatic_{ nullptr }, refreshTrackBar_{ nullptr }, exportPlaceFileButton_ { nullptr }
+  labelFieldComboBox_{ nullptr }, colorButton_{ nullptr }, lineSizeComboBox_{nullptr}, 
+  fillPolygonsCheck_{ nullptr }, displayThreshStatic_{ nullptr }, displayThreshTrackBar_{ nullptr }, 
+  rrNameEdit_{ nullptr }, latEdit_{ nullptr }, lonEdit_{ nullptr }, rangesEdit_{ nullptr }, 
+  summaryEdit_{ nullptr },
+  titleEditControl_ { nullptr }, refreshStatic_{ nullptr }, refreshTrackBar_{ nullptr }, 
+  exportPlaceFileButton_ { nullptr }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -226,7 +229,7 @@ void PFBApp::buildGUI_()
   //
   lyt_ = GridLayout::makeGridLyt(3, 2, Expand::Both, Collapse::No, {nullVal, nullVal, nullVal,DEF_MRGN});
   auto addDeleteLyt = FlowLayout::makeFlowLyt(FlowLayout::Direction::Left, {nullVal, nullVal,5,DEF_MRGN});
-  auto rightLayout = GridLayout::makeGridLyt(10, 2, { nullVal, nullVal, nullVal,DEF_MRGN });
+  auto rightLayout = GridLayout::makeGridLyt(11, 2, { nullVal, nullVal, nullVal,DEF_MRGN });
   auto bottomLayout = FlowLayout::makeFlowLyt(FlowLayout::Direction::Top, { nullVal, nullVal,5,DEF_MRGN });
   bottomLayout->set(Expand::Both);
   lyt_->set(0, 0, addDeleteLyt);
@@ -648,6 +651,26 @@ void PFBApp::buildGUI_()
   rightLayout->set(9, 1, tmpLayout);
 
   //
+  // Create the summaryEdit_
+  //
+  summaryEdit_ = CreateWindowExW(
+    WS_EX_CLIENTEDGE,
+    WC_EDITW,
+    nullptr,
+    WS_VISIBLE | WS_CHILD | WS_VSCROLL | WS_HSCROLL | WS_BORDER | ES_LEFT | ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY,
+    110, 350, 1, 20,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_SUMMARY_EDIT),
+    nullptr, nullptr);
+  if (!summaryEdit_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(summaryEdit_);
+  tmpLayout->set(HorizontalAlignment::Center);
+  tmpLayout->set({300, nullVal, nullVal, DEF_MRGN});
+  tmpLayout->set(Expand::Both);
+  rightLayout->set(10, 0, tmpLayout, 1, 2);
+  SendMessageW(summaryEdit_, WM_SETFONT, (WPARAM)GetStockFont(OEM_FIXED_FONT), FALSE);
+
+  //
   // Add a label for the titleEditControl_
   //
   temp = CreateWindowExW(
@@ -818,7 +841,7 @@ void PFBApp::updatePropertyControls_()
   {
     vector<HWND> cntrls = {deleteButton_, deleteAllButton_, labelFieldComboBox_, colorButton_, 
       fillPolygonsCheck_, displayThreshStatic_, lineSizeComboBox_, displayThreshTrackBar_,
-      rrNameEdit_, latEdit_, lonEdit_, rangesEdit_};
+      rrNameEdit_, latEdit_, lonEdit_, rangesEdit_, summaryEdit_};
 
     // Clear contents of combobox for labels
     ComboBox_ResetContent(labelFieldComboBox_);
@@ -866,6 +889,7 @@ void PFBApp::updatePropertyControls_()
       cntrls.push_back(fillPolygonsCheck_);
       cntrls.push_back(displayThreshStatic_);
       cntrls.push_back(displayThreshTrackBar_);
+      cntrls.push_back(summaryEdit_);
     }
     else if(appCon_.isLineLayer(source, layer))
     {
@@ -874,6 +898,7 @@ void PFBApp::updatePropertyControls_()
       cntrls.push_back(lineSizeComboBox_);
       cntrls.push_back(displayThreshStatic_);
       cntrls.push_back(displayThreshTrackBar_);
+      cntrls.push_back(summaryEdit_);
     }
     else if(appCon_.isPointLayer(source, layer))
     {
@@ -881,6 +906,7 @@ void PFBApp::updatePropertyControls_()
       cntrls.push_back(colorButton_);
       cntrls.push_back(displayThreshStatic_);
       cntrls.push_back(displayThreshTrackBar_);
+      cntrls.push_back(summaryEdit_);
     }
     else if(appCon_.isRangeRing(source, layer))
     {
@@ -958,7 +984,9 @@ void PFBApp::updatePropertyControls_()
       Edit_SetText(rrNameEdit_,widen(appCon_.getRangeRingName(source, layer)).c_str());
     }
     
+    //
     // Update the latitude and longitude boxes
+    //
     if (IsWindowEnabled(latEdit_) && IsWindowEnabled(lonEdit_))
     {
       // Get the values we need
@@ -976,7 +1004,9 @@ void PFBApp::updatePropertyControls_()
       Edit_SetText(lonEdit_, lonBuffer);
     }
 
+    //
     // Update the ranges text box
+    //
     if (IsWindowEnabled(rangesEdit_))
     {
       // Get the values we need
@@ -992,6 +1022,14 @@ void PFBApp::updatePropertyControls_()
 
       wstring formatedString = ss.str();
       Edit_SetText(rangesEdit_, formatedString.c_str());
+    }
+
+    //
+    // Update the summaryEdit_
+    //
+    if (IsWindowEnabled(summaryEdit_))
+    {
+      SendMessageW(summaryEdit_, WM_SETTEXT, 0, (LPARAM)widen(appCon_.summarizeLayerProperties(source, layer)).c_str());
     }
 
   }
