@@ -6,7 +6,7 @@
 #include <string>
 using std::string;
 
-#include "../src/AppController.hpp"
+#include "../src/AppModel.hpp"
 
 class PFBApp : public MainWindow
 {
@@ -19,7 +19,7 @@ public:
 private:
   Win32Helper::GLayoutPtr lyt_;
 
-  AppController appCon_;
+  AppModel appCon_;
   string pathToAppConSavedState_;
 
   // Top Row Buttons

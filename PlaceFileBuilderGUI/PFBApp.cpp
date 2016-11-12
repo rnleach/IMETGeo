@@ -1140,7 +1140,7 @@ HTREEITEM PFBApp::addRangeRingToTree_(const string& name)
   {
     string treeItemText;
     getTreeItemText_(currentItem, treeItemText);
-    if( treeItemText == AppController::RangeRingSrc )
+    if( treeItemText == AppModel::RangeRingSrc )
     {
         rangeItem = currentItem;
     }
@@ -1154,8 +1154,8 @@ HTREEITEM PFBApp::addRangeRingToTree_(const string& name)
 
     // Describe the item
     tvi.mask = TVIF_TEXT | TVIF_CHILDREN | TVIF_STATE;
-    auto dst = make_unique<wchar_t[]>(AppController::RangeRingSrc.length() + 1);
-    wcscpy(dst.get(), widen(AppController::RangeRingSrc).c_str());
+    auto dst = make_unique<wchar_t[]>(AppModel::RangeRingSrc.length() + 1);
+    wcscpy(dst.get(), widen(AppModel::RangeRingSrc).c_str());
     tvi.pszText = dst.get();
     tvi.cchTextMax = sizeof(tvi.pszText) / sizeof(tvi.pszText[0]);
     tvi.cChildren = 1;
@@ -1854,7 +1854,7 @@ void PFBApp::exportPlaceFileAction_()
   {
     try
     {
-      auto future = async(launch::async, &AppController::savePlaceFile, &appCon_, finalPath);
+      auto future = async(launch::async, &AppModel::savePlaceFile, &appCon_, finalPath);
       auto status = future.wait_for(chrono::milliseconds(0));
 
       // TODO CODE TO SHOW PROGRESS BAR
