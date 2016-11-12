@@ -11,14 +11,9 @@ using std::string;
 class PFBApp : public MainWindow
 {
 public:
-  // Constructors
   PFBApp(HINSTANCE hInstance);
-
-  // Delete these, I want to know if/when/why this would happen.
   PFBApp(const PFBApp& other) = delete;
   PFBApp(PFBApp&& other) = delete;
-
-  // Destructor
   ~PFBApp();
 
 private:
@@ -62,7 +57,7 @@ private:
   // Window Procedure, handle messages here.
   LRESULT WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
 
-  // Build the GUI upon receipt of the WM_CREATE message
+  // Build the GUI and keep it updated.
   void buildGUI_();
   void updatePropertyControls_();
   void updateColorButton_();
