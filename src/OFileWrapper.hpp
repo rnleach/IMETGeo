@@ -7,6 +7,7 @@ using std::ios_base;
 using std::ofstream;
 using std::string;
 
+// TODO - refactor to a different namespace. Not unique to PFB.
 namespace PFB
 {
   /*
