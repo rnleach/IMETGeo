@@ -8,7 +8,7 @@ using std::ofstream;
 using std::string;
 
 // TODO - refactor to a different namespace. Not unique to PFB.
-namespace PFB
+namespace Win32Helper
 {
   /*
   A wrapper class to enable RAII idiom use with an ofstream.

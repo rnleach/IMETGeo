@@ -9,6 +9,7 @@
 #include "OFileWrapper.hpp"
 
 using namespace std;
+using namespace Win32Helper;
 using namespace PFB;
 using LP = PFB::LineFeature::LP;
 
