@@ -24,17 +24,20 @@
     <Filter Include="MVC\Controller">
       <UniqueIdentifier>{b8cf5a5e-beaf-4351-b17f-2ffc83aea61c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Main and misc">
+    <Filter Include="Win32Helper">
+      <UniqueIdentifier>{07f63e09-d2c2-4461-966e-3e6d04f3d1e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Main">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
-      <Filter>Main and misc</Filter>
+      <Filter>Main</Filter>
     </ClCompile>
     <ClCompile Include="PFBApp.cpp">
-      <Filter>Main and misc</Filter>
+      <Filter>Main</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Feature.cpp">
       <Filter>Placefile Model</Filter>
@@ -60,11 +63,11 @@
     <ClCompile Include="..\src\AppModel.cpp">
       <Filter>MVC\Model</Filter>
     </ClCompile>
-    <ClCompile Include="Layouts.cpp">
-      <Filter>MVC\View</Filter>
-    </ClCompile>
     <ClCompile Include="MainWindow.cpp">
       <Filter>MVC\View</Filter>
+    </ClCompile>
+    <ClCompile Include="Layouts.cpp">
+      <Filter>Win32Helper</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -98,23 +101,23 @@
     <ClInclude Include="..\src\RangeRing.hpp">
       <Filter>Placefile Model</Filter>
     </ClInclude>
-    <ClInclude Include="Layouts.hpp">
-      <Filter>MVC\View</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\AppModel.hpp">
       <Filter>MVC\Model</Filter>
     </ClInclude>
     <ClInclude Include="MainWindow.hpp">
       <Filter>MVC\View</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\OFileWrapper.hpp">
-      <Filter>Main and misc</Filter>
-    </ClInclude>
     <ClInclude Include="PFBApp.hpp">
-      <Filter>Main and misc</Filter>
+      <Filter>Main</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
-      <Filter>Main and misc</Filter>
+      <Filter>Main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\OFileWrapper.hpp">
+      <Filter>Win32Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="Layouts.hpp">
+      <Filter>Win32Helper</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
