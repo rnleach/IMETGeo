@@ -3,8 +3,6 @@
 
 using namespace std;
 
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
   DEBUG_CONSOLE;
