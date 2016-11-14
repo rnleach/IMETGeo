@@ -12,6 +12,7 @@
 #include "PlaceFileColor.hpp"
 #include "RangeRing.hpp"
 using namespace PFB;
+using namespace OGRWrapper;
 
 using std::pair;
 using std::unordered_map;

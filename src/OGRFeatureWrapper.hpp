@@ -3,7 +3,7 @@
 #include <string>
 #include <ogrsf_frmts.h>
 
-namespace PFB
+namespace OGRWrapper
 {
   /*
   A wrapper class to enable RAII idiom use with the gdal library OGRFeatures.
