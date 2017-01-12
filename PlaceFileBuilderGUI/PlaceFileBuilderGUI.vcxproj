@@ -22,6 +22,7 @@
     <ProjectGuid>{34005D83-2E65-4ECB-90F8-47AA23D758F4}</ProjectGuid>
     <RootNamespace>PlaceFileBuilderGUI</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <ProjectName>PlaceFileBuilder</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -216,7 +217,7 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\AppController.cpp" />
+    <ClCompile Include="..\src\AppModel.cpp" />
     <ClCompile Include="..\src\Feature.cpp" />
     <ClCompile Include="..\src\LineFeature.cpp" />
     <ClCompile Include="..\src\PlaceFile.cpp" />
@@ -230,7 +231,7 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
     <ClCompile Include="PFBApp.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\AppController.hpp" />
+    <ClInclude Include="..\src\AppModel.hpp" />
     <ClInclude Include="..\src\Feature.hpp" />
     <ClInclude Include="..\src\LineFeature.hpp" />
     <ClInclude Include="..\src\OFileWrapper.hpp" />

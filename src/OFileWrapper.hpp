@@ -7,7 +7,8 @@ using std::ios_base;
 using std::ofstream;
 using std::string;
 
-namespace PFB
+// TODO - refactor to a different namespace. Not unique to PFB.
+namespace Win32Helper
 {
   /*
   A wrapper class to enable RAII idiom use with an ofstream.

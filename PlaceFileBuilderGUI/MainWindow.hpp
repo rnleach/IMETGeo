@@ -11,7 +11,7 @@
 #include <map>
 
 /*
-Base class for developing a main window for an application.
+Base class for developing the main window for an application.
 
 To use this class (or its subclasses):
  - Initialize the class by creating a variable

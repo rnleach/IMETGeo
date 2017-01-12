@@ -6,25 +6,20 @@
 #include <string>
 using std::string;
 
-#include "../src/AppController.hpp"
+#include "../src/AppModel.hpp"
 
 class PFBApp : public MainWindow
 {
 public:
-  // Constructors
   PFBApp(HINSTANCE hInstance);
-
-  // Delete these, I want to know if/when/why this would happen.
   PFBApp(const PFBApp& other) = delete;
   PFBApp(PFBApp&& other) = delete;
-
-  // Destructor
   ~PFBApp();
 
 private:
   Win32Helper::GLayoutPtr lyt_;
 
-  AppController appCon_;
+  AppModel appCon_;
   string pathToAppConSavedState_;
 
   // Top Row Buttons
@@ -62,7 +57,7 @@ private:
   // Window Procedure, handle messages here.
   LRESULT WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
 
-  // Build the GUI upon receipt of the WM_CREATE message
+  // Build the GUI and keep it updated.
   void buildGUI_();
   void updatePropertyControls_();
   void updateColorButton_();

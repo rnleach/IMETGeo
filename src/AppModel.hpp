@@ -12,18 +12,19 @@
 #include "PlaceFileColor.hpp"
 #include "RangeRing.hpp"
 using namespace PFB;
+using namespace OGRWrapper;
 
 using std::pair;
 using std::unordered_map;
 using std::tuple;
 
-class AppController
+class AppModel
 {
   using uint = unsigned int;
   
 public:
-  explicit AppController();
-  ~AppController();
+  explicit AppModel();
+  ~AppModel();
 
   // Get a list of sources, this is files only
   const vector<string> getSources();
