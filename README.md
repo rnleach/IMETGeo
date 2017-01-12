@@ -1,3 +1,11 @@
+# Status
+
+I no longer have adminstrator access to the system I was writing this software for, 
+and as a result of tightening security restrictions will not be able to get any self 
+authored software approved for installation. As a result, I'm stopping development since 
+nobody I'm making this for will be able to use it.  However, if you find it useful and 
+file a bug report, I would be happy to investigate.
+
 # PlaceFile Builder
 Tool to convert from common GIS formats to the placefile format used by 
 [GRlevelX](http://www.grlevelx.com) products, including 
@@ -12,17 +20,3 @@ For GIS, [GDAL 1.11.4](http://www.gisinternals.com/query.html?content=filelist&f
 was used from libraries, etc. provided by [Tamas Szekeres](http://www.gisinternals.com/myprofile.html)
 
 Installer built with Inno Setup 5.5.8 (or later).
-
-## In progress
-
-Three future versions are planned. 
-
-Version 1.1.1 will add some basic features back that were in the older gtkmm
-versions, like the about box and the layer summary.
-
-Version 1.2 will upgrade to major version 2 of the GDAL library, and possibly
-add placefile support directly into GDAL via my own plugin. This would allow
-users to load place files as well as other GIS formats.
-
-Version 2.0 will focus on adding gridded data in, especially PDF maps, as a 
-background image.
