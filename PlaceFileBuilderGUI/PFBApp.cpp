@@ -148,6 +148,10 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
       case IDC_RRNAME_EDIT:
         rangeRingNameEdit_(wParam, lParam);
+        break;
+      case IDC_RANGES_EDIT:
+        rangesEditAction_(wParam, lParam);
+        break;
       case IDC_TITLE_EDIT:
         editTitleAction_(wParam, lParam);
         break;
@@ -1238,7 +1242,7 @@ BOOL PFBApp::preventSelectionChange_(LPARAM lparam)
   if (appCon_.isRangeRing(source, layer))
   {
     // Prevent selection change if either fails.
-    if (!latLonEdit_() || !rangesEditAction_()) return TRUE;
+    if (!latLonEdit_() || !validateRanges_()) return TRUE;
   }
 
   return FALSE;
@@ -1607,64 +1611,78 @@ bool PFBApp::latLonEdit_()
   return success;
 }
 
-bool PFBApp::rangesEditAction_()
+bool PFBApp::parseRanges_(string source, string layer, vector<double> *parseInto)
 {
-  bool success = true;
+  const size_t NUMCHARS = 64;
+  WCHAR buffer[NUMCHARS] = { 0 };
+  Edit_GetLine(rangesEdit_, 0, buffer, NUMCHARS);
 
-  // TODO better error checking.
-  if (SendMessageW(rangesEdit_, EM_GETMODIFY, 0, 0))
+  // Parse the string
+  bool errorFlag = false;
+  wstringstream ss(buffer);
+  wchar_t tokenBuff[256];;
+  while (ss.getline(tokenBuff, 256, L','))
   {
-    string source, layer;
-    getSourceLayerFromTree_(source, layer);
-    const size_t NUMCHARS = 64;
-    WCHAR buffer[NUMCHARS] = { 0 };
-    Edit_GetLine(rangesEdit_, 0, buffer, NUMCHARS);
+    wstring token(tokenBuff);
 
-    // Parse the string
-    vector<double> newRanges;
-    bool errorFlag = false;
-    wstringstream ss(buffer);
-    wchar_t tokenBuff[256];;
-    while (ss.getline(tokenBuff, 256, L','))
+    // Erase white space from token
+    token.erase(remove(token.begin(), token.end(), L' '), token.end());
+
+    // Parse the double value
+    try
     {
-      wstring token(tokenBuff);
-
-      // Erase white space from token
-      token.erase(remove(token.begin(), token.end(), L' '), token.end());
-
-      // Parse the double value
-      try
-      {
-        double newVal = stod(token);
-        if (newVal < 0) errorFlag = true;
-        else newRanges.push_back(newVal);
-      }
-      catch (const exception)
-      {
-        errorFlag = true;
-      }
+      size_t endIndex = 0;
+      size_t shouldEnd = token.length();
+      double newVal = stod(token, &endIndex);
+      if (newVal < 0 || shouldEnd != endIndex) errorFlag = true;
+      else if(parseInto != nullptr) parseInto->push_back(newVal);
     }
-    
-    // Update the appcon if it was a valid list
-    if ((newRanges.size() > 0 && errorFlag) || !errorFlag)
+    catch (const exception)
     {
-      appCon_.setRangeRingRanges(source, layer, newRanges);
-      SendMessageW(rangesEdit_, EM_SETMODIFY, FALSE, 0);
-    }
-    // If there was an error, reset the window text to the correct value and send message
-    if(errorFlag)
-    {
-      // Easiest to just call update controls here, less efficient though
-      updatePropertyControls_();
-
-      auto msg = L"Format error: use a comma seperated list of ranges in miles for ranges.";
-      MessageBoxW(hwnd_, msg, L"ERROR", MB_OK | MB_ICONERROR);
-
-      success = false;
+      errorFlag = true;
     }
   }
 
+  if (!errorFlag) SendMessageW(rangesEdit_, EM_SETMODIFY, FALSE, 0);
+
+  return !errorFlag;
+}
+
+bool PFBApp::validateRanges_()
+{
+  bool success = true;
+
+  string source, layer;
+  getSourceLayerFromTree_(source, layer);
+  success = parseRanges_(source, layer, nullptr);
+
   return success;
+}
+
+void PFBApp::rangesEditAction_(WPARAM wParam, LPARAM lParam)
+{
+  WORD code = HIWORD(wParam);
+  if ((code == EN_CHANGE || code == EN_KILLFOCUS) && SendMessageW(rangesEdit_, EM_GETMODIFY, 0, 0))
+  {
+    string source, layer;
+    getSourceLayerFromTree_(source, layer);
+
+    vector<double> newRanges;
+    bool success = parseRanges_(source, layer, &newRanges);
+
+    // Update the appcon if it was a valid list
+    if ((newRanges.size() > 0 && !success) || success)
+    {
+      appCon_.setRangeRingRanges(source, layer, newRanges);
+    }
+
+    if (!success && code == EN_KILLFOCUS)
+    {
+      auto msg = L"Format error: use a comma seperated list of ranges in miles for ranges.";
+      MessageBoxW(hwnd_, msg, L"ERROR", MB_OK | MB_ICONERROR);
+      SetFocus(rangesEdit_);
+    }
+  }
 }
 
 void PFBApp::fillPolygonsCheckAction_()

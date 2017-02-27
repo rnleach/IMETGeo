@@ -74,7 +74,11 @@ private:
   void lineWidthAction_(WPARAM wParam, LPARAM lParam);
   void rangeRingNameEdit_(WPARAM wParam, LPARAM lParam);
   bool latLonEdit_();       // Return true if validated and updated.
-  bool rangesEditAction_(); // Return true if validated and updated.
+  // Fill vector with range values and return true if valid. 
+  // If parseinto is nullptr, just return true if valid.
+  bool parseRanges_(string source, string layer, vector<double> *parseInto);
+  bool validateRanges_(); // Return true if validated.
+  void rangesEditAction_(WPARAM wParam, LPARAM lParam);
   void fillPolygonsCheckAction_();
   void displayThreshAction_();
   void editTitleAction_(WPARAM wParam, LPARAM lParam);
