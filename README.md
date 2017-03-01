@@ -1,11 +1,3 @@
-# Status
-
-I no longer have adminstrator access to the system I was writing this software for, 
-and as a result of tightening security restrictions will not be able to get any self 
-authored software approved for installation. As a result, I'm stopping development since 
-nobody I'm making this for will be able to use it.  However, if you find it useful and 
-file a bug report, I would be happy to investigate.
-
 # PlaceFile Builder
 Tool to convert from common GIS formats to the placefile format used by 
 [GRlevelX](http://www.grlevelx.com) products, including 
