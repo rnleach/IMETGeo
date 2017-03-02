@@ -8,9 +8,6 @@
     <Filter Include="OGR Interface">
       <UniqueIdentifier>{f176d5df-dfba-49f6-aa7a-39bb4ee345ab}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Placefile Model">
-      <UniqueIdentifier>{5e6064fa-06b8-4bc2-9388-7067737646df}</UniqueIdentifier>
-    </Filter>
     <Filter Include="MVC">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
@@ -31,6 +28,9 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="MVC\Model\Placefile Model">
+      <UniqueIdentifier>{5e6064fa-06b8-4bc2-9388-7067737646df}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -40,25 +40,25 @@
       <Filter>Main</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Feature.cpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClCompile>
     <ClCompile Include="..\src\LineFeature.cpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClCompile>
     <ClCompile Include="..\src\RangeRing.cpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClCompile>
     <ClCompile Include="..\src\PolygonFeature.cpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClCompile>
     <ClCompile Include="..\src\PointFeature.cpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClCompile>
     <ClCompile Include="..\src\PlaceFileColor.cpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClCompile>
     <ClCompile Include="..\src\PlaceFile.cpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClCompile>
     <ClCompile Include="..\src\AppModel.cpp">
       <Filter>MVC\Model</Filter>
@@ -69,6 +69,9 @@
     <ClCompile Include="Layouts.cpp">
       <Filter>Win32Helper</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\OGR_RangeRing.cpp">
+      <Filter>OGR Interface</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\OGRDataSourceWrapper.hpp">
@@ -78,28 +81,25 @@
       <Filter>OGR Interface</Filter>
     </ClInclude>
     <ClInclude Include="..\src\Feature.hpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClInclude>
     <ClInclude Include="..\src\LineFeature.hpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClInclude>
     <ClInclude Include="..\src\PlaceFile.hpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClInclude>
     <ClInclude Include="..\src\PlaceFileColor.hpp">
-      <Filter>Placefile Model</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\point.hpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClInclude>
     <ClInclude Include="..\src\PointFeature.hpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClInclude>
     <ClInclude Include="..\src\PolygonFeature.hpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClInclude>
     <ClInclude Include="..\src\RangeRing.hpp">
-      <Filter>Placefile Model</Filter>
+      <Filter>MVC\Model\Placefile Model</Filter>
     </ClInclude>
     <ClInclude Include="..\src\AppModel.hpp">
       <Filter>MVC\Model</Filter>
@@ -118,6 +118,12 @@
     </ClInclude>
     <ClInclude Include="Layouts.hpp">
       <Filter>Win32Helper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\point.hpp">
+      <Filter>MVC\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\OGR_RangeRing.hpp">
+      <Filter>OGR Interface</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
