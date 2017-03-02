@@ -49,8 +49,9 @@ public:
   // Save a place file
   void savePlaceFile(const string& fileName);
 
-  // Get the name of the last placefile saved
+  // Get the name of the last saved
   inline string getLastSavedPlaceFile() { return lastPlaceFileSaved_; }
+  inline string getLastSavedKML() { return lastKMLSaved_; }
 
   // Get/Set the title of the place file
   inline string getPFTitle() { return pfTitle_; }
@@ -190,6 +191,7 @@ private:
 
    // Variables for saving parameters that affect entire PlaceFile.
   string lastPlaceFileSaved_ {};
+  string lastKMLSaved_{};
   int refreshMinutes_{ 1 };
   int refreshSeconds_{ 0 };
   string pfTitle_ = "Created by PlaceFile Builder";

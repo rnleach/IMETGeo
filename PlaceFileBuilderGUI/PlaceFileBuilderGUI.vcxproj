@@ -220,6 +220,7 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
     <ClCompile Include="..\src\AppModel.cpp" />
     <ClCompile Include="..\src\Feature.cpp" />
     <ClCompile Include="..\src\LineFeature.cpp" />
+    <ClCompile Include="..\src\OGR_RangeRing.cpp" />
     <ClCompile Include="..\src\PlaceFile.cpp" />
     <ClCompile Include="..\src\PlaceFileColor.cpp" />
     <ClCompile Include="..\src\PointFeature.cpp" />
@@ -237,6 +238,7 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
     <ClInclude Include="..\src\OFileWrapper.hpp" />
     <ClInclude Include="..\src\OGRDataSourceWrapper.hpp" />
     <ClInclude Include="..\src\OGRFeatureWrapper.hpp" />
+    <ClInclude Include="..\src\OGR_RangeRing.hpp" />
     <ClInclude Include="..\src\PlaceFile.hpp" />
     <ClInclude Include="..\src\PlaceFileColor.hpp" />
     <ClInclude Include="..\src\point.hpp" />

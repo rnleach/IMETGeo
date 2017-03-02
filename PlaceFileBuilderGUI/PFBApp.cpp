@@ -33,13 +33,14 @@ using namespace Win32Helper;
 #define IDC_TITLE_EDIT     1012 // Edit control for setting placefile title
 #define IDC_REFRESH_TBAR   1013 // Trackbar for setting the refresh time.
 #define IDC_EXPORT_PF      1014 // Export place file.
-#define IDC_WIDTH_CB       1015 // Line width combobox.
-#define IDC_RRNAME_EDIT    1016 // Name for a range ring.
-#define IDB_ADD_RANGERING  1017 // Add a range ring
-#define IDC_LAT_EDIT       1018 // Edit latitude
-#define IDC_LON_EDIT       1019 // Edit longitude
-#define IDC_RANGES_EDIT    1020 // Edit a string for range rings
-#define IDC_SUMMARY_EDIT   1021 // Summary text box
+#define IDC_EXPORT_KML     1015 // Export KML
+#define IDC_WIDTH_CB       1016 // Line width combobox.
+#define IDC_RRNAME_EDIT    1017 // Name for a range ring.
+#define IDB_ADD_RANGERING  1018 // Add a range ring
+#define IDC_LAT_EDIT       1019 // Edit latitude
+#define IDC_LON_EDIT       1020 // Edit longitude
+#define IDC_RANGES_EDIT    1021 // Edit a string for range rings
+#define IDC_SUMMARY_EDIT   1022 // Summary text box
 
 PFBApp::PFBApp(HINSTANCE hInstance) : 
   MainWindow{ hInstance}, 
@@ -52,7 +53,7 @@ PFBApp::PFBApp(HINSTANCE hInstance) :
   rrNameEdit_{ nullptr }, latEdit_{ nullptr }, lonEdit_{ nullptr }, rangesEdit_{ nullptr }, 
   summaryEdit_{ nullptr },
   titleEditControl_ { nullptr }, refreshStatic_{ nullptr }, refreshTrackBar_{ nullptr }, 
-  exportPlaceFileButton_ { nullptr }
+  exportPlaceFileButton_ { nullptr }, exportKMLButton_{ nullptr }
 {
   // Initialize COM controls
   HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -157,6 +158,9 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
       case IDC_EXPORT_PF:
         if (code == BN_CLICKED) exportPlaceFileAction_();
+        break;
+      case IDC_EXPORT_KML:
+        if (code == BN_CLICKED) exportKMLAction_();
         break;
       }
       break;
@@ -782,6 +786,22 @@ void PFBApp::buildGUI_()
   if (!exportPlaceFileButton_) { HandleFatalError(__FILEW__, __LINE__); }
   tmpFlow = FlowLayout::makeFlowLyt(FlowLayout::Direction::Right);
   tmpLayout = SingleControlLayout::makeSingleCtrlLayout(exportPlaceFileButton_, BUTTON_PADDING);
+  tmpFlow->add(tmpLayout);
+
+  //
+  // Create the exportKMLButton_
+  //
+  exportKMLButton_ = CreateWindowExW(
+    0,
+    WC_BUTTON,
+    L"Export KML",
+    WS_TABSTOP | WS_VISIBLE | WS_CHILD,
+    175, 585, 120, 30,
+    hwnd_,
+    reinterpret_cast<HMENU>(IDC_EXPORT_KML),
+    nullptr, nullptr);
+  if (!exportKMLButton_) { HandleFatalError(__FILEW__, __LINE__); }
+  tmpLayout = SingleControlLayout::makeSingleCtrlLayout(exportKMLButton_, BUTTON_PADDING);
   tmpFlow->add(tmpLayout);
   bottomLayout->add(tmpFlow);
 
@@ -1877,6 +1897,132 @@ void PFBApp::exportPlaceFileAction_()
 
       // TODO CODE TO SHOW PROGRESS BAR
       
+      while (status != future_status::ready)
+      {
+        status = future.wait_for(chrono::milliseconds(50));
+      }
+    }
+    catch (const runtime_error& e)
+    {
+      MessageBoxW(hwnd_, widen(e.what()).c_str(), L"ERROR!", MB_OK | MB_ICONEXCLAMATION);
+    }
+  }
+  else // Check if this was an error or canceled if we didn't find a file
+  {
+    DWORD errCode = CommDlgExtendedError();
+    if (errCode != 0)
+    {
+      WCHAR errMsg[64];
+      _snwprintf_s(errMsg, sizeof(errMsg) / sizeof(WCHAR), L"Error getting file name from system: code %#06X.", errCode);
+      MessageBoxW(hwnd_, errMsg, L"ERROR", MB_OK | MB_ICONERROR);
+    }
+  }
+}
+
+void PFBApp::exportKMLAction_()
+{
+  // Path where file was saved last time
+  wstring startPath = widen(appCon_.getLastSavedKML());
+
+  // My file dialog and a shell item to get the path, plus a string for the file name.
+  IFileSaveDialog *pFileSave = nullptr;
+  IShellItem *pItem = nullptr;
+  LPWSTR lpszFilePath = nullptr;
+
+  // Did I find a file to save? And where?
+  bool foundFile = false;
+  string finalPath;
+
+  // Create the dialog
+  HRESULT hr = CoCreateInstance(__uuidof(FileSaveDialog), nullptr,
+    CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileSave));
+
+  if (SUCCEEDED(hr))
+  {
+    // Set up the filter types
+    COMDLG_FILTERSPEC fltr = { 0 };
+    fltr.pszName = L"KML/KMZ";
+    fltr.pszSpec = L"*.kml;*.kmz;*.KML;*.KMZ";
+    hr = pFileSave->SetFileTypes(1, &fltr);
+  }
+  // Set the path to the last place one was saved, if it exists still.
+  if (SUCCEEDED(hr) && !startPath.empty() && PathFileExistsW(startPath.c_str()))
+  {
+    HRESULT hr2 = SHCreateItemFromParsingName(startPath.c_str(), nullptr, IID_PPV_ARGS(&pItem));
+    if (SUCCEEDED(hr2))
+    {
+      hr2 = pFileSave->SetSaveAsItem(pItem);
+    }
+    SafeRelease(&pItem);
+  }
+  // Otherwise set to my documents...
+  else if (SUCCEEDED(hr))
+  {
+    // Get the known folders manager to track down my documents
+    IKnownFolderManager *pKnownFolderManager = nullptr;
+
+    HRESULT hr2 = CoCreateInstance(__uuidof(KnownFolderManager), nullptr, CLSCTX_INPROC_SERVER,
+      IID_PPV_ARGS(&pKnownFolderManager));
+
+    // Handle to shell item for my documents
+    IKnownFolder *pMyDocs = nullptr;
+    if (SUCCEEDED(hr2))
+    {
+      hr2 = pKnownFolderManager->GetFolderByName(L"DocumentsLibrary", &pMyDocs);
+    }
+    // Get the shell item
+    if (SUCCEEDED(hr2))
+    {
+      pMyDocs->GetShellItem(0, IID_PPV_ARGS(&pItem));
+    }
+    // Set the folder in the dialog
+    if (SUCCEEDED(hr2))
+    {
+      hr2 = pFileSave->SetFolder(pItem);
+    }
+    SafeRelease(&pItem);
+    SafeRelease(&pMyDocs);
+    SafeRelease(&pKnownFolderManager);
+
+    // If any of this fails hr2 shows failed, no worries, we'll use whatever directory the OS
+    // came up with as a starting point. Hence the hr2 variable here instead of using hr.
+  }
+  // Show the dialog
+  if (SUCCEEDED(hr))
+  {
+    hr = pFileSave->Show(hwnd_);
+  }
+  // Get the resulting path as a shell item
+  if (SUCCEEDED(hr))
+  {
+    hr = pFileSave->GetResult(&pItem);
+  }
+  // Extract the file name
+  if (SUCCEEDED(hr))
+  {
+    hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &lpszFilePath);
+  }
+  // Convert to a regular string and flag that we have been successufl so far.
+  if (SUCCEEDED(hr))
+  {
+    finalPath = narrow(lpszFilePath);
+    foundFile = true;
+  }
+
+  // Clean up.
+  SafeRelease(&pItem);
+  SafeRelease(&pFileSave);
+  CoTaskMemFree(lpszFilePath);
+
+  if (foundFile)
+  {
+    try
+    {
+      auto future = async(launch::async, &AppModel::saveKMLFile, &appCon_, finalPath);
+      auto status = future.wait_for(chrono::milliseconds(0));
+
+      // TODO CODE TO SHOW PROGRESS BAR
+
       while (status != future_status::ready)
       {
         status = future.wait_for(chrono::milliseconds(50));
