@@ -11,6 +11,7 @@
 #include <cstdlib>
 
 #include "PlaceFileColor.hpp"
+#include "OGR_RangeRing.hpp"
 
 #include "ogrsf_frmts.h"
 #include "ogr_api.h"
@@ -303,9 +304,6 @@ void AppModel::setRefreshSeconds(int newVal)
 
 void AppModel::saveKMLFile(const string & fileName)
 {
-
-  // DOES NOT HANDLE RANGE RINGS
-
   OGRSFDriver* kmlDriver = 
       (OGRSFDriverRegistrar::GetRegistrar())->GetDriverByName("KML");
   OGRDataSourceWrapper kmlSrc{ kmlDriver->CreateDataSource(fileName.c_str()) };
@@ -323,17 +321,46 @@ void AppModel::saveKMLFile(const string & fileName)
       const string& layerName     = lIt->first;
       const string& labelField    = lIt->second.labelField;
 
-      /*
-      cerr << "srcName " << srcName << endl;
-      cerr << "layerName " << layerName << endl;
-      cerr << "labelField " << labelField << endl << endl;
-      */
-
       if (labelField == DO_NOT_USE_LAYER) continue;
 
       OGRLayer *layer = src->GetLayerByName(layerName.c_str());
 
       kmlSrc->CopyLayer(layer, layerName.c_str());
+    }
+  }
+
+  // Now save the requested range rings.
+  for (auto rrIt = rangeRings_.cbegin(); rrIt != rangeRings_.cend(); ++rrIt)
+  {
+    OGR_RangeRing rr{ rrIt->first.getCenterPoint() };
+
+    auto centerLayer = kmlSrc->CreateLayer(rrIt->first.name().c_str(), nullptr, wkbPoint, nullptr);
+    OGRFeature *pcf = OGRFeature::CreateFeature(centerLayer->GetLayerDefn());
+    OGRFeatureWrapper centerFeature(pcf);
+    OGRPoint centerPoint;
+    centerPoint.setX(rr.getCenterPoint().longitude);
+    centerPoint.setY(rr.getCenterPoint().latitude);
+    centerFeature->SetGeometry(&centerPoint);
+    centerLayer->CreateFeature(pcf);
+
+    auto ringsLayer = kmlSrc->CreateLayer(rrIt->first.name().c_str(), nullptr, wkbLinearRing, nullptr);
+    auto numRanges = rrIt->first.getRanges().size();
+    for (auto i = 0; i < numRanges; i++)
+    {
+      auto range = rrIt->first.getRanges()[i];
+      auto ringPoints = rr.getClosedRingForRange(range);
+      
+      OGRFeature *prf = OGRFeature::CreateFeature(ringsLayer->GetLayerDefn());
+      OGRFeatureWrapper ringFeature(prf);
+      OGRLinearRing aRing;
+      aRing.setNumPoints(ringPoints.size());
+
+      for (auto j = 0; j < ringPoints.size(); j++)
+      {
+        aRing.setPoint(j, ringPoints[j].longitude, ringPoints[j].latitude, 0.0);
+      }
+      ringFeature->SetGeometry(&aRing);
+      ringsLayer->CreateFeature(prf);
     }
   }
 
