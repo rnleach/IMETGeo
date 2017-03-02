@@ -1308,7 +1308,7 @@ void AppModel::loadState(const string& pathToStateFile)
         // Check for lastKMLSaved
         if (line.find("lastSavedKML:") != string::npos)
         {
-          lastKMLSaved_ = line.substr(11);
+          lastKMLSaved_ = line.substr(14);
         }
 
         // Get the next line and keep going, look for next source
