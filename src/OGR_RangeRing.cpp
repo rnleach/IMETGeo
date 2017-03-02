@@ -14,7 +14,8 @@ namespace PFB {
     vector<point> pnts{};
     pnts.reserve(NUM_POINTS + 1);
     double deltaBearing = 360.0 / (NUM_POINTS) / 180.0 * PI; // radians
-    for (size_t i = 0; i < NUM_POINTS + 1; i++)
+    point point0;
+    for (size_t i = 0; i < NUM_POINTS; i++)
     {
       const double bearing = i * deltaBearing; // radians
       const double delta = range / earthRadius;
@@ -34,7 +35,10 @@ namespace PFB {
       newLon *= 180.0 / PI;
 
       pnts.push_back(point(newLat, newLon));
+
+      if (i == 0) point0 = point(newLat, newLon);
     }
+    pnts.push_back(point0);
 
     return pnts;
   }
