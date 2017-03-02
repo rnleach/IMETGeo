@@ -53,6 +53,7 @@ private:
   HWND refreshStatic_;
   HWND refreshTrackBar_;
   HWND exportPlaceFileButton_;
+  HWND exportKMLButton_;
 
   // Window Procedure, handle messages here.
   LRESULT WindowProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
@@ -84,6 +85,7 @@ private:
   void editTitleAction_(WPARAM wParam, LPARAM lParam);
   void refreshTimeAction_();
   void exportPlaceFileAction_();
+  void exportKMLAction_();
 
   // Custom window procedures for subclassing/superclassing controls
   static LRESULT CALLBACK TreeViewWinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

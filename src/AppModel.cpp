@@ -310,7 +310,7 @@ void AppModel::saveKMLFile(const string & fileName)
       (OGRSFDriverRegistrar::GetRegistrar())->GetDriverByName("KML");
   OGRDataSourceWrapper kmlSrc{ kmlDriver->CreateDataSource(fileName.c_str()) };
 
-
+  // Output requested GIS layers.
   for(auto sIt = srcs_.begin(); sIt != srcs_.end(); ++sIt)
   {
     const LayerInfo& lyrs = get<IDX_layerInfo>(sIt->second);
@@ -336,6 +336,9 @@ void AppModel::saveKMLFile(const string & fileName)
       kmlSrc->CopyLayer(layer, layerName.c_str());
     }
   }
+
+  // Remember saving it!
+  lastKMLSaved_ = fileName;
 }
 
 bool AppModel::hideLayer(const string& source, const string& layer)
@@ -921,29 +924,30 @@ void AppModel::saveState(const string& pathToStateFile)
       Line:  Value:
          0:  PlaceFile Builder
          1:  lastSaved: path to last placefile saved.
-         2:  refreshMinutes: integer
-         3:  refreshSeconds: integer
-         4:  title: title text
-         5:  Source Start: srcName
-         6:  Path: path to file
-         7:  Layer Start: layerName
-         8:  labelField: labelField
-         9:  color: rrr ggg bbb
-        10:  lineWidth: integer
-        11:  polyAsLine: True (or False)
-        12:  visible: True (or False)
-        13:  displayThresh: integer value
-        14:  Layer End: layerName
-        15:  .......
+         2:  lastSavedKML: path to last KML file saved.
+         3:  refreshMinutes: integer
+         4:  refreshSeconds: integer
+         5:  title: title text
+         6:  Source Start: srcName
+         7:  Path: path to file
+         8:  Layer Start: layerName
+         9:  labelField: labelField
+        10:  color: rrr ggg bbb
+        11:  lineWidth: integer
+        12:  polyAsLine: True (or False)
+        13:  visible: True (or False)
+        14:  displayThresh: integer value
+        15:  Layer End: layerName
+        16:  .......
         . :
         . :
-        . :  repeat 7-14 for each layer
+        . :  repeat 8-15 for each layer
         . :
         . :
         m :  Source End: srcName
         . :
         . :
-        n :  Repeat 5-m for each source
+        n :  Repeat 6-m for each source
         . :
         . :
         p :  Range Ring: name
@@ -970,6 +974,7 @@ void AppModel::saveState(const string& pathToStateFile)
       statefile << "PlaceFile Builder\n";
 
       statefile << "lastSaved: " << lastPlaceFileSaved_ << "\n";
+      statefile << "lastSavedKML: " << lastKMLSaved_ << "\n";
       statefile << "refreshMinutes: " << refreshMinutes_ << "\n";
       statefile << "refreshSeconds: " << refreshSeconds_ << "\n";
       statefile << "title: " << pfTitle_ << "\n";
@@ -1294,10 +1299,16 @@ void AppModel::loadState(const string& pathToStateFile)
           pfTitle_ = line.substr(7);
         }
 
-        // Check for lastPlaceSaved
+        // Check for lastPlaceFileSaved
         if(line.find("lastSaved:") != string::npos)
         {
           lastPlaceFileSaved_ = line.substr(11);
+        }
+
+        // Check for lastKMLSaved
+        if (line.find("lastSavedKML:") != string::npos)
+        {
+          lastKMLSaved_ = line.substr(11);
         }
 
         // Get the next line and keep going, look for next source
