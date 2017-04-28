@@ -27,10 +27,14 @@ PFB::LineFeature::LineFeature(const string& label, const PlaceFileColor& color,
 :Feature(label, color, dispThresh, lineWidth)
 {
   int numPoints = lineString.getNumPoints();
+  int increment = 1;
+  while (numPoints / increment > 10000) {
+    increment++;
+  }
 
-  _coords.reserve(numPoints + 1);
+  _coords.reserve(numPoints / increment + 1);
 
-  for (int i = 0; i != numPoints; ++i)
+  for (int i = 0; i < numPoints; i += increment)
   {
     _coords.push_back(point(lineString.getY(i), lineString.getX(i)));
   }

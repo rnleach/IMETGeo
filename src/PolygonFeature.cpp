@@ -36,15 +36,18 @@ PFB::PolygonFeature::PolygonFeature(const std::string & label, const PlaceFileCo
     }
 
     int numPntsInRing = ls->getNumPoints();
-    bool closed = _isOGRLinearRingClosed(*ls);
+    int increment = 1;
+    while (numPntsInRing / increment > 5000) {
+      increment++;
+    }
 
-    for (int i = 0; i != numPntsInRing; ++i)
+    for (int i = 0; i < numPntsInRing; i += increment)
     {
       _coords.push_back(point(ls->getY(i), ls->getX(i)));
     }
-
-    if(!closed) 
-      _coords.push_back(point(ls->getY(0), ls->getX(0)));
+    
+    // Close the loop
+    _coords.push_back(point(ls->getY(0), ls->getX(0)));
   }
 }
 
