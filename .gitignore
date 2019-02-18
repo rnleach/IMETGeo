@@ -41,3 +41,4 @@ dist/
 PlaceFileBuilderGUI/x64/
 *.aps
 PlaceFileBuilderGUI/Win32/
+.vs
