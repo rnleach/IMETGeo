@@ -123,18 +123,18 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
       <DisableLanguageExtensions>false</DisableLanguageExtensions>
-      <AdditionalIncludeDirectories>C:\devLibs\gdal111\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\ryan\programming\libs\gdal1_vs13\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4503;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\devLibs\gdal111\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\ryan\programming\libs\gdal1_vs13\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>gdal_i.lib;Comctl32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>NotSet</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /D /E /Y "C:\devLibs\gdal111\bin" $(OutDir)
+      <Command>xcopy /D /E /Y "C:\Users\ryan\programming\libs\gdal1_vs13\bin" $(OutDir)
 xcopy /D /Y $(ProjectDir)..\pfb.iss $(OutDir)..\..\
 xcopy /D /Y $(ProjectDir)..\res $(OutDir)..\res\
 xcopy /D /Y $(ProjectDir)..\src $(OutDir)..\src\
@@ -190,19 +190,19 @@ if not exist $(OutDir)..\config mkdir $(OutDir)..\config</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <DisableLanguageExtensions>false</DisableLanguageExtensions>
-      <AdditionalIncludeDirectories>C:\devLibs\gdal111\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\ryan\programming\libs\gdal1_vs13\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4503;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\devLibs\gdal111\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\ryan\programming\libs\gdal1_vs13\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>gdal_i.lib;Comctl32.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>NotSet</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /D /E /Y "C:\devLibs\gdal111\bin" $(OutDir)
+      <Command>xcopy /D /E /Y "C:\Users\ryan\programming\libs\gdal1_vs13\bin" $(OutDir)
 xcopy /D /Y $(ProjectDir)..\pfb.iss $(OutDir)..\..\
 xcopy /D /Y $(ProjectDir)..\res $(OutDir)..\res\
 xcopy /D /Y $(ProjectDir)..\src $(OutDir)..\src\
