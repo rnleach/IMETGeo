@@ -304,9 +304,8 @@ void AppModel::setRefreshSeconds(int newVal)
 
 void AppModel::saveKMLFile(const string & fileName)
 {
-  OGRSFDriver* kmlDriver = 
-      (OGRSFDriverRegistrar::GetRegistrar())->GetDriverByName("KML");
-  OGRDataSourceWrapper kmlSrc{ kmlDriver->CreateDataSource(fileName.c_str()) };
+  GDALDriver* kmlDriver = GetGDALDriverManager()->GetDriverByName("KML");
+  OGRDataSourceWrapper kmlSrc{ kmlDriver->Create(fileName.c_str(), 0, 0, 0, GDT_Unknown, NULL) };
 
   // Output requested GIS layers.
   for(auto sIt = srcs_.begin(); sIt != srcs_.end(); ++sIt)

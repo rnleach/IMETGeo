@@ -20,7 +20,7 @@ namespace OGRWrapper
     // Constructor / destructor
     // --------------------------------------------------------------------------
     OGRDataSourceWrapper(string path, bool update = false)
-      : _src(OGRSFDriverRegistrar::Open(path.c_str(), update))
+      : _src(static_cast<GDALDataset*>(GDALOpenEx(path.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL)))
     {
       if (!_src)
         throw runtime_error((string("Error Opening Source: ") + path + "\n" + 
@@ -28,11 +28,11 @@ namespace OGRWrapper
     }
 
     // Construct from raw pointer
-    OGRDataSourceWrapper(OGRDataSource *rawPtr) :_src(rawPtr) {}
+    OGRDataSourceWrapper(GDALDataset *rawPtr) :_src(rawPtr) {}
 
     ~OGRDataSourceWrapper()
     {
-      if (_src) OGRDataSource::DestroyDataSource(_src);
+      if (_src) GDALClose(_src);
     }
 
     // --------------------------------------------------------------------------
@@ -47,7 +47,7 @@ namespace OGRWrapper
     OGRDataSourceWrapper& operator=(OGRDataSourceWrapper&& rhs)
     {
       // Delete old value if non-null
-      if (_src)  OGRDataSource::DestroyDataSource(_src);
+      if (_src)  GDALClose(_src);
 
       // Copy location of moved value
       _src = rhs._src;
@@ -62,8 +62,8 @@ namespace OGRWrapper
     // Overload indirection and dereference
     // --------------------------------------------------------------------------
     // TODO - add nullptr safety checks to throw exception?
-    OGRDataSource& operator*() { return *_src; }
-    OGRDataSource* operator->() { return _src; }
+    GDALDataset& operator*() { return *_src; }
+    GDALDataset* operator->() { return _src; }
 
     // --------------------------------------------------------------------------
     // Explicit bool conversion
@@ -77,7 +77,7 @@ namespace OGRWrapper
     OGRDataSourceWrapper& operator=(OGRDataSourceWrapper& rhs) = delete;
 
   private:
-    OGRDataSource *_src;
+    GDALDataset *_src;
   };
 
 }
