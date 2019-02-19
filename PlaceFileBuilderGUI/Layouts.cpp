@@ -466,7 +466,7 @@ namespace Win32Helper
       AbstractLayout(Expand::No, lytOpt, clpsOpt), flowDir_{ dir }, lyts_()
   {}
 
-  GridLayout::GridLayout(Coord rows, Coord columns, Expand exOpt, LytOpt lytOpt,
+  GridLayout::GridLayout(size_t rows, size_t columns, Expand exOpt, LytOpt lytOpt,
     Collapse clpsOpt) : 
       AbstractLayout(exOpt, lytOpt, clpsOpt), 
     lyts_(rows * columns, nullptr), spans_(rows * columns, pair<Coord,Coord>(1,1)), 

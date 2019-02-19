@@ -316,8 +316,8 @@ namespace Win32Helper
   private:
 
     GridLayout(
-      Coord rows,
-      Coord columns,
+      size_t rows,
+      size_t columns,
       Expand exOpt = Expand::No,
       LytOpt lytOpt = { nullVal, nullVal, nullVal, nullVal },
       Collapse clpsOpt = Collapse::No);
