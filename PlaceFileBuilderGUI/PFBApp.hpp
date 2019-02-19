@@ -74,7 +74,7 @@ private:
   void colorButtonAction_();
   void lineWidthAction_(WPARAM wParam, LPARAM lParam);
   void rangeRingNameEdit_(WPARAM wParam, LPARAM lParam);
-  void latLonEdit_(WPARAM wParam, LPARAM lParam);
+  bool latLonEdit_();       // Return true if validated and updated.
   // Fill vector with range values and return true if valid. 
   // If parseinto is nullptr, just return true if valid.
   bool parseRanges_(string source, string layer, vector<double> *parseInto);

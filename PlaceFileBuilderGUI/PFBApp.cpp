@@ -7,9 +7,8 @@
 #endif
 
 #include <algorithm>
-#include <future>
-#include <limits>
 #include <string>
+#include <future>
 #include <thread>
 
 #include <Shlobj.h>
@@ -151,10 +150,6 @@ LRESULT PFBApp::WindowProc(UINT msg, WPARAM wParam, LPARAM lParam)
       case IDC_RRNAME_EDIT:
         rangeRingNameEdit_(wParam, lParam);
         break;
-	  case IDC_LAT_EDIT:
-	  case IDC_LON_EDIT:
-		  latLonEdit_(wParam, lParam);
-		  break;
       case IDC_RANGES_EDIT:
         rangesEditAction_(wParam, lParam);
         break;
@@ -1267,7 +1262,7 @@ BOOL PFBApp::preventSelectionChange_(LPARAM lparam)
   if (appCon_.isRangeRing(source, layer))
   {
     // Prevent selection change if either fails.
-    if (!validateRanges_()) return TRUE;
+    if (!latLonEdit_() || !validateRanges_()) return TRUE;
   }
 
   return FALSE;
@@ -1574,85 +1569,66 @@ void PFBApp::rangeRingNameEdit_(WPARAM wParam, LPARAM lParam)
   }
 }
 
-void PFBApp::latLonEdit_(WPARAM wParam, LPARAM lParam)
+bool PFBApp::latLonEdit_()
 {
-	// Check if we even need to check.
-	if (SendMessage(latEdit_, EM_GETMODIFY, 0, 0) || SendMessage(lonEdit_, EM_GETMODIFY, 0, 0))
-	{
-		string source, layer;
-		getSourceLayerFromTree_(source, layer);
-		point original = appCon_.getRangeRingCenter(source, layer);
+  // Flag to return to indicate success
+  bool success = true;
 
-		// Get the strings from the latEdit_ and lonEdit_ controls
-		const size_t NUMCHARS = 32;
-		WCHAR latBuffer[NUMCHARS] = { 0 }, lonBuffer[NUMCHARS] = { 0 };
-		Edit_GetLine(latEdit_, 0, latBuffer, NUMCHARS);
-		Edit_GetLine(lonEdit_, 0, lonBuffer, NUMCHARS);
-		string latString{ narrow(latBuffer) };
-		string lonString{ narrow(lonBuffer) };
+  // Check if we even need to check.
+  if (SendMessage(latEdit_, EM_GETMODIFY, 0, 0) || SendMessage(lonEdit_, EM_GETMODIFY, 0, 0))
+  {
+    // Get the strings from the latEdit_ and lonEdit_ controls
+    const size_t NUMCHARS = 32;
+    WCHAR latBuffer[NUMCHARS] = { 0 }, lonBuffer[NUMCHARS] = { 0 };
+    Edit_GetLine(latEdit_, 0, latBuffer, NUMCHARS);
+    Edit_GetLine(lonEdit_, 0, lonBuffer, NUMCHARS);
+    string latString{ narrow(latBuffer) };
+    string lonString{ narrow(lonBuffer) };
 
-		// Validate strings
-		bool validStrings = true;
-		double lat = (std::numeric_limits<double>::max)();
-		try {
-			if (latString == "-") {
-				lat = 0.0;
-			}
-			else {
-				lat = stod(latString);
-			}
-		}
-		catch (const invalid_argument) { 
-			// Reset to a valid value
-			Edit_SetText(latEdit_, widen(to_string(original.latitude)).c_str());
-			validStrings = false; 
-		}
-		catch (const out_of_range) {
-			// Reset to a valid value
-			Edit_SetText(latEdit_, widen(to_string(original.latitude)).c_str());
-			validStrings = false; 
-		}
+    // Validate strings
+    bool validStrings = true;
+    double lat = 0.0;
+    double lon = 0.0;
+    try
+    {
+      // Convert using string to double function from <string>
+      lat = stod(latString);
+      lon = stod(lonString);
 
-		double lon = (std::numeric_limits<double>::max)();
-		try {
-			if (lonString == "-") {
-				lon = 0.0;
-			}
-			else {
-				lon = stod(lonString);
-			}
-		}
-		catch (const invalid_argument) {
-			// Reset to a valid value
-			Edit_SetText(lonEdit_, widen(to_string(original.longitude)).c_str());
-			validStrings = false; 
-		}
-		catch (const out_of_range) {
-			// Reset to a valid value
-			Edit_SetText(lonEdit_, widen(to_string(original.longitude)).c_str());
-			validStrings = false; 
-		}
+      // Range check
+      if (lat < -90.0 || lat > 90.0 || lon < -180.0 || lon > 180.0) validStrings = false;
+    }
+    catch (const invalid_argument) { validStrings = false; }
+    catch (const out_of_range) { validStrings = false; }
 
-		// Range check
-		if (lat < -90.0 || lat > 90.0 || lon < -180.0 || lon > 180.0) validStrings = false;
+    // If valid, update values in appCon_
+    string source, layer;
+    getSourceLayerFromTree_(source, layer);
+    if (validStrings) appCon_.setRangeRingCenter(source, layer, point(lat, lon));
 
-		// If valid, update values in appCon_
-		if (validStrings) {
-			appCon_.setRangeRingCenter(source, layer, point(lat, lon));
-		}
+    // Else, reset to old values and pop up message box alerting the error
+    else
+    {
+      // Must reset to valid values before calling MessageBox, or else another EN_KILLFOCUS
+      // message gets sent when the box comes up, and it fails validation again unless you
+      // have already reset it, so the box comes up twice.
+      point original = appCon_.getRangeRingCenter(source, layer);
+      Edit_SetText(latEdit_, widen(to_string(original.latitude)).c_str());
+      Edit_SetText(lonEdit_, widen(to_string(original.longitude)).c_str());
 
-		// Else, pop up message box alerting the error
-		else
-		{
-			auto msg = L"Format error: Latitude and Longitude must be in decimal degrees. Latitude must"
-				L" be -90.0 to 90.0 and longitude must be -180.0 to 180.0.";
-			MessageBoxW(hwnd_, msg, L"ERROR", MB_OK | MB_ICONERROR);
-		}
+      auto msg = L"Format error: Latitude and Longitude must be in decimal degrees. Latitude must"
+        L" be -90.0 to 90.0 and longitude must be -180.0 to 180.0.";
+      MessageBoxW(hwnd_, msg, L"ERROR", MB_OK | MB_ICONERROR);
 
-		// Clear these messages.
-		SendMessage(latEdit_, EM_SETMODIFY, FALSE, 0);
-		SendMessage(lonEdit_, EM_SETMODIFY, FALSE, 0);
-	}
+      success = false;
+    }
+
+    // Clear these messages.
+    SendMessage(latEdit_, EM_SETMODIFY, FALSE, 0);
+    SendMessage(lonEdit_, EM_SETMODIFY, FALSE, 0);
+  }
+
+  return success;
 }
 
 bool PFBApp::parseRanges_(string source, string layer, vector<double> *parseInto)
