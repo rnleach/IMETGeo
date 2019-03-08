@@ -29,10 +29,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
+    <ClCompile Include="PlaceFileBuilder.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PlaceFileBuilder.cpp">
+    <ClCompile Include="stdafx.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -43,9 +43,6 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="pfbicon.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="s.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

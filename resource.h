@@ -1,5 +1,3 @@
-//{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
 // Used by PlaceFileBuilder.rc
 //
 #define IDC_MYICON                      2
@@ -10,7 +8,6 @@
 #define IDM_EXIT                        105
 #define IDC_PLACEFILEBUILDER            109
 #define IDR_MAINFRAME                   128
-#define IDI_ICON1                       129
 #define IDI_APP_ICON                    129
 #define IDC_STATIC                      -1
 
