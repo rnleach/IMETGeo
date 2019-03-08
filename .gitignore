@@ -38,7 +38,6 @@ dist/
 *.user
 *.opendb
 *.VC.db
-PlaceFileBuilderGUI/x64/
+x64/
 *.aps
-PlaceFileBuilderGUI/Win32/
 .vs
